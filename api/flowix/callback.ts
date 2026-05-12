@@ -166,7 +166,18 @@ export async function handleFlowixCallback(c: Context) {
   const providerPaymentId = getCandidate(payload, ["pay_id", "payment_id", "paymentId"]);
   const lookup = invoiceNumber || providerReference || providerPaymentId;
   if (!lookup) {
-    return c.json({ success: false, message: "Transaction reference is required" }, 400);
+    await getDb().insert(activityLogs).values({
+      action: "flowix_callback_test",
+      entityType: "webhook",
+      details: payload,
+      ipAddress: c.req.header("x-forwarded-for") || "",
+      userAgent: c.req.header("user-agent") || "",
+    });
+
+    return c.json({
+      success: true,
+      message: "Webhook received. No transaction reference was provided.",
+    });
   }
 
   const status = mapStatus(getFlowixStatus(payload));
@@ -193,7 +204,19 @@ export async function handleFlowixCallback(c: Context) {
     .returning({ id: transactions.id, invoiceNumber: transactions.invoiceNumber });
 
   if (updated.length === 0) {
-    return c.json({ success: false, message: "Transaction not found" }, 404);
+    await db.insert(activityLogs).values({
+      action: "flowix_callback_unmatched",
+      entityType: "transaction",
+      details: payload,
+      ipAddress: c.req.header("x-forwarded-for") || "",
+      userAgent: c.req.header("user-agent") || "",
+    });
+
+    return c.json({
+      success: true,
+      message: "Webhook received. Transaction not found.",
+      reference: lookup,
+    });
   }
 
   await db.insert(activityLogs).values({
