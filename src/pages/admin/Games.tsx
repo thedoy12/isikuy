@@ -13,6 +13,7 @@ import {
   XCircle,
   ArrowLeft,
   Loader2,
+  RefreshCw,
   BarChart3,
   Receipt,
   Users,
@@ -84,6 +85,15 @@ export default function AdminGames() {
   const updateGame = trpc.admin.updateGame.useMutation({
     onSuccess: () => utils.admin.games.invalidate(),
   });
+  const syncFlowix = trpc.admin.syncFlowixCatalog.useMutation({
+    onSuccess: () => {
+      utils.admin.games.invalidate();
+      utils.game.list.invalidate();
+      utils.game.trending.invalidate();
+      utils.game.popular.invalidate();
+      setPage(0);
+    },
+  });
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isAdmin)) navigate("/");
@@ -99,7 +109,28 @@ export default function AdminGames() {
       <AdminSidebar active="games" />
       <main className="flex-1 min-w-0">
         <header className="border-b border-[#222] bg-[#11131a]/50 px-6 py-4">
-          <p className="text-[10px] text-[#00f0ff] tracking-wider">ARSENAL // GAME_MANAGEMENT</p>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] text-[#00f0ff] tracking-wider">ARSENAL // GAME_MANAGEMENT</p>
+              {syncFlowix.data && (
+                <p className="text-[9px] text-[#0aff00] mt-1">
+                  SYNCED {syncFlowix.data.games} CATALOGS / {syncFlowix.data.products} PRODUCTS
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => syncFlowix.mutate()}
+              disabled={syncFlowix.isPending}
+              className="inline-flex items-center gap-2 px-3 py-2 border border-[#00f0ff]/30 text-[#00f0ff] text-[10px] tracking-wider hover:bg-[#00f0ff]/10 disabled:opacity-50"
+            >
+              {syncFlowix.isPending ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3 h-3" />
+              )}
+              SYNC_FLOWIX
+            </button>
+          </div>
         </header>
         <div className="p-6">
           <div className="border border-[#222] bg-[#11131a] overflow-x-auto">

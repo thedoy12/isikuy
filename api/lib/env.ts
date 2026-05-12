@@ -70,6 +70,6 @@ export const env = {
     "playstation",
     "google play",
   ]),
-  productMarkupPercent: numberEnv("PRODUCT_MARKUP_PERCENT", 5),
-  checkoutTaxPercent: numberEnv("CHECKOUT_TAX_PERCENT", 1),
+  productMarkupPercent: numberEnv("PRODUCT_MARKUP_PERCENT", 3),
+  checkoutTaxPercent: numberEnv("CHECKOUT_TAX_PERCENT", 0.5),
 };

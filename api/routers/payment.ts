@@ -52,18 +52,20 @@ export const paymentRouter = createRouter({
         : input.basePrice!;
       const feePercent = parseFloat(method.feePercent || "0");
       const feeFixed = parseFloat(method.feeFixed || "0");
-      const taxPercent = env.checkoutTaxPercent;
-      const taxAmount = Math.round(basePrice * (taxPercent / 100));
+      const servicePercent = env.checkoutTaxPercent;
+      const serviceAmount = Math.round(basePrice * (servicePercent / 100));
       const paymentFeeAmount = Math.round(basePrice * (feePercent / 100) + feeFixed);
-      const feeAmount = taxAmount + paymentFeeAmount;
+      const feeAmount = serviceAmount + paymentFeeAmount;
       const totalAmount = basePrice + feeAmount;
 
       return {
         basePrice,
         feePercent,
         feeFixed,
-        taxPercent,
-        taxAmount,
+        servicePercent,
+        serviceAmount,
+        taxPercent: servicePercent,
+        taxAmount: serviceAmount,
         paymentFeeAmount,
         feeAmount,
         totalAmount,

@@ -13,8 +13,18 @@ import {
   categories,
   activityLogs,
 } from "@db/schema";
+import { syncFlowixCatalog } from "./game";
 
 export const adminRouter = createRouter({
+  syncFlowixCatalog: adminQuery.mutation(async () => {
+    const result = await syncFlowixCatalog();
+    return {
+      success: true,
+      games: result.games.length,
+      products: result.productCodes.length,
+    };
+  }),
+
   stats: adminQuery.query(async () => {
     const db = getDb();
 

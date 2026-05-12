@@ -153,6 +153,10 @@ export default function GameDetail() {
 
   const handlePayNow = () => {
     if (!invoiceNumber) return;
+    if (paymentDetails) {
+      utils.transaction.checkStatus.invalidate({ invoiceNumber });
+      return;
+    }
     processPayment.mutate({ invoiceNumber });
   };
 
@@ -300,15 +304,10 @@ export default function GameDetail() {
                   </div>
                 </div>
               )}
-              {paymentDetails?.payUrl && (
-                <a
-                  href={paymentDetails.payUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex mt-4 text-xs text-[#00f0ff] hover:underline"
-                >
-                  Buka halaman pembayaran
-                </a>
+              {paymentDetails?.payCode && (
+                <p className="font-terminal text-xs text-white/60 mt-4 break-all">
+                  {paymentDetails.payCode}
+                </p>
               )}
               {paymentDetails?.reference && (
                 <p className="font-terminal text-[10px] text-white/30 mt-3">
@@ -328,7 +327,7 @@ export default function GameDetail() {
               ) : (
                 <CheckCircle2 className="w-5 h-5" />
               )}
-              Simulasikan Pembayaran
+              {paymentDetails ? "Cek Status Pembayaran" : "Simulasikan Pembayaran"}
             </button>
 
             <button
@@ -622,8 +621,8 @@ export default function GameDetail() {
                         </p>
                         <p className="text-xs text-white/40">
                           {fee > 0
-                            ? `Fee ${fee}%`
-                            : "No fee"}
+                            ? `Biaya ${fee}%`
+                            : "Tanpa biaya"}
                         </p>
                       </div>
                       {isSelected && (
@@ -686,11 +685,11 @@ export default function GameDetail() {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-white/50">Pajak</span>
+                    <span className="text-white/50">Biaya Layanan</span>
                     <span className="text-white">
                       Rp
-                      {paymentCalc?.taxAmount
-                        ? Math.round(paymentCalc.taxAmount).toLocaleString()
+                      {paymentCalc?.serviceAmount ?? paymentCalc?.taxAmount
+                        ? Math.round(paymentCalc.serviceAmount ?? paymentCalc.taxAmount).toLocaleString()
                         : "0"}
                     </span>
                   </div>

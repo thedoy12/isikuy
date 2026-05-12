@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, like, asc, inArray } from "drizzle-orm";
+import { eq, and, like, asc, desc } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { games, categories, products } from "@db/schema";
@@ -39,16 +39,47 @@ function matchKey(value: string) {
     .join("");
 }
 
-function productGameName(product: FlowixProduct) {
-  return (product.brand || product.name || "Game").trim();
+function cleanFlowixName(value: string) {
+  return value
+    .replace(/\s*-\s*produk\s+digital\s*/gi, " ")
+    .replace(/\s*produk\s+digital\s*/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function productCategorySlug(product: FlowixProduct) {
   return slugify(product.sourceCategory || product.category || "produk");
 }
 
+function productGroupBaseName(product: FlowixProduct) {
+  return cleanFlowixName(product.brand || product.name || "Produk");
+}
+
+function isRegionalGameProduct(product: FlowixProduct) {
+  if (productCategorySlug(product) !== "game") return false;
+  const text = `${product.brand || ""} ${product.name || ""}`.toLowerCase();
+  const parenthesized = text.match(/\(([^)]+)\)/);
+  if (parenthesized && !parenthesized[1].includes("global")) return true;
+  return [
+    "malaysia",
+    "philippines",
+    "russia",
+    "singapore",
+    "thailand",
+    "vietnam",
+    "brazil",
+    "turkey",
+    "korea",
+    "japan",
+  ].some((region) => text.includes(region));
+}
+
 function isAllowedGameProduct(product: FlowixProduct) {
   if (productCategorySlug(product) !== "game") return true;
+  if (isRegionalGameProduct(product)) return false;
+  if (/\b(gift|test|promo|voucher\s+gift)\b/i.test(`${product.brand} ${product.name}`)) {
+    return false;
+  }
   const haystack = matchKey(`${product.brand || ""} ${product.name || ""}`);
   return env.flowixGameWhitelist.some((item) => haystack.includes(matchKey(item)));
 }
@@ -59,37 +90,29 @@ function productCategoryName(slug: string) {
     pulsa: "Pulsa",
     data: "Paket Data",
     ewallet: "E-Wallet",
-    premium: "Akun Premium",
-    "akun-premium": "Akun Premium",
-    streaming: "Streaming",
     voucher: "Voucher",
     pln: "PLN",
-    emoney: "E-Money",
-    tagihan: "Tagihan",
-    internet: "Internet",
-    produk: "Produk Digital",
+    produk: "Lainnya",
   };
   return labels[slug] ?? titleCase(slug.replace(/-/g, " "));
 }
 
 function productGroupSlug(product: FlowixProduct) {
   const categorySlug = productCategorySlug(product);
-  const brandSlug = slugify(titleCase(productGameName(product)));
+  const brandSlug = slugify(titleCase(productGroupBaseName(product)));
   return categorySlug === "game" ? brandSlug : `${categorySlug}-${brandSlug}`;
 }
 
 function productGroupName(product: FlowixProduct) {
-  const categorySlug = productCategorySlug(product);
-  const brandName = titleCase(productGameName(product));
-  return categorySlug === "game" ? brandName : `${brandName} ${productCategoryName(categorySlug)}`;
+  return titleCase(productGroupBaseName(product));
 }
 
 function withMarkup(price: number) {
   return Math.ceil((price * (1 + env.productMarkupPercent / 100)) / 100) * 100;
 }
 
-async function ensureFlowixCatalog() {
-  if (!isFlowixConfigured()) return null;
+export async function syncFlowixCatalog() {
+  if (!isFlowixConfigured()) return { games: [], productCodes: [] };
 
   const db = getDb();
   const flowixProducts = (await listFlowixCatalog())
@@ -132,65 +155,50 @@ async function ensureFlowixCatalog() {
   const groups = Array.from(
     new Map(
       flowixProducts.map((product) => {
-        const name = productGroupName(product);
         const categorySlug = productCategorySlug(product);
-        return [
-          productGroupSlug(product),
-          {
-            slug: productGroupSlug(product),
-            name,
-            categorySlug,
-          },
-        ] as const;
+        const slug = productGroupSlug(product);
+        return [slug, { slug, name: productGroupName(product), categorySlug }] as const;
       }),
-    ).entries(),
-  ).map(([, group]) => group);
+    ).values(),
+  );
   const existingGames = await db.select().from(games);
-
   const syncedGames: SyncedGame[] = [];
+
   for (const group of groups) {
-    const { slug, name, categorySlug } = group;
-    const category =
-      categoryBySlug.get(categorySlug) ??
-      categoryBySlug.get("produk") ??
-      Array.from(categoryBySlug.values())[0];
+    const category = categoryBySlug.get(group.categorySlug);
     if (!category) continue;
 
     const existing =
-      existingGames.find((game) => game.slug === slug) ??
-      existingGames.find((game) => matchKey(game.slug) === matchKey(slug)) ??
-      existingGames.find((game) => matchKey(game.name) === matchKey(name));
+      existingGames.find((game) => game.slug === group.slug) ??
+      existingGames.find((game) => matchKey(game.slug) === matchKey(group.slug)) ??
+      existingGames.find((game) => matchKey(game.name) === matchKey(group.name));
 
     const gameData = {
       categoryId: category.id,
-      name,
-      description: `Top up ${name} via Flowix.`,
+      name: group.name,
+      description: `${productCategoryName(group.categorySlug)} ${group.name} via Flowix.`,
       publisher: "Flowix",
       platform: "mobile" as const,
       isActive: true,
       hasServerId: false,
     };
 
-    const syncedGameRows: GameRow[] = existing
-      ? await db
-          .update(games)
-          .set(gameData)
-          .where(eq(games.id, existing.id))
-          .returning()
+    const syncedRows: GameRow[] = existing
+      ? await db.update(games).set(gameData).where(eq(games.id, existing.id)).returning()
       : await db
           .insert(games)
           .values({
             ...gameData,
-            slug,
+            slug: group.slug,
             sortOrder: syncedGames.length + 1,
             isTrending: syncedGames.length < 8,
             isPopular: syncedGames.length < 12,
             isNew: false,
           })
           .returning();
-    const syncedGame = syncedGameRows[0];
-    existingGames.push(syncedGame);
 
+    const syncedGame = syncedRows[0];
+    existingGames.push(syncedGame);
     syncedGames.push({ ...syncedGame, categoryName: category.name });
   }
 
@@ -207,30 +215,35 @@ async function ensureFlowixCatalog() {
       .where(and(eq(products.gameId, game.id), eq(products.nominalAmount, product.code)))
       .limit(1);
 
-    const salePrice = withMarkup(product.price);
     const productData = {
       gameId: game.id,
-      name: product.name,
-      description: `${product.brand} - ${product.code}`,
+      name: cleanFlowixName(product.name),
+      description: `${cleanFlowixName(product.brand)} - ${product.code}`,
       nominalAmount: product.code,
       basePrice: String(product.price),
-      salePrice: String(salePrice),
+      salePrice: String(withMarkup(product.price)),
       discountPercent: 0,
       isPromo: false,
       stock: 999,
       isActive: true,
+      sortOrder: index + 1,
     };
 
     if (existing) {
       await db.update(products).set(productData).where(eq(products.id, existing.id));
     } else {
-      await db
-        .insert(products)
-        .values({
-          ...productData,
-          sortOrder: index + 1,
-        });
+      await db.insert(products).values(productData);
     }
+  }
+
+  const syncedGameIds = syncedGames.map((game) => game.id);
+  const allFlowixGames = await db
+    .select({ id: games.id })
+    .from(games)
+    .where(eq(games.publisher, "Flowix"));
+  for (const stale of allFlowixGames.filter((game) => !syncedGameIds.includes(game.id))) {
+    await db.update(games).set({ isActive: false }).where(eq(games.id, stale.id));
+    await db.update(products).set({ isActive: false }).where(eq(products.gameId, stale.id));
   }
 
   return { games: syncedGames, productCodes: Array.from(activeCodes) };
@@ -247,52 +260,20 @@ export const gameRouter = createRouter({
         popular: z.boolean().optional(),
         limit: z.number().default(50),
         offset: z.number().default(0),
-      }).optional()
+      }).optional(),
     )
     .query(async ({ input }) => {
       const db = getDb();
-      const flowixCatalog = await ensureFlowixCatalog().catch((error) => {
-        console.warn("[flowix] Failed to sync catalog, using local catalog", error);
-        return null;
-      });
-
-      if (flowixCatalog) {
-        const search = input?.search?.toLowerCase().trim();
-        const offset = input?.offset ?? 0;
-        const limit = input?.limit ?? flowixCatalog.games.length;
-
-        return flowixCatalog.games
-          .filter((game) => !input?.categoryId || game.categoryId === input.categoryId)
-          .filter((game) => !search || game.name.toLowerCase().includes(search))
-          .filter((game) => !input?.platform || game.platform === input.platform)
-          .filter((game) => !input?.trending || game.isTrending)
-          .filter((game) => !input?.popular || game.isPopular)
-          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-          .slice(offset, offset + limit);
-      }
-
-      const filters = [];
-      
-      if (input?.categoryId) {
-        filters.push(eq(games.categoryId, input.categoryId));
-      }
-      if (input?.search) {
-        filters.push(like(games.name, `%${input.search}%`));
-      }
+      const filters = [eq(games.isActive, true)];
+      if (input?.categoryId) filters.push(eq(games.categoryId, input.categoryId));
+      if (input?.search) filters.push(like(games.name, `%${input.search}%`));
       if (input?.platform) {
         filters.push(eq(games.platform, input.platform as "mobile" | "pc" | "console" | "voucher"));
       }
-      if (input?.trending) {
-        filters.push(eq(games.isTrending, true));
-      }
-      if (input?.popular) {
-        filters.push(eq(games.isPopular, true));
-      }
-      filters.push(eq(games.isActive, true));
+      if (input?.trending) filters.push(eq(games.isTrending, true));
+      if (input?.popular) filters.push(eq(games.isPopular, true));
 
-      const where = filters.length > 0 ? and(...filters) : undefined;
-
-      const result = await db
+      return db
         .select({
           id: games.id,
           name: games.name,
@@ -315,33 +296,21 @@ export const gameRouter = createRouter({
         })
         .from(games)
         .leftJoin(categories, eq(games.categoryId, categories.id))
-        .where(where)
-        .orderBy(asc(games.sortOrder))
+        .where(and(...filters))
+        .orderBy(desc(games.publisher), asc(games.sortOrder))
         .limit(input?.limit || 50)
         .offset(input?.offset || 0);
-
-      return result;
     }),
 
   getBySlug: publicQuery
     .input(z.object({ slug: z.string() }))
     .query(async ({ input }) => {
       const db = getDb();
-      const flowixCatalog = await ensureFlowixCatalog().catch((error) => {
-        console.warn("[flowix] Failed to sync catalog, using local products", error);
-        return null;
-      });
-
-      const [localGame] = await db
+      const [game] = await db
         .select()
         .from(games)
         .where(and(eq(games.slug, input.slug), eq(games.isActive, true)))
         .limit(1);
-
-      const game =
-        flowixCatalog?.games.find((item) => item.slug === input.slug) ??
-        flowixCatalog?.games.find((item) => matchKey(item.slug) === matchKey(input.slug)) ??
-        localGame;
 
       if (!game) return null;
 
@@ -351,42 +320,26 @@ export const gameRouter = createRouter({
         .where(eq(categories.id, game.categoryId))
         .limit(1);
 
-      const productFilters = [eq(products.gameId, game.id), eq(products.isActive, true)];
-      if (flowixCatalog?.productCodes.length) {
-        productFilters.push(inArray(products.nominalAmount, flowixCatalog.productCodes));
-      }
-
       const localProducts = await db
         .select()
         .from(products)
-        .where(and(...productFilters))
+        .where(and(eq(products.gameId, game.id), eq(products.isActive, true)))
         .orderBy(asc(products.sortOrder));
 
+      const isFlowixGame = game.publisher === "Flowix";
       return {
         ...game,
         category,
         products: localProducts.map((product) => ({
           ...product,
-          provider: flowixCatalog ? ("flowix" as const) : ("local" as const),
-          providerProductCode: flowixCatalog ? product.nominalAmount : null,
-          providerProductName: flowixCatalog ? product.name : null,
+          provider: isFlowixGame ? ("flowix" as const) : ("local" as const),
+          providerProductCode: isFlowixGame ? product.nominalAmount : null,
+          providerProductName: isFlowixGame ? product.name : null,
         })),
       };
     }),
 
   trending: publicQuery.query(async () => {
-    const flowixCatalog = await ensureFlowixCatalog().catch((error) => {
-      console.warn("[flowix] Failed to sync trending catalog, using local catalog", error);
-      return null;
-    });
-
-    if (flowixCatalog) {
-      return flowixCatalog.games
-        .filter((game) => game.isTrending)
-        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-        .slice(0, 8);
-    }
-
     const db = getDb();
     return db
       .select({
@@ -406,23 +359,11 @@ export const gameRouter = createRouter({
       .from(games)
       .leftJoin(categories, eq(games.categoryId, categories.id))
       .where(and(eq(games.isTrending, true), eq(games.isActive, true)))
-      .orderBy(asc(games.sortOrder))
+      .orderBy(desc(games.publisher), asc(games.sortOrder))
       .limit(8);
   }),
 
   popular: publicQuery.query(async () => {
-    const flowixCatalog = await ensureFlowixCatalog().catch((error) => {
-      console.warn("[flowix] Failed to sync popular catalog, using local catalog", error);
-      return null;
-    });
-
-    if (flowixCatalog) {
-      return flowixCatalog.games
-        .filter((game) => game.isPopular)
-        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-        .slice(0, 12);
-    }
-
     const db = getDb();
     return db
       .select({
@@ -442,7 +383,7 @@ export const gameRouter = createRouter({
       .from(games)
       .leftJoin(categories, eq(games.categoryId, categories.id))
       .where(and(eq(games.isPopular, true), eq(games.isActive, true)))
-      .orderBy(asc(games.sortOrder))
+      .orderBy(desc(games.publisher), asc(games.sortOrder))
       .limit(12);
   }),
 
