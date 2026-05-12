@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, like, asc } from "drizzle-orm";
+import { eq, and, like, asc, inArray } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { games, categories, products } from "@db/schema";
@@ -9,15 +9,147 @@ import {
   type FlowixProduct,
 } from "../flowix/client";
 
-function normalize(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+type GameRow = typeof games.$inferSelect;
+type SyncedGame = GameRow & { categoryName: string };
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-function matchesGame(product: FlowixProduct, gameName: string) {
-  const brand = normalize(product.brand || "");
-  const name = normalize(product.name || "");
-  const game = normalize(gameName);
-  return brand === game || brand.includes(game) || game.includes(brand) || name.includes(game);
+function titleCase(value: string) {
+  return value
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function productGameName(product: FlowixProduct) {
+  return (product.brand || product.name || "Game").trim();
+}
+
+async function ensureFlowixCatalog() {
+  if (!isFlowixConfigured()) return null;
+
+  const db = getDb();
+  const flowixProducts = (await listFlowixProducts("game")).filter(
+    (product) => product.status.toLowerCase() === "aktif",
+  );
+
+  const [category] = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.slug, "game"))
+    .limit(1);
+
+  const gameCategory =
+    category ??
+    (
+      await db
+        .insert(categories)
+        .values({
+          name: "Game",
+          slug: "game",
+          icon: "gamepad-2",
+          sortOrder: 0,
+          isActive: true,
+        })
+        .returning()
+    )[0];
+
+  const brands = Array.from(
+    new Map(
+      flowixProducts.map((product) => {
+        const name = titleCase(productGameName(product));
+        return [slugify(name), name] as const;
+      }),
+    ).entries(),
+  );
+
+  const syncedGames: SyncedGame[] = [];
+  for (const [slug, name] of brands) {
+    const [existing] = await db
+      .select()
+      .from(games)
+      .where(eq(games.slug, slug))
+      .limit(1);
+
+    const gameData = {
+      categoryId: gameCategory.id,
+      name,
+      description: `Top up ${name} via Flowix.`,
+      publisher: "Flowix",
+      platform: "mobile" as const,
+      isActive: true,
+      hasServerId: false,
+    };
+
+    const syncedGameRows: GameRow[] = existing
+      ? await db
+          .update(games)
+          .set(gameData)
+          .where(eq(games.id, existing.id))
+          .returning()
+      : await db
+          .insert(games)
+          .values({
+            ...gameData,
+            slug,
+            sortOrder: syncedGames.length,
+            isTrending: syncedGames.length < 8,
+            isPopular: syncedGames.length < 12,
+            isNew: false,
+          })
+          .returning();
+    const syncedGame = syncedGameRows[0];
+
+    syncedGames.push({ ...syncedGame, categoryName: gameCategory.name });
+  }
+
+  const gamesBySlug = new Map(syncedGames.map((game) => [game.slug, game]));
+  const activeCodes = new Set(flowixProducts.map((product) => product.code));
+
+  for (const product of flowixProducts) {
+    const game = gamesBySlug.get(slugify(titleCase(productGameName(product))));
+    if (!game) continue;
+
+    const [existing] = await db
+      .select()
+      .from(products)
+      .where(and(eq(products.gameId, game.id), eq(products.nominalAmount, product.code)))
+      .limit(1);
+
+    const productData = {
+      gameId: game.id,
+      name: product.name,
+      description: `${product.brand} - ${product.code}`,
+      nominalAmount: product.code,
+      basePrice: String(product.price),
+      salePrice: String(product.price),
+      discountPercent: 0,
+      isPromo: false,
+      stock: 999,
+      isActive: true,
+    };
+
+    if (existing) {
+      await db.update(products).set(productData).where(eq(products.id, existing.id));
+    } else {
+      await db
+        .insert(products)
+        .values({
+          ...productData,
+          sortOrder: activeCodes.size,
+        });
+    }
+  }
+
+  return { games: syncedGames, productCodes: Array.from(activeCodes) };
 }
 
 export const gameRouter = createRouter({
@@ -35,6 +167,10 @@ export const gameRouter = createRouter({
     )
     .query(async ({ input }) => {
       const db = getDb();
+      const flowixCatalog = await ensureFlowixCatalog().catch((error) => {
+        console.warn("[flowix] Failed to sync catalog, using local catalog", error);
+        return null;
+      });
       const filters = [];
       
       if (input?.categoryId) {
@@ -84,13 +220,21 @@ export const gameRouter = createRouter({
         .limit(input?.limit || 50)
         .offset(input?.offset || 0);
 
-      return result;
+      if (!flowixCatalog) return result;
+
+      const flowixIds = new Set(flowixCatalog.games.map((game) => game.id));
+      return result.filter((game) => flowixIds.has(game.id));
     }),
 
   getBySlug: publicQuery
     .input(z.object({ slug: z.string() }))
     .query(async ({ input }) => {
       const db = getDb();
+      const flowixCatalog = await ensureFlowixCatalog().catch((error) => {
+        console.warn("[flowix] Failed to sync catalog, using local products", error);
+        return null;
+      });
+
       const [game] = await db
         .select()
         .from(games)
@@ -105,53 +249,25 @@ export const gameRouter = createRouter({
         .where(eq(categories.id, game.categoryId))
         .limit(1);
 
+      const productFilters = [eq(products.gameId, game.id), eq(products.isActive, true)];
+      if (flowixCatalog?.productCodes.length) {
+        productFilters.push(inArray(products.nominalAmount, flowixCatalog.productCodes));
+      }
+
       const localProducts = await db
         .select()
         .from(products)
-        .where(and(eq(products.gameId, game.id), eq(products.isActive, true)))
+        .where(and(...productFilters))
         .orderBy(asc(products.sortOrder));
-
-      if (isFlowixConfigured()) {
-        try {
-          const flowixProducts = (await listFlowixProducts("game"))
-            .filter((product) => product.status.toLowerCase() === "aktif")
-            .filter((product) => matchesGame(product, game.name))
-            .map((product, index) => ({
-              id: -(index + 1),
-              gameId: game.id,
-              name: product.name,
-              description: `${product.brand} - ${product.code}`,
-              nominalAmount: product.code,
-              basePrice: String(product.price),
-              salePrice: String(product.price),
-              discountPercent: 0,
-              isPromo: false,
-              stock: 999,
-              sortOrder: index,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              provider: "flowix" as const,
-              providerProductCode: product.code,
-              providerProductName: product.name,
-            }));
-
-          if (flowixProducts.length > 0) {
-            return { ...game, category, products: flowixProducts };
-          }
-        } catch (error) {
-          console.warn("[flowix] Failed to load products, using local products", error);
-        }
-      }
 
       return {
         ...game,
         category,
         products: localProducts.map((product) => ({
           ...product,
-          provider: "local" as const,
-          providerProductCode: null,
-          providerProductName: null,
+          provider: flowixCatalog ? ("flowix" as const) : ("local" as const),
+          providerProductCode: flowixCatalog ? product.nominalAmount : null,
+          providerProductName: flowixCatalog ? product.name : null,
         })),
       };
     }),

@@ -85,6 +85,9 @@ export default function GameDetail() {
   const selectedProductPrice = selectedProductData
     ? parseFloat(selectedProductData.salePrice || selectedProductData.basePrice)
     : 0;
+  const fallbackCover = game
+    ? `https://placehold.co/1200x600/09090b/ffffff?text=${encodeURIComponent(game.name)}`
+    : "";
 
   const { data: paymentCalc } = trpc.payment.calculate.useQuery(
     {
@@ -419,7 +422,7 @@ export default function GameDetail() {
       <div className="relative pt-20">
         <div className="absolute inset-0 h-72 overflow-hidden">
           <img
-            src={game.coverImage || ""}
+            src={game.bannerImage || game.coverImage || fallbackCover}
             alt={game.name}
             className="w-full h-full object-cover opacity-30"
           />
@@ -445,7 +448,7 @@ export default function GameDetail() {
           <div className="flex items-start gap-5">
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden flex-shrink-0 ring-2 ring-[#ff003c]/20">
               <img
-                src={game.cardImage || game.coverImage || ""}
+                src={game.cardImage || game.coverImage || fallbackCover}
                 alt={game.name}
                 className="w-full h-full object-cover"
               />
