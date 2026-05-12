@@ -146,6 +146,21 @@ function verifySignature(rawBody: string, signature: string | undefined) {
   );
 }
 
+async function logFlowixEvent(input: {
+  action: string;
+  entityType: string;
+  entityId?: number;
+  details: Record<string, unknown>;
+  ipAddress: string;
+  userAgent: string;
+}) {
+  try {
+    await getDb().insert(activityLogs).values(input);
+  } catch (error) {
+    console.warn("[flowix] Failed to write activity log", error);
+  }
+}
+
 export async function handleFlowixCallback(c: Context) {
   const rawBody = await c.req.text();
   const signature = c.req.header("X-Flowix-Signature");
@@ -166,7 +181,7 @@ export async function handleFlowixCallback(c: Context) {
   const providerPaymentId = getCandidate(payload, ["pay_id", "payment_id", "paymentId"]);
   const lookup = invoiceNumber || providerReference || providerPaymentId;
   if (!lookup) {
-    await getDb().insert(activityLogs).values({
+    await logFlowixEvent({
       action: "flowix_callback_test",
       entityType: "webhook",
       details: payload,
@@ -191,20 +206,30 @@ export async function handleFlowixCallback(c: Context) {
   };
 
   const db = getDb();
-  const updated = await db
-    .update(transactions)
-    .set(updateData)
-    .where(
-      or(
-        eq(transactions.invoiceNumber, lookup),
-        eq(transactions.providerReference, lookup),
-        eq(transactions.providerPaymentId, lookup),
-      ),
-    )
-    .returning({ id: transactions.id, invoiceNumber: transactions.invoiceNumber });
+  let updated: Array<{ id: number; invoiceNumber: string }> = [];
+  try {
+    updated = await db
+      .update(transactions)
+      .set(updateData)
+      .where(
+        or(
+          eq(transactions.invoiceNumber, lookup),
+          eq(transactions.providerReference, lookup),
+          eq(transactions.providerPaymentId, lookup),
+        ),
+      )
+      .returning({ id: transactions.id, invoiceNumber: transactions.invoiceNumber });
+  } catch (error) {
+    console.error("[flowix] Failed to update transaction", error);
+    return c.json({
+      success: true,
+      message: "Webhook received. Transaction update failed and was skipped.",
+      reference: lookup,
+    });
+  }
 
   if (updated.length === 0) {
-    await db.insert(activityLogs).values({
+    await logFlowixEvent({
       action: "flowix_callback_unmatched",
       entityType: "transaction",
       details: payload,
@@ -219,7 +244,7 @@ export async function handleFlowixCallback(c: Context) {
     });
   }
 
-  await db.insert(activityLogs).values({
+  await logFlowixEvent({
     action: "flowix_callback",
     entityType: "transaction",
     entityId: updated[0].id,
