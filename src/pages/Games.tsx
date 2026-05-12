@@ -33,7 +33,7 @@ export default function Games() {
     search: search || undefined,
     platform: selectedPlatform,
     trending: trendingParam || undefined,
-    limit: 50,
+    limit: 500,
   });
 
   const platforms = [

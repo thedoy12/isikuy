@@ -100,7 +100,7 @@ async function ensureFlowixCatalog() {
           .values({
             ...gameData,
             slug,
-            sortOrder: syncedGames.length,
+            sortOrder: syncedGames.length + 1,
             isTrending: syncedGames.length < 8,
             isPopular: syncedGames.length < 12,
             isNew: false,
@@ -114,7 +114,7 @@ async function ensureFlowixCatalog() {
   const gamesBySlug = new Map(syncedGames.map((game) => [game.slug, game]));
   const activeCodes = new Set(flowixProducts.map((product) => product.code));
 
-  for (const product of flowixProducts) {
+  for (const [index, product] of flowixProducts.entries()) {
     const game = gamesBySlug.get(slugify(titleCase(productGameName(product))));
     if (!game) continue;
 
@@ -144,7 +144,7 @@ async function ensureFlowixCatalog() {
         .insert(products)
         .values({
           ...productData,
-          sortOrder: activeCodes.size,
+          sortOrder: index + 1,
         });
     }
   }
@@ -171,6 +171,22 @@ export const gameRouter = createRouter({
         console.warn("[flowix] Failed to sync catalog, using local catalog", error);
         return null;
       });
+
+      if (flowixCatalog) {
+        const search = input?.search?.toLowerCase().trim();
+        const offset = input?.offset ?? 0;
+        const limit = input?.limit ?? flowixCatalog.games.length;
+
+        return flowixCatalog.games
+          .filter((game) => !input?.categoryId || game.categoryId === input.categoryId)
+          .filter((game) => !search || game.name.toLowerCase().includes(search))
+          .filter((game) => !input?.platform || game.platform === input.platform)
+          .filter((game) => !input?.trending || game.isTrending)
+          .filter((game) => !input?.popular || game.isPopular)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+          .slice(offset, offset + limit);
+      }
+
       const filters = [];
       
       if (input?.categoryId) {
@@ -220,10 +236,7 @@ export const gameRouter = createRouter({
         .limit(input?.limit || 50)
         .offset(input?.offset || 0);
 
-      if (!flowixCatalog) return result;
-
-      const flowixIds = new Set(flowixCatalog.games.map((game) => game.id));
-      return result.filter((game) => flowixIds.has(game.id));
+      return result;
     }),
 
   getBySlug: publicQuery
