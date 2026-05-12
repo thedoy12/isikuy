@@ -686,11 +686,20 @@ export default function GameDetail() {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-white/50">Fee</span>
+                    <span className="text-white/50">Pajak</span>
                     <span className="text-white">
                       Rp
-                      {paymentCalc?.feeAmount
-                        ? Math.round(paymentCalc.feeAmount).toLocaleString()
+                      {paymentCalc?.taxAmount
+                        ? Math.round(paymentCalc.taxAmount).toLocaleString()
+                        : "0"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Biaya Pembayaran</span>
+                    <span className="text-white">
+                      Rp
+                      {paymentCalc?.paymentFeeAmount
+                        ? Math.round(paymentCalc.paymentFeeAmount).toLocaleString()
                         : "0"}
                     </span>
                   </div>

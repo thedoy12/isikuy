@@ -8,6 +8,13 @@ function required(name: string): string {
   return value ?? "";
 }
 
+function numberEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : fallback;
+}
+
 export const env = {
   appSecret: required("APP_SECRET"),
   isProduction: process.env.NODE_ENV === "production",
@@ -18,4 +25,6 @@ export const env = {
   flowixApiKey: process.env.FLOWIX_API_KEY ?? "",
   flowixMerchantId: process.env.FLOWIX_MERCHANT_ID ?? "",
   flowixWebhookSecret: process.env.FLOWIX_WEBHOOK_SECRET ?? "",
+  productMarkupPercent: numberEnv("PRODUCT_MARKUP_PERCENT", 5),
+  checkoutTaxPercent: numberEnv("CHECKOUT_TAX_PERCENT", 1),
 };

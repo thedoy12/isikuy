@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { paymentMethods, products } from "@db/schema";
+import { env } from "../lib/env";
 
 export const paymentRouter = createRouter({
   methods: publicQuery.query(async () => {
@@ -51,13 +52,19 @@ export const paymentRouter = createRouter({
         : input.basePrice!;
       const feePercent = parseFloat(method.feePercent || "0");
       const feeFixed = parseFloat(method.feeFixed || "0");
-      const feeAmount = Math.round(basePrice * (feePercent / 100) + feeFixed);
+      const taxPercent = env.checkoutTaxPercent;
+      const taxAmount = Math.round(basePrice * (taxPercent / 100));
+      const paymentFeeAmount = Math.round(basePrice * (feePercent / 100) + feeFixed);
+      const feeAmount = taxAmount + paymentFeeAmount;
       const totalAmount = basePrice + feeAmount;
 
       return {
         basePrice,
         feePercent,
         feeFixed,
+        taxPercent,
+        taxAmount,
+        paymentFeeAmount,
         feeAmount,
         totalAmount,
         product,

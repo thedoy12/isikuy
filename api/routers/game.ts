@@ -3,6 +3,7 @@ import { eq, and, like, asc, inArray } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { games, categories, products } from "@db/schema";
+import { env } from "../lib/env";
 import {
   isFlowixConfigured,
   listFlowixProducts,
@@ -31,6 +32,10 @@ function titleCase(value: string) {
 
 function productGameName(product: FlowixProduct) {
   return (product.brand || product.name || "Game").trim();
+}
+
+function withMarkup(price: number) {
+  return Math.ceil((price * (1 + env.productMarkupPercent / 100)) / 100) * 100;
 }
 
 async function ensureFlowixCatalog() {
@@ -124,13 +129,14 @@ async function ensureFlowixCatalog() {
       .where(and(eq(products.gameId, game.id), eq(products.nominalAmount, product.code)))
       .limit(1);
 
+    const salePrice = withMarkup(product.price);
     const productData = {
       gameId: game.id,
       name: product.name,
       description: `${product.brand} - ${product.code}`,
       nominalAmount: product.code,
       basePrice: String(product.price),
-      salePrice: String(product.price),
+      salePrice: String(salePrice),
       discountPercent: 0,
       isPromo: false,
       stock: 999,
