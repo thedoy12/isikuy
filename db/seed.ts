@@ -12,6 +12,12 @@ import {
 async function seed() {
   const db = getDb();
 
+  const existingCategories = await db.select().from(categories).limit(1);
+  if (existingCategories.length > 0) {
+    console.log("Database already seeded. Skipping seed.");
+    return;
+  }
+
   // Seed categories
   const cats = await db.insert(categories).values([
     { name: "Mobile Games", slug: "mobile-games", icon: "Smartphone", sortOrder: 1 },

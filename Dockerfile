@@ -15,4 +15,4 @@ COPY --from=build /app/dist ./dist
 COPY package.json ./
 
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["npm", "run", "start:railway"]
