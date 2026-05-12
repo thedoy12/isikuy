@@ -30,6 +30,15 @@ function titleCase(value: string) {
     .join(" ");
 }
 
+function matchKey(value: string) {
+  return value
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .map((part) => (part.length > 3 && part.endsWith("s") ? part.slice(0, -1) : part))
+    .join("");
+}
+
 function productGameName(product: FlowixProduct) {
   return (product.brand || product.name || "Game").trim();
 }
@@ -75,14 +84,14 @@ async function ensureFlowixCatalog() {
       }),
     ).entries(),
   );
+  const existingGames = await db.select().from(games);
 
   const syncedGames: SyncedGame[] = [];
   for (const [slug, name] of brands) {
-    const [existing] = await db
-      .select()
-      .from(games)
-      .where(eq(games.slug, slug))
-      .limit(1);
+    const existing =
+      existingGames.find((game) => game.slug === slug) ??
+      existingGames.find((game) => matchKey(game.slug) === matchKey(slug)) ??
+      existingGames.find((game) => matchKey(game.name) === matchKey(name));
 
     const gameData = {
       categoryId: gameCategory.id,
@@ -112,6 +121,7 @@ async function ensureFlowixCatalog() {
           })
           .returning();
     const syncedGame = syncedGameRows[0];
+    existingGames.push(syncedGame);
 
     syncedGames.push({ ...syncedGame, categoryName: gameCategory.name });
   }
@@ -254,11 +264,16 @@ export const gameRouter = createRouter({
         return null;
       });
 
-      const [game] = await db
+      const [localGame] = await db
         .select()
         .from(games)
         .where(and(eq(games.slug, input.slug), eq(games.isActive, true)))
         .limit(1);
+
+      const game =
+        flowixCatalog?.games.find((item) => item.slug === input.slug) ??
+        flowixCatalog?.games.find((item) => matchKey(item.slug) === matchKey(input.slug)) ??
+        localGame;
 
       if (!game) return null;
 
@@ -292,6 +307,18 @@ export const gameRouter = createRouter({
     }),
 
   trending: publicQuery.query(async () => {
+    const flowixCatalog = await ensureFlowixCatalog().catch((error) => {
+      console.warn("[flowix] Failed to sync trending catalog, using local catalog", error);
+      return null;
+    });
+
+    if (flowixCatalog) {
+      return flowixCatalog.games
+        .filter((game) => game.isTrending)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        .slice(0, 8);
+    }
+
     const db = getDb();
     return db
       .select({
@@ -316,6 +343,18 @@ export const gameRouter = createRouter({
   }),
 
   popular: publicQuery.query(async () => {
+    const flowixCatalog = await ensureFlowixCatalog().catch((error) => {
+      console.warn("[flowix] Failed to sync popular catalog, using local catalog", error);
+      return null;
+    });
+
+    if (flowixCatalog) {
+      return flowixCatalog.games
+        .filter((game) => game.isPopular)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        .slice(0, 12);
+    }
+
     const db = getDb();
     return db
       .select({
