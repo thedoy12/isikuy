@@ -47,6 +47,12 @@ function productCategorySlug(product: FlowixProduct) {
   return slugify(product.sourceCategory || product.category || "produk");
 }
 
+function isAllowedGameProduct(product: FlowixProduct) {
+  if (productCategorySlug(product) !== "game") return true;
+  const haystack = matchKey(`${product.brand || ""} ${product.name || ""}`);
+  return env.flowixGameWhitelist.some((item) => haystack.includes(matchKey(item)));
+}
+
 function productCategoryName(slug: string) {
   const labels: Record<string, string> = {
     game: "Game",
@@ -86,9 +92,9 @@ async function ensureFlowixCatalog() {
   if (!isFlowixConfigured()) return null;
 
   const db = getDb();
-  const flowixProducts = (await listFlowixCatalog()).filter(
-    (product) => product.status.toLowerCase() === "aktif",
-  );
+  const flowixProducts = (await listFlowixCatalog())
+    .filter((product) => product.status.toLowerCase() === "aktif")
+    .filter(isAllowedGameProduct);
 
   const categorySlugs = Array.from(new Set(flowixProducts.map(productCategorySlug)));
   const categoryBySlug = new Map<string, typeof categories.$inferSelect>();
