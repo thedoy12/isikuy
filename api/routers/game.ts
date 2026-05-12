@@ -6,7 +6,7 @@ import { games, categories, products } from "@db/schema";
 import { env } from "../lib/env";
 import {
   isFlowixConfigured,
-  listFlowixProducts,
+  listFlowixCatalog,
   type FlowixProduct,
 } from "../flowix/client";
 
@@ -43,6 +43,41 @@ function productGameName(product: FlowixProduct) {
   return (product.brand || product.name || "Game").trim();
 }
 
+function productCategorySlug(product: FlowixProduct) {
+  return slugify(product.sourceCategory || product.category || "produk");
+}
+
+function productCategoryName(slug: string) {
+  const labels: Record<string, string> = {
+    game: "Game",
+    pulsa: "Pulsa",
+    data: "Paket Data",
+    ewallet: "E-Wallet",
+    premium: "Akun Premium",
+    "akun-premium": "Akun Premium",
+    streaming: "Streaming",
+    voucher: "Voucher",
+    pln: "PLN",
+    emoney: "E-Money",
+    tagihan: "Tagihan",
+    internet: "Internet",
+    produk: "Produk Digital",
+  };
+  return labels[slug] ?? titleCase(slug.replace(/-/g, " "));
+}
+
+function productGroupSlug(product: FlowixProduct) {
+  const categorySlug = productCategorySlug(product);
+  const brandSlug = slugify(titleCase(productGameName(product)));
+  return categorySlug === "game" ? brandSlug : `${categorySlug}-${brandSlug}`;
+}
+
+function productGroupName(product: FlowixProduct) {
+  const categorySlug = productCategorySlug(product);
+  const brandName = titleCase(productGameName(product));
+  return categorySlug === "game" ? brandName : `${brandName} ${productCategoryName(categorySlug)}`;
+}
+
 function withMarkup(price: number) {
   return Math.ceil((price * (1 + env.productMarkupPercent / 100)) / 100) * 100;
 }
@@ -51,50 +86,77 @@ async function ensureFlowixCatalog() {
   if (!isFlowixConfigured()) return null;
 
   const db = getDb();
-  const flowixProducts = (await listFlowixProducts("game")).filter(
+  const flowixProducts = (await listFlowixCatalog()).filter(
     (product) => product.status.toLowerCase() === "aktif",
   );
 
-  const [category] = await db
-    .select()
-    .from(categories)
-    .where(eq(categories.slug, "game"))
-    .limit(1);
+  const categorySlugs = Array.from(new Set(flowixProducts.map(productCategorySlug)));
+  const categoryBySlug = new Map<string, typeof categories.$inferSelect>();
+  for (const [index, slug] of categorySlugs.entries()) {
+    const [existing] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.slug, slug))
+      .limit(1);
 
-  const gameCategory =
-    category ??
-    (
-      await db
-        .insert(categories)
-        .values({
-          name: "Game",
-          slug: "game",
-          icon: "gamepad-2",
-          sortOrder: 0,
-          isActive: true,
-        })
-        .returning()
-    )[0];
+    const [category] = existing
+      ? await db
+          .update(categories)
+          .set({
+            name: productCategoryName(slug),
+            isActive: true,
+            sortOrder: index + 1,
+          })
+          .where(eq(categories.id, existing.id))
+          .returning()
+      : await db
+          .insert(categories)
+          .values({
+            name: productCategoryName(slug),
+            slug,
+            icon: slug === "game" ? "gamepad-2" : "box",
+            sortOrder: index + 1,
+            isActive: true,
+          })
+          .returning();
 
-  const brands = Array.from(
+    categoryBySlug.set(slug, category);
+  }
+
+  const groups = Array.from(
     new Map(
       flowixProducts.map((product) => {
-        const name = titleCase(productGameName(product));
-        return [slugify(name), name] as const;
+        const name = productGroupName(product);
+        const categorySlug = productCategorySlug(product);
+        return [
+          productGroupSlug(product),
+          {
+            slug: productGroupSlug(product),
+            name,
+            categorySlug,
+          },
+        ] as const;
       }),
     ).entries(),
-  );
+  ).map(([, group]) => group);
   const existingGames = await db.select().from(games);
 
   const syncedGames: SyncedGame[] = [];
-  for (const [slug, name] of brands) {
+  for (const group of groups) {
+    const { slug, name, categorySlug } = group;
+    const category =
+      categoryBySlug.get(categorySlug) ??
+      categoryBySlug.get("produk") ??
+      Array.from(categoryBySlug.values())[0];
+    if (!category) continue;
+
     const existing =
       existingGames.find((game) => game.slug === slug) ??
       existingGames.find((game) => matchKey(game.slug) === matchKey(slug)) ??
       existingGames.find((game) => matchKey(game.name) === matchKey(name));
 
     const gameData = {
-      categoryId: gameCategory.id,
+      categoryId: category.id,
       name,
       description: `Top up ${name} via Flowix.`,
       publisher: "Flowix",
@@ -123,14 +185,14 @@ async function ensureFlowixCatalog() {
     const syncedGame = syncedGameRows[0];
     existingGames.push(syncedGame);
 
-    syncedGames.push({ ...syncedGame, categoryName: gameCategory.name });
+    syncedGames.push({ ...syncedGame, categoryName: category.name });
   }
 
   const gamesBySlug = new Map(syncedGames.map((game) => [game.slug, game]));
   const activeCodes = new Set(flowixProducts.map((product) => product.code));
 
   for (const [index, product] of flowixProducts.entries()) {
-    const game = gamesBySlug.get(slugify(titleCase(productGameName(product))));
+    const game = gamesBySlug.get(productGroupSlug(product));
     if (!game) continue;
 
     const [existing] = await db

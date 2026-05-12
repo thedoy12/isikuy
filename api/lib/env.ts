@@ -15,6 +15,15 @@ function numberEnv(name: string, fallback: number): number {
   return Number.isFinite(value) ? value : fallback;
 }
 
+function listEnv(name: string, fallback: string[]): string[] {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  return raw
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export const env = {
   appSecret: required("APP_SECRET"),
   isProduction: process.env.NODE_ENV === "production",
@@ -25,6 +34,19 @@ export const env = {
   flowixApiKey: process.env.FLOWIX_API_KEY ?? "",
   flowixMerchantId: process.env.FLOWIX_MERCHANT_ID ?? "",
   flowixWebhookSecret: process.env.FLOWIX_WEBHOOK_SECRET ?? "",
+  flowixProductCategories: listEnv("FLOWIX_PRODUCT_CATEGORIES", [
+    "game",
+    "pulsa",
+    "data",
+    "ewallet",
+    "premium",
+    "streaming",
+    "voucher",
+    "pln",
+    "emoney",
+    "tagihan",
+    "internet",
+  ]),
   productMarkupPercent: numberEnv("PRODUCT_MARKUP_PERCENT", 5),
   checkoutTaxPercent: numberEnv("CHECKOUT_TAX_PERCENT", 1),
 };

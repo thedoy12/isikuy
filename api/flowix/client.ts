@@ -31,6 +31,8 @@ export type FlowixProduct = {
   brand: string;
   status: string;
   price: number;
+  category?: string;
+  sourceCategory?: string;
 };
 
 function assertConfigured() {
@@ -89,10 +91,38 @@ export async function createFlowixDeposit(input: {
   return response.data;
 }
 
-export async function listFlowixProducts(category = "game") {
-  const response = await request<FlowixProduct[]>(
-    `/product?category=${encodeURIComponent(category)}`,
-  );
+export async function listFlowixProducts(category?: string) {
+  const path = category ? `/product?category=${encodeURIComponent(category)}` : "/product";
+  const response = await request<FlowixProduct[]>(path);
 
-  return response.data;
+  return response.data.map((product) => ({
+    ...product,
+    sourceCategory: product.category || category || "produk",
+  }));
+}
+
+export async function listFlowixCatalog() {
+  const categories = Array.from(new Set(env.flowixProductCategories));
+  const requests = [undefined, ...categories].map((category) =>
+    listFlowixProducts(category).catch((error) => {
+      console.warn(
+        `[flowix] Failed to load products${category ? ` for ${category}` : ""}`,
+        error,
+      );
+      return [] as FlowixProduct[];
+    }),
+  );
+  const groups = await Promise.all(requests);
+  const productsByKey = new Map<string, FlowixProduct>();
+
+  for (const product of groups.flat()) {
+    const key = [
+      product.sourceCategory || product.category || "produk",
+      product.brand || "",
+      product.code,
+    ].join(":");
+    productsByKey.set(key, product);
+  }
+
+  return Array.from(productsByKey.values());
 }
