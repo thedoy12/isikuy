@@ -130,6 +130,7 @@ function productGroupBaseName(product: FlowixProduct) {
 
 function isRegionalGameProduct(product: FlowixProduct) {
   if (productCategorySlug(product) !== "game") return false;
+  if (knownGameName(product) === "Mobile Legends") return false;
   const text = `${product.brand || ""} ${product.name || ""}`.toLowerCase();
   const parenthesized = text.match(/\(([^)]+)\)/);
   if (parenthesized && !parenthesized[1].includes("global")) return true;
@@ -149,7 +150,11 @@ function isRegionalGameProduct(product: FlowixProduct) {
 
 function isAllowedFlowixProduct(product: FlowixProduct) {
   if (productCategorySlug(product) !== "game") return true;
+  const knownName = knownGameName(product);
   if (isRegionalGameProduct(product)) return false;
+  if (knownName === "Mobile Legends" && /\bgift\b/i.test(`${product.brand} ${product.name}`)) {
+    return true;
+  }
   if (/\b(gift|test|promo|voucher\s+gift)\b/i.test(`${product.brand} ${product.name}`)) {
     return false;
   }
@@ -232,6 +237,7 @@ function cleanProductDisplayName(name: string, brand?: string | null) {
     .trim();
 
   const cleanBrand = brand ? cleanFlowixName(brand) : "";
+  const isMobileLegendsVariant = /\b(mobile\s*legends?|mlbb|moonton)\b/i.test(`${cleanBrand} ${name}`);
   if (cleanBrand) {
     const escapedBrand = cleanBrand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     value = value
@@ -239,6 +245,13 @@ function cleanProductDisplayName(name: string, brand?: string | null) {
       .replace(new RegExp(`\\s*[-:]?\\s*${escapedBrand}$`, "i"), "")
       .replace(/\s+/g, " ")
       .trim();
+  }
+
+  if (isMobileLegendsVariant) {
+    const variant = `${cleanBrand} ${name}`.match(/\b(global|gift|a|b)\b/i)?.[1];
+    if (variant && !new RegExp(`\\b${variant}\\b`, "i").test(value)) {
+      value = `${value} ${variant.toUpperCase()}`.trim();
+    }
   }
 
   return value || cleanFlowixName(name);
@@ -267,6 +280,10 @@ function productDedupeKey(product: ProductDedupeInput) {
     product.name,
     productBrandFromDescription(product.description),
   );
+  const brand = productBrandFromDescription(product.description) || "";
+  if (/\b(mobile\s*legends?|mlbb|moonton)\b/i.test(`${brand} ${product.name}`)) {
+    return matchKey(`${displayName}:${product.nominalAmount || ""}`);
+  }
   return matchKey(displayName) || matchKey(product.nominalAmount || product.name);
 }
 
