@@ -183,6 +183,48 @@ function productGroupName(product: FlowixProduct) {
   return titleCase(productGroupBaseName(product));
 }
 
+function targetInputMetadata(slug: string, categorySlug: string) {
+  const base = {
+    hasServerId: false,
+    serverIdLabel: null as string | null,
+    serverIdPlaceholder: null as string | null,
+  };
+
+  if (slug === "mobile-legends") {
+    return {
+      hasServerId: true,
+      serverIdLabel: "Zone ID",
+      serverIdPlaceholder: "Contoh: 1234",
+    };
+  }
+
+  if (["genshin-impact", "arena-of-valor", "honor-of-kings"].includes(slug)) {
+    return {
+      hasServerId: true,
+      serverIdLabel: "Server",
+      serverIdPlaceholder: "Contoh: Asia / 1",
+    };
+  }
+
+  if (["ragnarok-m", "lifeafter", "sausage-man"].includes(slug)) {
+    return {
+      hasServerId: true,
+      serverIdLabel: "Server ID",
+      serverIdPlaceholder: "Contoh: 1",
+    };
+  }
+
+  if (categorySlug === "pln") {
+    return {
+      hasServerId: false,
+      serverIdLabel: null,
+      serverIdPlaceholder: null,
+    };
+  }
+
+  return base;
+}
+
 function cleanProductDisplayName(name: string, brand?: string | null) {
   let value = cleanFlowixName(name)
     .replace(/\b(top[\s-]*up|voucher|produk\s+digital)\b/gi, " ")
@@ -336,7 +378,7 @@ export async function syncFlowixCatalog() {
       isActive: true,
       isTrending: syncedGames.length < 8 || favoriteRank(group.slug) !== null,
       isPopular: syncedGames.length < 12 || favoriteRank(group.slug) !== null,
-      hasServerId: false,
+      ...targetInputMetadata(group.slug, group.categorySlug),
       sortOrder: favoriteRank(group.slug) ?? syncedGames.length + favoriteGameOrder.length + 1,
     };
 

@@ -88,6 +88,23 @@ export default function GameDetail() {
   const fallbackCover = game
     ? `https://placehold.co/1200x600/09090b/ffffff?text=${encodeURIComponent(game.name)}`
     : "";
+  const categorySlug = game?.category?.slug || "";
+  const isPhoneTarget = ["pulsa", "data", "ewallet"].includes(categorySlug);
+  const isPlnTarget = categorySlug === "pln";
+  const targetLabel = isPhoneTarget
+    ? "Nomor HP"
+    : isPlnTarget
+      ? "ID Pelanggan / No. Meter"
+      : categorySlug === "game"
+        ? "User ID / Player ID"
+        : "ID Tujuan";
+  const targetPlaceholder = isPhoneTarget
+    ? "Contoh: 08xxxxxxxxxx"
+    : isPlnTarget
+      ? "Contoh: 12345678901"
+      : categorySlug === "game"
+        ? "Contoh: 123456789"
+        : "Masukkan ID tujuan";
 
   const { data: paymentCalc } = trpc.payment.calculate.useQuery(
     {
@@ -263,12 +280,12 @@ export default function GameDetail() {
                   <span className="text-white">{game.name}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/50">Player ID</span>
+                  <span className="text-white/50">{targetLabel}</span>
                   <span className="text-white">{playerId}</span>
                 </div>
                 {serverId && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-white/50">Server</span>
+                    <span className="text-white/50">{game.serverIdLabel || "Server"}</span>
                     <span className="text-white">{serverId}</span>
                   </div>
                 )}
@@ -537,7 +554,7 @@ export default function GameDetail() {
                   2
                 </div>
                 <h3 className="font-display text-lg font-semibold text-white">
-                  Masukkan Data Akun
+                  Masukkan Data Tujuan
                 </h3>
               </div>
 
@@ -545,13 +562,13 @@ export default function GameDetail() {
                 <div>
                   <label className="flex items-center gap-2 text-sm text-white/60 mb-2">
                     <User className="w-4 h-4" />
-                    Player ID / User ID
+                    {targetLabel}
                   </label>
                   <input
                     type="text"
                     value={playerId}
                     onChange={(e) => setPlayerId(e.target.value)}
-                    placeholder="Contoh: 123456789"
+                    placeholder={targetPlaceholder}
                     className="w-full px-4 py-3 rounded-xl glass text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[#ff003c]/50 transition-colors"
                   />
                 </div>
