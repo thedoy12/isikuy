@@ -28,6 +28,7 @@ const categoryGroupSlugs: Record<string, string[]> = {
 
 const favoriteGameOrder = [
   "mobile-legends",
+  "mobile-legends-gift",
   "pubg-mobile",
   "point-blank",
   "valorant",
@@ -96,12 +97,31 @@ function productCategorySlug(product: FlowixProduct) {
   return aliases[slug] ?? slug;
 }
 
+function mobileLegendsVariant(product: FlowixProduct) {
+  const text = `${product.brand || ""} ${product.name || ""} ${product.code || ""}`.toLowerCase();
+  if (!/\b(mobile\s*legends?|mlbb|moonton)\b/i.test(text)) return null;
+  if (/\bgift\b/i.test(text)) return "gift";
+  if (/\bglobal\b/i.test(text)) return "global";
+  if (/\bmobile\s*legends\s*a\b|\bmlbb\s*a\b|\bml\s*a\b/i.test(text)) return "a";
+  if (/\bmobile\s*legends\s*b\b|\bmlbb\s*b\b|\bml\s*b\b/i.test(text)) return "b";
+  if (
+    /\(([^)]*(brazil|malaysia|philippines|russia|singapore|thailand|vietnam|turkey|korea|japan)[^)]*)\)/i.test(text) ||
+    /\b(brazil|malaysia|philippines|russia|singapore|thailand|vietnam|turkey|korea|japan)\b/i.test(text)
+  ) {
+    return "regional";
+  }
+  return "main";
+}
+
 function knownGameName(product: FlowixProduct) {
   const text = `${product.brand || ""} ${product.name || ""} ${product.code || ""}`.toLowerCase();
+  const mlVariant = mobileLegendsVariant(product);
+  if (mlVariant === "gift") return "Mobile Legends Gift";
+  if (mlVariant) return "Mobile Legends";
+
   const knownGames: Array<[RegExp, string]> = [
     [/\b(point\s*blank|pb\s*cash|zepetto)\b/i, "Point Blank"],
     [/\b(valorant|valorant\s*points?|\bvp\b)\b/i, "Valorant"],
-    [/\b(mobile\s*legends?|mlbb|moonton)\b/i, "Mobile Legends"],
     [/\b(free\s*fire|\bff\b|garena)\b/i, "Free Fire"],
     [/\b(pubg\s*mobile|pubgm)\b/i, "PUBG Mobile"],
     [/\b(genshin\s*impact|hoyoverse|genesis\s*crystals?)\b/i, "Genshin Impact"],
@@ -130,7 +150,8 @@ function productGroupBaseName(product: FlowixProduct) {
 
 function isRegionalGameProduct(product: FlowixProduct) {
   if (productCategorySlug(product) !== "game") return false;
-  if (knownGameName(product) === "Mobile Legends") return false;
+  if (mobileLegendsVariant(product) === "regional") return true;
+  if (knownGameName(product) === "Mobile Legends" || knownGameName(product) === "Mobile Legends Gift") return false;
   const text = `${product.brand || ""} ${product.name || ""}`.toLowerCase();
   const parenthesized = text.match(/\(([^)]+)\)/);
   if (parenthesized && !parenthesized[1].includes("global")) return true;
@@ -152,7 +173,7 @@ function isAllowedFlowixProduct(product: FlowixProduct) {
   if (productCategorySlug(product) !== "game") return true;
   const knownName = knownGameName(product);
   if (isRegionalGameProduct(product)) return false;
-  if (knownName === "Mobile Legends" && /\bgift\b/i.test(`${product.brand} ${product.name}`)) {
+  if (knownName === "Mobile Legends Gift") {
     return true;
   }
   if (/\b(gift|test|promo|voucher\s+gift)\b/i.test(`${product.brand} ${product.name}`)) {
@@ -195,7 +216,7 @@ function targetInputMetadata(slug: string, categorySlug: string) {
     serverIdPlaceholder: null as string | null,
   };
 
-  if (slug === "mobile-legends") {
+  if (slug === "mobile-legends" || slug === "mobile-legends-gift") {
     return {
       hasServerId: true,
       serverIdLabel: "Zone ID",
@@ -248,9 +269,10 @@ function cleanProductDisplayName(name: string, brand?: string | null) {
   }
 
   if (isMobileLegendsVariant) {
-    const variant = `${cleanBrand} ${name}`.match(/\b(global|gift|a|b)\b/i)?.[1];
-    if (variant && !new RegExp(`\\b${variant}\\b`, "i").test(value)) {
-      value = `${value} ${variant.toUpperCase()}`.trim();
+    const variant = `${cleanBrand} ${name}`.match(/\b(global|gift)\b|\bmobile\s*legends\s*(a|b)\b|\bmlbb\s*(a|b)\b|\bml\s*(a|b)\b/i);
+    const variantLabel = variant?.[1] || variant?.[2] || variant?.[3] || variant?.[4];
+    if (variantLabel && !new RegExp(`\\b${variantLabel}\\b`, "i").test(value)) {
+      value = `${value} ${variantLabel.toUpperCase()}`.trim();
     }
   }
 
