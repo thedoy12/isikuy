@@ -63,92 +63,69 @@ function HeroSection() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16">
-        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,1fr)_500px]">
-          <div className="text-center lg:text-left">
-            <div className="mx-auto mb-5 w-fit lg:hidden">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#00f0ff]/20 bg-[#00f0ff]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#00f0ff]">
-                <Sparkles className="h-3 w-3" />
-                Maskot ISIKUY
-              </div>
-              <img
-                src="/games/maskot.png"
-                alt="Maskot ISIKUY"
-                className="mx-auto w-36 sm:w-44 drop-shadow-[0_18px_45px_rgba(0,240,255,0.22)]"
-              />
-            </div>
+      <img
+        src="/games/maskot.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-[-4rem] right-1/2 z-[1] w-[560px] translate-x-1/2 opacity-[0.16] blur-[0.2px] drop-shadow-[0_35px_90px_rgba(0,240,255,0.22)] sm:w-[680px] lg:bottom-[-7rem] lg:right-[-3rem] lg:w-[760px] lg:translate-x-0 lg:opacity-[0.22] xl:right-[-1rem] xl:w-[880px]"
+      />
+      <div className="absolute inset-0 z-[2] bg-[radial-gradient(circle_at_70%_58%,transparent_0%,rgba(3,3,5,0.22)_38%,rgba(3,3,5,0.78)_72%)]" />
 
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-8">
-              <Sparkles className="w-4 h-4 text-[#ff003c]" />
-              <span className="text-xs font-medium text-[#e1f5fe]">
-                {heroBanner?.subtitle || "Platform Top-Up Game #1 Indonesia"}
-              </span>
-            </div>
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 text-center">
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-8">
+          <Sparkles className="w-4 h-4 text-[#ff003c]" />
+          <span className="text-xs font-medium text-[#e1f5fe]">
+            {heroBanner?.subtitle || "Platform Top-Up Game #1 Indonesia"}
+          </span>
+        </div>
 
-            {/* Main Title */}
-            <h1 className="font-display text-6xl sm:text-8xl xl:text-[128px] font-bold text-white leading-none mb-6">
-              ISIKUY
-              <span className="block text-gradient text-4xl sm:text-5xl lg:text-6xl mt-2 tracking-[0.2em] lg:tracking-[0.32em]">
-                TOPUP
-              </span>
-            </h1>
+        {/* Main Title */}
+        <h1 className="font-display text-6xl sm:text-8xl lg:text-[120px] font-bold text-white leading-none mb-6">
+          ISIKUY
+          <span className="block text-gradient text-4xl sm:text-5xl lg:text-6xl mt-2 tracking-[0.2em]">
+            TOPUP
+          </span>
+        </h1>
 
-            <p className="text-lg sm:text-xl text-[#e1f5fe]/70 max-w-2xl mx-auto lg:mx-0 mb-10 font-body">
-              Top up diamonds, UC, dan game currency favoritmu dengan harga
-              terbaik. Proses cepat, aman, dan terpercaya.
-            </p>
+        <p className="text-lg sm:text-xl text-[#e1f5fe]/70 max-w-2xl mx-auto mb-10 font-body">
+          Top up diamonds, UC, dan game currency favoritmu dengan harga
+          terbaik. Proses cepat, aman, dan terpercaya.
+        </p>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-              <Link
-                to="/games"
-                className="group flex items-center gap-3 bg-gradient-to-r from-[#ff003c] to-[#b30029] text-white px-8 py-4 rounded-xl text-base font-semibold hover:shadow-lg hover:shadow-[#ff003c]/25 transition-all"
-              >
-                <Gamepad2 className="w-5 h-5" />
-                Mulai Top Up
-                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                to="/games?trending=true"
-                className="flex items-center gap-3 glass text-white px-8 py-4 rounded-xl text-base font-semibold hover:bg-white/10 transition-all"
-              >
-                <TrendingUp className="w-5 h-5" />
-                Lihat Trending
-              </Link>
-            </div>
+        {/* CTAs */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link
+            to="/games"
+            className="group flex items-center gap-3 bg-gradient-to-r from-[#ff003c] to-[#b30029] text-white px-8 py-4 rounded-xl text-base font-semibold hover:shadow-lg hover:shadow-[#ff003c]/25 transition-all"
+          >
+            <Gamepad2 className="w-5 h-5" />
+            Mulai Top Up
+            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </Link>
+          <Link
+            to="/games?trending=true"
+            className="flex items-center gap-3 glass text-white px-8 py-4 rounded-xl text-base font-semibold hover:bg-white/10 transition-all"
+          >
+            <TrendingUp className="w-5 h-5" />
+            Lihat Trending
+          </Link>
+        </div>
 
-            {/* Quick Stats */}
-            <div className="mt-16 grid grid-cols-3 gap-6 max-w-lg mx-auto lg:mx-0">
-              {[
-                { value: "500K+", label: "Transaksi" },
-                { value: "16+", label: "Game" },
-                { value: "<3m", label: "Proses" },
-              ].map((s) => (
-                <div key={s.label} className="text-center lg:text-left">
-                  <p className="font-display text-2xl sm:text-3xl font-bold text-white">
-                    {s.value}
-                  </p>
-                  <p className="text-xs text-white/40 mt-1">{s.label}</p>
-                </div>
-              ))}
+        {/* Quick Stats */}
+        <div className="mt-16 grid grid-cols-3 gap-6 max-w-lg mx-auto">
+          {[
+            { value: "500K+", label: "Transaksi" },
+            { value: "16+", label: "Game" },
+            { value: "<3m", label: "Proses" },
+          ].map((s) => (
+            <div key={s.label} className="text-center">
+              <p className="font-display text-2xl sm:text-3xl font-bold text-white">
+                {s.value}
+              </p>
+              <p className="text-xs text-white/40 mt-1">{s.label}</p>
             </div>
-          </div>
-
-          <div className="pointer-events-none relative hidden min-h-[560px] lg:flex items-end justify-center">
-            <div className="absolute left-4 top-20 rounded-full border border-[#00f0ff]/20 bg-[#00f0ff]/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#00f0ff] shadow-[0_0_30px_rgba(0,240,255,0.08)]">
-              Maskot ISIKUY
-            </div>
-            <div className="absolute right-8 top-36 max-w-48 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-white/70 backdrop-blur-xl">
-              Siap bantu top up cepat.
-            </div>
-            <div className="absolute bottom-0 h-24 w-80 rounded-full bg-[#00f0ff]/10 blur-3xl" />
-            <img
-              src="/games/maskot.png"
-              alt="Maskot ISIKUY"
-              className="relative z-10 w-[390px] xl:w-[470px] origin-bottom translate-y-4 drop-shadow-[0_30px_70px_rgba(0,240,255,0.22)]"
-            />
-          </div>
+          ))}
         </div>
       </div>
     </section>
