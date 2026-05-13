@@ -66,13 +66,17 @@ export const transactionRouter = createRouter({
           methodCode: "QRIS",
           feeByCustomer: true,
         });
+        const flowixTotal = Number(flowixDeposit.amount_total || input.totalAmount);
+        const flowixFee = Math.max(0, flowixTotal - input.baseAmount);
 
         await db
           .update(transactions)
           .set({
+            feeAmount: flowixFee.toString(),
+            totalAmount: flowixTotal.toString(),
             providerReference: flowixDeposit.reff_id,
             providerPaymentId: flowixDeposit.pay_id,
-            providerResponse: JSON.stringify(flowixDeposit),
+            providerResponse: JSON.stringify({ deposit: flowixDeposit }),
           })
           .where(eq(transactions.id, result[0].id));
 
@@ -80,7 +84,7 @@ export const transactionRouter = createRouter({
           provider: "flowix",
           reference: flowixDeposit.reff_id,
           paymentId: flowixDeposit.pay_id,
-          amountTotal: flowixDeposit.amount_total,
+          amountTotal: flowixTotal,
           amountReceived: flowixDeposit.amount_received,
           payUrl: flowixDeposit.pay_url,
           payCode: flowixDeposit.pay_code,
@@ -200,6 +204,10 @@ export const transactionRouter = createRouter({
   processPayment: publicQuery
     .input(z.object({ invoiceNumber: z.string() }))
     .mutation(async ({ input }) => {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("Pembayaran produksi hanya diproses dari callback Flowix.");
+      }
+
       const db = getDb();
       await db
         .update(transactions)

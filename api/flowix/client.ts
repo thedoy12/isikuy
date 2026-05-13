@@ -35,6 +35,20 @@ export type FlowixProduct = {
   sourceCategory?: string;
 };
 
+export type FlowixTransaction = {
+  reff_id: string;
+  status: string;
+  sn?: string;
+  note?: string;
+  price?: number;
+  balance_left?: number;
+  service_code?: string;
+  service_name?: string;
+  target?: string;
+  selling_price?: number;
+  createdAt?: string;
+};
+
 function normalizeFlowixCategory(value?: string) {
   const slug = (value || "produk")
     .toLowerCase()
@@ -134,6 +148,33 @@ export async function createFlowixDeposit(input: {
       fee_by_customer: input.feeByCustomer ?? true,
     }),
   });
+
+  return response.data;
+}
+
+export async function createFlowixTransaction(input: {
+  serviceCode: string;
+  target: string;
+  zone?: string | null;
+  qty?: number;
+}) {
+  const response = await request<FlowixTransaction>("/product", {
+    method: "POST",
+    body: JSON.stringify({
+      service_code: input.serviceCode,
+      target: input.target,
+      ...(input.zone ? { zone: input.zone } : {}),
+      ...(input.qty ? { qty: input.qty } : {}),
+    }),
+  });
+
+  return response.data;
+}
+
+export async function checkFlowixTransaction(reffId: string) {
+  const response = await request<FlowixTransaction>(
+    `/product/${encodeURIComponent(reffId)}`,
+  );
 
   return response.data;
 }

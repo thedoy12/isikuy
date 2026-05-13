@@ -4,6 +4,11 @@ import { eq, or } from "drizzle-orm";
 import { env } from "../lib/env";
 import { getDb } from "../queries/connection";
 import { activityLogs, transactions } from "@db/schema";
+import {
+  checkFlowixTransaction,
+  createFlowixTransaction,
+  type FlowixTransaction,
+} from "./client";
 
 type TransactionStatus =
   | "pending"
@@ -20,6 +25,15 @@ type FlowixStatusUpdate = {
   paymentStatus: PaymentStatus;
   paid: boolean;
   completed: boolean;
+};
+
+type ProviderState = {
+  deposit?: unknown;
+  depositCallback?: unknown;
+  productOrder?: FlowixTransaction;
+  productCallback?: unknown;
+  orderSubmitError?: string;
+  lastCallback?: unknown;
 };
 
 function safeString(value: unknown): string {
@@ -70,6 +84,15 @@ function getFlowixStatus(payload: Record<string, unknown>): string {
     "transaction_status",
     "transactionStatus",
   ]).toLowerCase();
+}
+
+function getFlowixEvent(payload: Record<string, unknown>, headerEvent?: string) {
+  return (
+    safeString(payload.event) ||
+    safeString(nested(payload).event) ||
+    headerEvent ||
+    ""
+  ).toLowerCase();
 }
 
 function mapStatus(status: string): FlowixStatusUpdate {
@@ -126,6 +149,78 @@ function mapStatus(status: string): FlowixStatusUpdate {
   };
 }
 
+function productTransactionStatus(status: string): TransactionStatus {
+  if (["paid", "success", "settlement", "settled", "completed", "capture"].includes(status)) {
+    return "success";
+  }
+  if (["failed", "failure", "deny", "denied"].includes(status)) {
+    return "failed";
+  }
+  if (["expired", "expire", "cancelled", "canceled"].includes(status)) {
+    return "cancelled";
+  }
+  if (["refund", "refunded"].includes(status)) {
+    return "refunded";
+  }
+  return "processing";
+}
+
+function parseProviderState(raw: string | null): ProviderState {
+  if (!raw) return {};
+
+  try {
+    const parsed = JSON.parse(raw) as ProviderState & Record<string, unknown>;
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      ("deposit" in parsed ||
+        "productOrder" in parsed ||
+        "depositCallback" in parsed ||
+        "productCallback" in parsed)
+    ) {
+      return parsed;
+    }
+
+    return { deposit: parsed };
+  } catch {
+    return {};
+  }
+}
+
+function stringifyProviderState(
+  raw: string | null,
+  patch: Partial<ProviderState>,
+) {
+  return JSON.stringify({
+    ...parseProviderState(raw),
+    ...patch,
+  });
+}
+
+async function submitFlowixProductOrder(transaction: {
+  providerProductCode: string | null;
+  playerId: string;
+  serverId: string | null;
+  providerReference: string | null;
+  providerResponse: string | null;
+}) {
+  const state = parseProviderState(transaction.providerResponse);
+  const existingOrderRef = state.productOrder?.reff_id;
+  if (existingOrderRef) {
+    return checkFlowixTransaction(existingOrderRef).catch(() => state.productOrder);
+  }
+
+  if (!transaction.providerProductCode) {
+    throw new Error("Kode produk Flowix kosong, order tidak bisa dikirim.");
+  }
+
+  return createFlowixTransaction({
+    serviceCode: transaction.providerProductCode,
+    target: transaction.playerId,
+    zone: transaction.serverId,
+  });
+}
+
 function verifySignature(rawBody: string, signature: string | undefined) {
   if (!env.flowixWebhookSecret) {
     return !env.isProduction;
@@ -164,6 +259,7 @@ async function logFlowixEvent(input: {
 export async function handleFlowixCallback(c: Context) {
   const rawBody = await c.req.text();
   const signature = c.req.header("X-Flowix-Signature");
+  const headerEvent = c.req.header("X-Flowix-Event");
 
   if (!verifySignature(rawBody, signature)) {
     return c.json({ success: false, message: "Invalid signature" }, 401);
@@ -178,7 +274,12 @@ export async function handleFlowixCallback(c: Context) {
 
   const invoiceNumber = getInvoiceNumber(payload);
   const providerReference = getCandidate(payload, ["reff_id", "ref_id", "reference"]);
-  const providerPaymentId = getCandidate(payload, ["pay_id", "payment_id", "paymentId"]);
+  const providerPaymentId = getCandidate(payload, [
+    "pay_id",
+    "payment_id",
+    "paymentId",
+    "provider_ref",
+  ]);
   const lookup = invoiceNumber || providerReference || providerPaymentId;
   if (!lookup) {
     await logFlowixEvent({
@@ -196,21 +297,38 @@ export async function handleFlowixCallback(c: Context) {
   }
 
   const status = mapStatus(getFlowixStatus(payload));
+  const event = getFlowixEvent(payload, headerEvent);
   const now = new Date();
-  const updateData = {
-    status: status.status,
-    paymentStatus: status.paymentStatus,
-    providerResponse: JSON.stringify(payload),
-    ...(status.paid ? { paidAt: now } : {}),
-    ...(status.completed ? { completedAt: now } : {}),
-  };
-
   const db = getDb();
-  let updated: Array<{ id: number; invoiceNumber: string }> = [];
+  let matched:
+    | {
+        id: number;
+        invoiceNumber: string;
+        playerId: string;
+        serverId: string | null;
+        status: TransactionStatus;
+        paymentStatus: PaymentStatus;
+        providerProductCode: string | null;
+        providerReference: string | null;
+        providerPaymentId: string | null;
+        providerResponse: string | null;
+      }
+    | undefined;
   try {
-    updated = await db
-      .update(transactions)
-      .set(updateData)
+    const rows = await db
+      .select({
+        id: transactions.id,
+        invoiceNumber: transactions.invoiceNumber,
+        playerId: transactions.playerId,
+        serverId: transactions.serverId,
+        status: transactions.status,
+        paymentStatus: transactions.paymentStatus,
+        providerProductCode: transactions.providerProductCode,
+        providerReference: transactions.providerReference,
+        providerPaymentId: transactions.providerPaymentId,
+        providerResponse: transactions.providerResponse,
+      })
+      .from(transactions)
       .where(
         or(
           eq(transactions.invoiceNumber, lookup),
@@ -218,17 +336,18 @@ export async function handleFlowixCallback(c: Context) {
           eq(transactions.providerPaymentId, lookup),
         ),
       )
-      .returning({ id: transactions.id, invoiceNumber: transactions.invoiceNumber });
+      .limit(1);
+    matched = rows[0];
   } catch (error) {
-    console.error("[flowix] Failed to update transaction", error);
+    console.error("[flowix] Failed to find transaction", error);
     return c.json({
       success: true,
-      message: "Webhook received. Transaction update failed and was skipped.",
+      message: "Webhook received. Transaction lookup failed and was skipped.",
       reference: lookup,
     });
   }
 
-  if (updated.length === 0) {
+  if (!matched) {
     await logFlowixEvent({
       action: "flowix_callback_unmatched",
       entityType: "transaction",
@@ -244,10 +363,80 @@ export async function handleFlowixCallback(c: Context) {
     });
   }
 
+  let nextStatus = status.status;
+  let nextPaymentStatus = status.paymentStatus;
+  let providerResponse = stringifyProviderState(matched.providerResponse, {
+    lastCallback: payload,
+  });
+  let nextProviderReference = matched.providerReference;
+  let completedAt: Date | null | undefined = status.completed ? now : undefined;
+
+  if (event === "transaction.status" || providerReference.startsWith("TRX-")) {
+    nextStatus = productTransactionStatus(getFlowixStatus(payload));
+    nextPaymentStatus = "paid";
+    providerResponse = stringifyProviderState(matched.providerResponse, {
+      productCallback: payload,
+      lastCallback: payload,
+    });
+    completedAt = nextStatus === "success" ? now : undefined;
+  } else if (status.paid) {
+    nextPaymentStatus = "paid";
+    nextStatus = "processing";
+    completedAt = undefined;
+    try {
+      const productOrder = await submitFlowixProductOrder(matched);
+      const orderStatus = productTransactionStatus(productOrder?.status || "processing");
+      nextStatus = orderStatus;
+      nextProviderReference = productOrder?.reff_id || matched.providerReference;
+      completedAt = orderStatus === "success" ? now : undefined;
+      providerResponse = stringifyProviderState(matched.providerResponse, {
+        depositCallback: payload,
+        productOrder,
+        lastCallback: payload,
+        orderSubmitError: undefined,
+      });
+    } catch (error) {
+      nextStatus = "failed";
+      providerResponse = stringifyProviderState(matched.providerResponse, {
+        depositCallback: payload,
+        orderSubmitError:
+          error instanceof Error ? error.message : "Gagal mengirim order produk Flowix.",
+        lastCallback: payload,
+      });
+      console.error("[flowix] Failed to submit product order", error);
+    }
+  } else {
+    providerResponse = stringifyProviderState(matched.providerResponse, {
+      depositCallback: payload,
+      lastCallback: payload,
+    });
+  }
+
+  try {
+    await db
+      .update(transactions)
+      .set({
+        status: nextStatus,
+        paymentStatus: nextPaymentStatus,
+        providerReference: nextProviderReference,
+        providerResponse,
+        ...(status.paid ? { paidAt: now } : {}),
+        ...(completedAt ? { completedAt } : {}),
+      })
+      .where(eq(transactions.id, matched.id));
+  } catch (error) {
+    console.error("[flowix] Failed to update transaction", error);
+    return c.json({
+      success: true,
+      message: "Webhook received. Transaction update failed and was skipped.",
+      reference: lookup,
+    });
+  }
+
   await logFlowixEvent({
     action: "flowix_callback",
     entityType: "transaction",
-    entityId: updated[0].id,
+    entityId: matched.id,
     details: payload,
     ipAddress: c.req.header("x-forwarded-for") || "",
     userAgent: c.req.header("user-agent") || "",
@@ -255,8 +444,8 @@ export async function handleFlowixCallback(c: Context) {
 
   return c.json({
     success: true,
-    invoiceNumber: updated[0].invoiceNumber,
-    status: status.status,
-    paymentStatus: status.paymentStatus,
+    invoiceNumber: matched.invoiceNumber,
+    status: nextStatus,
+    paymentStatus: nextPaymentStatus,
   });
 }

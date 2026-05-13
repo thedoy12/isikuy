@@ -119,6 +119,8 @@ export default function GameDetail() {
     { invoiceNumber },
     { enabled: !!invoiceNumber && step === "payment", refetchInterval: 3000 }
   );
+  const orderIsProcessing =
+    txStatus?.paymentStatus === "paid" && txStatus.status === "processing";
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -229,10 +231,12 @@ export default function GameDetail() {
                 <Clock className="w-8 h-8 text-[#ff003c]" />
               </div>
               <h2 className="font-display text-2xl font-bold text-white mb-1">
-                Menunggu Pembayaran
+                {orderIsProcessing ? "Pesanan Diproses" : "Menunggu Pembayaran"}
               </h2>
               <p className="text-sm text-white/50">
-                Selesaikan pembayaran sebelum waktu habis
+                {orderIsProcessing
+                  ? "Pembayaran sudah diterima, produk sedang dikirim"
+                  : "Selesaikan pembayaran sebelum waktu habis"}
               </p>
             </div>
 
@@ -344,7 +348,7 @@ export default function GameDetail() {
               ) : (
                 <CheckCircle2 className="w-5 h-5" />
               )}
-              {paymentDetails ? "Cek Status Pembayaran" : "Simulasikan Pembayaran"}
+              {paymentDetails ? "Cek Status Pesanan" : "Simulasikan Pembayaran"}
             </button>
 
             <button
