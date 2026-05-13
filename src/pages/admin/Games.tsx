@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,8 @@ import {
   Sparkles,
   CheckCircle2,
   XCircle,
+  Image as ImageIcon,
+  Save,
   ArrowLeft,
   Loader2,
   RefreshCw,
@@ -76,6 +78,12 @@ export default function AdminGames() {
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
   const utils = trpc.useUtils();
   const [page, setPage] = useState(0);
+  const [editingGameId, setEditingGameId] = useState<number | null>(null);
+  const [imageDraft, setImageDraft] = useState({
+    coverImage: "",
+    cardImage: "",
+    bannerImage: "",
+  });
   const pageSize = 10;
 
   const { data: gamesList } = trpc.admin.games.useQuery(
@@ -83,7 +91,12 @@ export default function AdminGames() {
     { enabled: isAdmin },
   );
   const updateGame = trpc.admin.updateGame.useMutation({
-    onSuccess: () => utils.admin.games.invalidate(),
+    onSuccess: () => {
+      utils.admin.games.invalidate();
+      utils.game.list.invalidate();
+      utils.game.trending.invalidate();
+      utils.game.popular.invalidate();
+    },
   });
   const syncFlowix = trpc.admin.syncFlowixCatalog.useMutation({
     onSuccess: () => {
@@ -103,6 +116,26 @@ export default function AdminGames() {
     return <div className="min-h-[100dvh] bg-[#030305] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#ff003c] animate-spin" /></div>;
   }
   if (!isAdmin) return null;
+
+  const startEditingImages = (game: any) => {
+    setEditingGameId(game.id);
+    setImageDraft({
+      coverImage: game.coverImage || "",
+      cardImage: game.cardImage || "",
+      bannerImage: game.bannerImage || "",
+    });
+  };
+
+  const saveImages = () => {
+    if (!editingGameId) return;
+    updateGame.mutate({
+      id: editingGameId,
+      coverImage: imageDraft.coverImage.trim() || null,
+      cardImage: imageDraft.cardImage.trim() || null,
+      bannerImage: imageDraft.bannerImage.trim() || null,
+    });
+    setEditingGameId(null);
+  };
 
   return (
     <div className="min-h-[100dvh] bg-[#030305] flex font-terminal">
@@ -149,46 +182,113 @@ export default function AdminGames() {
               </thead>
               <tbody>
                 {gamesList?.items.map((g: any) => (
-                  <tr key={g.id} className="border-b border-[#222] hover:bg-white/[0.02]">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        {g.coverImage && (
-                          <img src={g.coverImage} alt={g.name} className="w-8 h-8 rounded object-cover" />
-                        )}
-                        <span className="text-xs text-white">{g.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-white/50">{g.categoryName}</td>
-                    <td className="px-4 py-3 text-[10px] text-white/40 uppercase">{g.platform}</td>
-                    <td className="px-4 py-3 text-center">
-                      <button onClick={() => updateGame.mutate({ id: g.id, isTrending: !g.isTrending })}
-                        className={`text-xs ${g.isTrending ? "text-[#ff003c]" : "text-white/20"}`}>
-                        <TrendingUp className="w-4 h-4" />
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button onClick={() => updateGame.mutate({ id: g.id, isPopular: !g.isPopular })}
-                        className={`text-xs ${g.isPopular ? "text-[#ffb800]" : "text-white/20"}`}>
-                        <Star className="w-4 h-4" />
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button onClick={() => updateGame.mutate({ id: g.id, isNew: !g.isNew })}
-                        className={`text-xs ${g.isNew ? "text-[#00f0ff]" : "text-white/20"}`}>
-                        <Sparkles className="w-4 h-4" />
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button onClick={() => updateGame.mutate({ id: g.id, isActive: !g.isActive })}
-                        className={`text-xs ${g.isActive ? "text-[#0aff00]" : "text-[#ff003c]"}`}>
-                        {g.isActive ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link to={`/games/${g.slug}`} target="_blank"
-                        className="text-[10px] text-[#00f0ff] hover:underline">VIEW</Link>
-                    </td>
-                  </tr>
+                  <Fragment key={g.id}>
+                    <tr className="border-b border-[#222] hover:bg-white/[0.02]">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {g.coverImage ? (
+                            <img src={g.coverImage} alt={g.name} className="w-8 h-8 rounded object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center">
+                              <ImageIcon className="w-4 h-4 text-white/20" />
+                            </div>
+                          )}
+                          <span className="text-xs text-white">{g.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-white/50">{g.categoryName}</td>
+                      <td className="px-4 py-3 text-[10px] text-white/40 uppercase">{g.platform}</td>
+                      <td className="px-4 py-3 text-center">
+                        <button onClick={() => updateGame.mutate({ id: g.id, isTrending: !g.isTrending })}
+                          className={`text-xs ${g.isTrending ? "text-[#ff003c]" : "text-white/20"}`}>
+                          <TrendingUp className="w-4 h-4" />
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button onClick={() => updateGame.mutate({ id: g.id, isPopular: !g.isPopular })}
+                          className={`text-xs ${g.isPopular ? "text-[#ffb800]" : "text-white/20"}`}>
+                          <Star className="w-4 h-4" />
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button onClick={() => updateGame.mutate({ id: g.id, isNew: !g.isNew })}
+                          className={`text-xs ${g.isNew ? "text-[#00f0ff]" : "text-white/20"}`}>
+                          <Sparkles className="w-4 h-4" />
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button onClick={() => updateGame.mutate({ id: g.id, isActive: !g.isActive })}
+                          className={`text-xs ${g.isActive ? "text-[#0aff00]" : "text-[#ff003c]"}`}>
+                          {g.isActive ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => editingGameId === g.id ? setEditingGameId(null) : startEditingImages(g)}
+                            className="text-[10px] text-[#ffb800] hover:underline"
+                          >
+                            IMAGES
+                          </button>
+                          <Link to={`/games/${g.slug}`} target="_blank"
+                            className="text-[10px] text-[#00f0ff] hover:underline">VIEW</Link>
+                        </div>
+                      </td>
+                    </tr>
+                    {editingGameId === g.id && (
+                      <tr className="border-b border-[#222] bg-black/20">
+                        <td colSpan={8} className="px-4 py-4">
+                          <div className="grid grid-cols-1 lg:grid-cols-[120px_1fr] gap-4">
+                            <div className="w-28 h-28 bg-white/5 border border-white/10 rounded overflow-hidden flex items-center justify-center">
+                              {imageDraft.coverImage ? (
+                                <img src={imageDraft.coverImage} alt={g.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <ImageIcon className="w-8 h-8 text-white/20" />
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              {[
+                                ["coverImage", "COVER URL"],
+                                ["cardImage", "CARD URL"],
+                                ["bannerImage", "BANNER URL"],
+                              ].map(([field, label]) => (
+                                <label key={field} className="block">
+                                  <span className="block text-[9px] text-white/30 tracking-wider mb-1">{label}</span>
+                                  <input
+                                    value={imageDraft[field as keyof typeof imageDraft]}
+                                    onChange={(event) =>
+                                      setImageDraft((current) => ({
+                                        ...current,
+                                        [field]: event.target.value,
+                                      }))
+                                    }
+                                    placeholder="https://... atau /games/nama.jpg"
+                                    className="w-full bg-[#0b0d14] border border-[#222] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                                  />
+                                </label>
+                              ))}
+                              <div className="md:col-span-3 flex items-center gap-2">
+                                <button
+                                  onClick={saveImages}
+                                  disabled={updateGame.isPending}
+                                  className="inline-flex items-center gap-2 px-3 py-2 bg-[#00f0ff]/10 border border-[#00f0ff]/30 text-[#00f0ff] text-[10px] tracking-wider disabled:opacity-50"
+                                >
+                                  <Save className="w-3 h-3" />
+                                  SAVE_IMAGES
+                                </button>
+                                <button
+                                  onClick={() => setEditingGameId(null)}
+                                  className="px-3 py-2 border border-white/10 text-white/40 text-[10px] tracking-wider"
+                                >
+                                  CANCEL
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
