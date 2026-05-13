@@ -457,7 +457,7 @@ export default function GameDetail() {
                 {game.name}
               </h1>
               <p className="text-sm text-white/50 mb-2">
-                {game.publisher} &middot;{" "}
+                {game.category?.name || "Produk Digital"} &middot;{" "}
                 <span className="uppercase">{game.platform}</span>
               </p>
               <p className="text-sm text-white/40 max-w-lg">

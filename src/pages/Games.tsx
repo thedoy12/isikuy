@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { ComponentType } from "react";
 import { useSearchParams } from "react-router";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
@@ -10,17 +11,33 @@ import {
   TrendingUp,
   Sparkles,
   Gamepad2,
+  Smartphone,
+  Wallet,
+  Boxes,
   X,
   ChevronRight,
 } from "lucide-react";
 
+type ProductFilter = "game" | "pulsa" | "ewallet" | "digital";
+
+const productFilters: Array<{
+  value: ProductFilter;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+}> = [
+  { value: "game", label: "Game", icon: Gamepad2 },
+  { value: "pulsa", label: "Pulsa", icon: Smartphone },
+  { value: "ewallet", label: "E-Wallet", icon: Wallet },
+  { value: "digital", label: "Digital", icon: Boxes },
+];
+
 export default function Games() {
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<number | undefined>(
+  const [selectedType, setSelectedType] = useState<ProductFilter | undefined>(
     undefined
   );
-  const [selectedPlatform, setSelectedPlatform] = useState<string | undefined>(
+  const [selectedCategory, setSelectedCategory] = useState<number | undefined>(
     undefined
   );
   const [showFilters, setShowFilters] = useState(false);
@@ -30,26 +47,20 @@ export default function Games() {
   const { data: categories } = trpc.game.categories.useQuery();
   const { data: games, isLoading } = trpc.game.list.useQuery({
     categoryId: selectedCategory,
+    categoryGroup: selectedType,
     search: search || undefined,
-    platform: selectedPlatform,
     trending: trendingParam || undefined,
     limit: 500,
   });
-
-  const platforms = [
-    { value: "mobile", label: "Mobile" },
-    { value: "pc", label: "PC" },
-    { value: "voucher", label: "Voucher" },
-  ];
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const pageTitle = trendingParam ? "Trending Games" : "Semua Game";
+  const pageTitle = trendingParam ? "Trending Produk" : "Semua Produk";
   const pageSubtitle = trendingParam
-    ? "Game paling populer saat ini"
-    : "Temukan game favoritmu dan top up sekarang";
+    ? "Produk paling populer saat ini"
+    : "Pilih game, pulsa, e-wallet, atau produk digital favoritmu";
 
   const fallbackCover = (name: string) =>
     `https://placehold.co/600x800/09090b/ffffff?text=${encodeURIComponent(name)}`;
@@ -69,7 +80,7 @@ export default function Games() {
             </Link>
             <ChevronRight className="w-3 h-3" />
             <span className="text-[#ff003c]">
-              {trendingParam ? "Trending" : "Games"}
+              {trendingParam ? "Trending" : "Produk"}
             </span>
           </div>
 
@@ -101,7 +112,7 @@ export default function Games() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input
                   type="text"
-                  placeholder="Cari game..."
+                  placeholder="Cari produk..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-xl glass text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#ff003c]/50 transition-colors"
@@ -129,14 +140,50 @@ export default function Games() {
             </div>
           </div>
 
+          <div className="mt-8 flex flex-wrap gap-2">
+            <button
+              onClick={() => {
+                setSelectedType(undefined);
+                setSelectedCategory(undefined);
+              }}
+              className={`px-4 py-3 rounded-xl text-xs font-semibold transition-colors ${
+                !selectedType
+                  ? "bg-[#ff003c] text-white"
+                  : "glass text-white/60 hover:bg-white/10"
+              }`}
+            >
+              Semua
+            </button>
+            {productFilters.map((filter) => {
+              const Icon = filter.icon;
+              return (
+                <button
+                  key={filter.value}
+                  onClick={() => {
+                    setSelectedType(filter.value);
+                    setSelectedCategory(undefined);
+                  }}
+                  className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold transition-colors ${
+                    selectedType === filter.value
+                      ? "bg-[#ff003c] text-white"
+                      : "glass text-white/60 hover:bg-white/10"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {filter.label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Filters */}
           {showFilters && (
             <div className="mt-6 p-5 glass rounded-xl">
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col gap-4">
                 {/* Category Filter */}
-                <div className="flex-1">
+                <div>
                   <label className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2 block">
-                    Kategori
+                    Kategori Detail
                   </label>
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -160,38 +207,6 @@ export default function Games() {
                         }`}
                       >
                         {cat.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Platform Filter */}
-                <div className="flex-1">
-                  <label className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2 block">
-                    Platform
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setSelectedPlatform(undefined)}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                        !selectedPlatform
-                          ? "bg-[#00f0ff] text-black"
-                          : "glass text-white/60 hover:bg-white/10"
-                      }`}
-                    >
-                      Semua
-                    </button>
-                    {platforms.map((p) => (
-                      <button
-                        key={p.value}
-                        onClick={() => setSelectedPlatform(p.value)}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                          selectedPlatform === p.value
-                            ? "bg-[#00f0ff] text-black"
-                            : "glass text-white/60 hover:bg-white/10"
-                        }`}
-                      >
-                        {p.label}
                       </button>
                     ))}
                   </div>
@@ -245,10 +260,10 @@ export default function Games() {
                   )}
                 </div>
 
-                {/* Platform Badge */}
+                {/* Category Badge */}
                 <div className="absolute top-2 right-2">
                   <span className="text-[9px] font-medium text-white/60 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded uppercase">
-                    {game.platform}
+                    {game.categoryName}
                   </span>
                 </div>
 
@@ -260,9 +275,6 @@ export default function Games() {
                   <h3 className="font-display text-base font-semibold text-white group-hover:text-[#00f0ff] transition-colors leading-tight">
                     {game.name}
                   </h3>
-                  <p className="text-[10px] text-white/30 mt-1">
-                    {game.publisher}
-                  </p>
                 </div>
               </Link>
             ))}
@@ -271,7 +283,7 @@ export default function Games() {
           <div className="text-center py-20">
             <Gamepad2 className="w-12 h-12 text-white/10 mx-auto mb-4" />
             <h3 className="font-display text-xl font-semibold text-white/40 mb-2">
-              Game tidak ditemukan
+              Produk tidak ditemukan
             </h3>
             <p className="text-sm text-white/30">
               Coba kata kunci lain atau reset filter

@@ -1,9 +1,10 @@
 import { z } from "zod";
-import { eq, and, like, asc, not, notInArray } from "drizzle-orm";
+import { eq, and, like, asc, not, notInArray, inArray } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { games, categories, products } from "@db/schema";
 import { env } from "../lib/env";
+import { publicProviderLabel, sanitizePublicText } from "../lib/publicText";
 import {
   isFlowixConfigured,
   listFlowixCatalog,
@@ -16,6 +17,13 @@ type SyncedGame = GameRow & { categoryName: string };
 
 const FLOWIX_PUBLISHER = "Flowix";
 const FLOWIX_ONLY_GAME_FILTER = eq(games.publisher, FLOWIX_PUBLISHER);
+
+const categoryGroupSlugs: Record<string, string[]> = {
+  game: ["game"],
+  pulsa: ["pulsa"],
+  ewallet: ["ewallet"],
+  digital: ["data", "voucher", "pln", "produk"],
+};
 
 function slugify(value: string) {
   return value
@@ -229,7 +237,7 @@ export async function syncFlowixCatalog() {
       categoryId: category.id,
       name: group.name,
       slug: group.slug,
-      description: `${productCategoryName(group.categorySlug)} ${group.name} via Flowix.`,
+      description: `${productCategoryName(group.categorySlug)} ${group.name} tersedia instan.`,
       publisher: FLOWIX_PUBLISHER,
       platform: productPlatform(group.categorySlug),
       isActive: true,
@@ -372,6 +380,7 @@ export const gameRouter = createRouter({
         categoryId: z.number().optional(),
         search: z.string().optional(),
         platform: z.string().optional(),
+        categoryGroup: z.enum(["game", "pulsa", "ewallet", "digital"]).optional(),
         trending: z.boolean().optional(),
         popular: z.boolean().optional(),
         limit: z.number().default(50),
@@ -382,6 +391,9 @@ export const gameRouter = createRouter({
       const db = getDb();
       const filters = [eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER];
       if (input?.categoryId) filters.push(eq(games.categoryId, input.categoryId));
+      if (input?.categoryGroup) {
+        filters.push(inArray(categories.slug, categoryGroupSlugs[input.categoryGroup]));
+      }
       if (input?.search) filters.push(like(games.name, `%${input.search}%`));
       if (input?.platform) {
         filters.push(eq(games.platform, input.platform as "mobile" | "pc" | "console" | "voucher"));
@@ -417,7 +429,11 @@ export const gameRouter = createRouter({
         .limit((input?.limit || 50) * 3)
         .offset(input?.offset || 0);
 
-      return uniqueGamesByName(rows).slice(0, input?.limit || 50);
+      return uniqueGamesByName(rows).slice(0, input?.limit || 50).map((game) => ({
+        ...game,
+        description: sanitizePublicText(game.description),
+        publisher: publicProviderLabel,
+      }));
     }),
 
   getBySlug: publicQuery
@@ -446,6 +462,8 @@ export const gameRouter = createRouter({
 
       return {
         ...game,
+        description: sanitizePublicText(game.description),
+        publisher: publicProviderLabel,
         category,
         products: uniqueProductsByCode(localProducts).map((product) => ({
           ...product,
@@ -479,7 +497,11 @@ export const gameRouter = createRouter({
       .where(and(eq(games.isTrending, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
       .orderBy(asc(games.sortOrder), asc(games.name))
       .limit(24);
-    return uniqueGamesByName(rows).slice(0, 8);
+    return uniqueGamesByName(rows).slice(0, 8).map((game) => ({
+      ...game,
+      description: sanitizePublicText(game.description),
+      publisher: publicProviderLabel,
+    }));
   }),
 
   popular: publicQuery.query(async () => {
@@ -505,7 +527,11 @@ export const gameRouter = createRouter({
       .where(and(eq(games.isPopular, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
       .orderBy(asc(games.sortOrder), asc(games.name))
       .limit(36);
-    return uniqueGamesByName(rows).slice(0, 12);
+    return uniqueGamesByName(rows).slice(0, 12).map((game) => ({
+      ...game,
+      description: sanitizePublicText(game.description),
+      publisher: publicProviderLabel,
+    }));
   }),
 
   categories: publicQuery.query(async () => {

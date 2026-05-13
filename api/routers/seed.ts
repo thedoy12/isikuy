@@ -247,7 +247,7 @@ export const seedRouter = createRouter({
         await seedSupportContent();
         return {
           success: true,
-          message: "Flowix catalog synced successfully",
+          message: "Catalog synced successfully",
           games: result.games.length,
         };
       }

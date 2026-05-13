@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { faqs } from "@db/schema";
+import { sanitizePublicText } from "../lib/publicText";
 
 export const faqRouter = createRouter({
   list: publicQuery
@@ -19,10 +20,16 @@ export const faqRouter = createRouter({
         filters.push(eq(faqs.category, input.category));
       }
 
-      return db
+      const rows = await db
         .select()
         .from(faqs)
         .where(and(...filters))
         .orderBy(faqs.sortOrder);
+
+      return rows.map((faq) => ({
+        ...faq,
+        question: sanitizePublicText(faq.question) ?? faq.question,
+        answer: sanitizePublicText(faq.answer) ?? faq.answer,
+      }));
     }),
 });

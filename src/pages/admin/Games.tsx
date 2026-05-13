@@ -111,7 +111,7 @@ export default function AdminGames() {
         <header className="border-b border-[#222] bg-[#11131a]/50 px-6 py-4">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-[10px] text-[#00f0ff] tracking-wider">ARSENAL // GAME_MANAGEMENT</p>
+              <p className="text-[10px] text-[#00f0ff] tracking-wider">ARSENAL // CATALOG_MANAGEMENT</p>
               {syncFlowix.data && (
                 <p className="text-[9px] text-[#0aff00] mt-1">
                   SYNCED {syncFlowix.data.games} CATALOGS / {syncFlowix.data.products} PRODUCTS
@@ -128,7 +128,7 @@ export default function AdminGames() {
               ) : (
                 <RefreshCw className="w-3 h-3" />
               )}
-              SYNC_FLOWIX
+              SYNC_CATALOG
             </button>
           </div>
         </header>

@@ -182,7 +182,7 @@ function TrendingSection() {
                   </div>
                 )}
                 <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <p className="text-xs text-white/50 mb-1">{game.publisher}</p>
+                  <p className="text-xs text-white/50 mb-1">{game.categoryName}</p>
                   <h3 className="font-display text-lg font-semibold text-white group-hover:text-[#00f0ff] transition-colors">
                     {game.name}
                   </h3>
@@ -258,7 +258,7 @@ function PopularSection() {
                   <h3 className="font-display text-base font-semibold text-white group-hover:text-[#00f0ff] transition-colors truncate">
                     {game.name}
                   </h3>
-                  <p className="text-xs text-white/40">{game.publisher}</p>
+                  <p className="text-xs text-white/40">{game.categoryName}</p>
                 </Link>
               ))}
             </div>
