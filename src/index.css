@@ -144,6 +144,36 @@
   0% { transform: translateX(-50%); }
   100% { transform: translateX(0); }
 }
+@keyframes mascot-float {
+  0%, 100% {
+    transform: translateX(50%) translateY(0) scale(1);
+    opacity: 0.16;
+  }
+  50% {
+    transform: translateX(50%) translateY(-14px) scale(1.015);
+    opacity: 0.2;
+  }
+}
+@keyframes mascot-float-desktop {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.22;
+  }
+  50% {
+    transform: translateY(-18px) scale(1.018);
+    opacity: 0.26;
+  }
+}
+@keyframes mascot-glow {
+  0%, 100% {
+    opacity: 0.45;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: translate3d(-18px, -12px, 0) scale(1.12);
+  }
+}
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
@@ -155,4 +185,23 @@
 }
 .animate-marquee-right {
   animation: marquee-right 30s linear infinite;
+}
+.animate-mascot-float {
+  animation: mascot-float 7s ease-in-out infinite;
+}
+.animate-mascot-glow {
+  animation: mascot-glow 8s ease-in-out infinite;
+}
+
+@media (min-width: 1024px) {
+  .animate-mascot-float {
+    animation-name: mascot-float-desktop;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-mascot-float,
+  .animate-mascot-glow {
+    animation: none;
+  }
 }
