@@ -62,71 +62,89 @@ function HeroSection() {
         ))}
       </div>
 
+      <div className="absolute inset-0 z-[2] bg-[radial-gradient(circle_at_72%_54%,rgba(0,240,255,0.08)_0%,rgba(3,3,5,0.12)_28%,rgba(3,3,5,0.72)_76%)]" />
+
       {/* Content */}
-      <img
-        src="/games/maskot.png"
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-[-3rem] right-[-12rem] z-[1] w-[520px] opacity-[0.08] blur-[0.2px] drop-shadow-[0_35px_90px_rgba(0,240,255,0.12)] animate-mascot-float [mask-image:linear-gradient(90deg,transparent_0%,rgba(0,0,0,0.25)_22%,black_48%)] sm:right-[-14rem] sm:w-[620px] lg:bottom-[-5rem] lg:right-[-12rem] lg:w-[700px] lg:opacity-[0.1] xl:right-[-8rem] xl:w-[780px]"
-      />
-      <div className="pointer-events-none absolute bottom-16 right-0 z-[1] h-64 w-64 rounded-full bg-[#00f0ff]/4 blur-[90px] animate-mascot-glow lg:h-80 lg:w-80" />
-      <div className="absolute inset-0 z-[2] bg-[radial-gradient(circle_at_50%_52%,rgba(3,3,5,0.12)_0%,rgba(3,3,5,0.54)_58%,rgba(3,3,5,0.82)_100%)]" />
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_430px] xl:grid-cols-[minmax(0,1fr)_500px]">
+          <div className="text-center lg:text-left">
+            <img
+              src="/games/maskot-isikuy.png"
+              alt="Maskot ISIKUY"
+              className="mx-auto mb-5 w-36 drop-shadow-[0_20px_48px_rgba(0,240,255,0.2)] sm:w-44 lg:hidden"
+            />
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 text-center">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-8">
-          <Sparkles className="w-4 h-4 text-[#ff003c]" />
-          <span className="text-xs font-medium text-[#e1f5fe]">
-            {heroBanner?.subtitle || "Platform Top-Up Game #1 Indonesia"}
-          </span>
-        </div>
-
-        {/* Main Title */}
-        <h1 className="font-display text-6xl sm:text-8xl lg:text-[120px] font-bold text-white leading-none mb-6">
-          ISIKUY
-          <span className="block text-gradient text-4xl sm:text-5xl lg:text-6xl mt-2 tracking-[0.2em]">
-            TOPUP
-          </span>
-        </h1>
-
-        <p className="text-lg sm:text-xl text-[#e1f5fe]/70 max-w-2xl mx-auto mb-10 font-body">
-          Top up diamonds, UC, dan game currency favoritmu dengan harga
-          terbaik. Proses cepat, aman, dan terpercaya.
-        </p>
-
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link
-            to="/games"
-            className="group flex items-center gap-3 bg-gradient-to-r from-[#ff003c] to-[#b30029] text-white px-8 py-4 rounded-xl text-base font-semibold hover:shadow-lg hover:shadow-[#ff003c]/25 transition-all"
-          >
-            <Gamepad2 className="w-5 h-5" />
-            Mulai Top Up
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Link>
-          <Link
-            to="/games?trending=true"
-            className="flex items-center gap-3 glass text-white px-8 py-4 rounded-xl text-base font-semibold hover:bg-white/10 transition-all"
-          >
-            <TrendingUp className="w-5 h-5" />
-            Lihat Trending
-          </Link>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="mt-16 grid grid-cols-3 gap-6 max-w-lg mx-auto">
-          {[
-            { value: "500K+", label: "Transaksi" },
-            { value: "16+", label: "Game" },
-            { value: "<3m", label: "Proses" },
-          ].map((s) => (
-            <div key={s.label} className="text-center">
-              <p className="font-display text-2xl sm:text-3xl font-bold text-white">
-                {s.value}
-              </p>
-              <p className="text-xs text-white/40 mt-1">{s.label}</p>
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-8">
+              <Sparkles className="w-4 h-4 text-[#ff003c]" />
+              <span className="text-xs font-medium text-[#e1f5fe]">
+                {heroBanner?.subtitle || "Platform Top-Up Game #1 Indonesia"}
+              </span>
             </div>
-          ))}
+
+            {/* Main Title */}
+            <h1 className="font-display text-6xl sm:text-8xl xl:text-[128px] font-bold text-white leading-none mb-6">
+              ISIKUY
+              <span className="block text-gradient text-4xl sm:text-5xl lg:text-6xl mt-2 tracking-[0.2em] lg:tracking-[0.32em]">
+                TOPUP
+              </span>
+            </h1>
+
+            <p className="text-lg sm:text-xl text-[#e1f5fe]/70 max-w-2xl mx-auto lg:mx-0 mb-10 font-body">
+              Top up diamonds, UC, dan game currency favoritmu dengan harga
+              terbaik. Proses cepat, aman, dan terpercaya.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+              <Link
+                to="/games"
+                className="group flex items-center gap-3 bg-gradient-to-r from-[#ff003c] to-[#b30029] text-white px-8 py-4 rounded-xl text-base font-semibold hover:shadow-lg hover:shadow-[#ff003c]/25 transition-all"
+              >
+                <Gamepad2 className="w-5 h-5" />
+                Mulai Top Up
+                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                to="/games?trending=true"
+                className="flex items-center gap-3 glass text-white px-8 py-4 rounded-xl text-base font-semibold hover:bg-white/10 transition-all"
+              >
+                <TrendingUp className="w-5 h-5" />
+                Lihat Trending
+              </Link>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="mt-16 grid grid-cols-3 gap-6 max-w-lg mx-auto lg:mx-0">
+              {[
+                { value: "500K+", label: "Transaksi" },
+                { value: "16+", label: "Game" },
+                { value: "<3m", label: "Proses" },
+              ].map((s) => (
+                <div key={s.label} className="text-center lg:text-left">
+                  <p className="font-display text-2xl sm:text-3xl font-bold text-white">
+                    {s.value}
+                  </p>
+                  <p className="text-xs text-white/40 mt-1">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pointer-events-none relative hidden min-h-[560px] items-end justify-center lg:flex">
+            <div className="absolute bottom-4 h-24 w-80 rounded-full bg-[#00f0ff]/10 blur-3xl animate-mascot-glow" />
+            <div className="absolute bottom-20 h-96 w-96 rounded-full border border-[#00f0ff]/10" />
+            <div className="absolute bottom-28 h-72 w-72 rounded-full border border-[#ff003c]/10" />
+            <div className="absolute left-0 top-24 inline-flex items-center gap-2 rounded-full border border-[#00f0ff]/20 bg-[#00f0ff]/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#00f0ff]">
+              <Sparkles className="h-3.5 w-3.5" />
+              Maskot ISIKUY
+            </div>
+            <img
+              src="/games/maskot-isikuy.png"
+              alt="Maskot ISIKUY"
+              className="relative z-10 w-[420px] origin-bottom translate-y-4 animate-hero-mascot drop-shadow-[0_30px_80px_rgba(0,240,255,0.24)] xl:w-[500px]"
+            />
+          </div>
         </div>
       </div>
     </section>
