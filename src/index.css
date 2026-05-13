@@ -147,30 +147,30 @@
 @keyframes mascot-float {
   0%, 100% {
     transform: translateX(50%) translateY(0) scale(1);
-    opacity: 0.16;
+    opacity: 0.08;
   }
   50% {
     transform: translateX(50%) translateY(-14px) scale(1.015);
-    opacity: 0.2;
+    opacity: 0.12;
   }
 }
 @keyframes mascot-float-desktop {
   0%, 100% {
     transform: translateY(0) scale(1);
-    opacity: 0.22;
+    opacity: 0.12;
   }
   50% {
     transform: translateY(-18px) scale(1.018);
-    opacity: 0.26;
+    opacity: 0.16;
   }
 }
 @keyframes mascot-glow {
   0%, 100% {
-    opacity: 0.45;
+    opacity: 0.28;
     transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    opacity: 0.75;
+    opacity: 0.45;
     transform: translate3d(-18px, -12px, 0) scale(1.12);
   }
 }
