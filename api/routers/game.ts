@@ -64,6 +64,7 @@ function cleanFlowixName(value: string) {
 
 function productCategorySlug(product: FlowixProduct) {
   const slug = slugify(product.sourceCategory || product.category || "produk");
+  if (knownGameName(product)) return "game";
   const aliases: Record<string, string> = {
     games: "game",
     "game-online": "game",
@@ -83,8 +84,29 @@ function productCategorySlug(product: FlowixProduct) {
   return aliases[slug] ?? slug;
 }
 
+function knownGameName(product: FlowixProduct) {
+  const text = `${product.brand || ""} ${product.name || ""} ${product.code || ""}`.toLowerCase();
+  const knownGames: Array<[RegExp, string]> = [
+    [/\b(point\s*blank|pb\s*cash|zepetto)\b/i, "Point Blank"],
+    [/\b(valorant|valorant\s*points?|\bvp\b)\b/i, "Valorant"],
+    [/\b(mobile\s*legends?|mlbb|moonton)\b/i, "Mobile Legends"],
+    [/\b(free\s*fire|\bff\b|garena)\b/i, "Free Fire"],
+    [/\b(pubg\s*mobile|pubgm)\b/i, "PUBG Mobile"],
+    [/\b(genshin\s*impact|hoyoverse|genesis\s*crystals?)\b/i, "Genshin Impact"],
+    [/\b(call\s*of\s*duty\s*mobile|codm|cp\s*cod)\b/i, "Call of Duty Mobile"],
+    [/\b(honor\s*of\s*kings|hok)\b/i, "Honor of Kings"],
+    [/\b(roblox|robux)\b/i, "Roblox"],
+    [/\b(arena\s*of\s*valor|\baov\b)\b/i, "Arena of Valor"],
+    [/\b(wild\s*rift)\b/i, "League of Legends Wild Rift"],
+  ];
+
+  return knownGames.find(([pattern]) => pattern.test(text))?.[1] ?? null;
+}
+
 function productGroupBaseName(product: FlowixProduct) {
   const categorySlug = productCategorySlug(product);
+  const knownName = knownGameName(product);
+  if (knownName) return knownName;
   const rawName = cleanFlowixName(product.brand || product.name || "Produk");
   if (categorySlug !== "game") return rawName;
   return rawName
