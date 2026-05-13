@@ -62,8 +62,25 @@ function HeroSection() {
         ))}
       </div>
 
+      <div className="pointer-events-none absolute bottom-0 right-0 z-10 hidden lg:block">
+        <div className="relative">
+          <div className="absolute inset-x-8 bottom-6 h-16 rounded-full bg-[#00f0ff]/10 blur-3xl" />
+          <img
+            src="/games/maskot.png"
+            alt="Maskot ISIKUY"
+            className="relative w-72 xl:w-80 2xl:w-96 drop-shadow-[0_24px_60px_rgba(0,240,255,0.18)]"
+          />
+        </div>
+      </div>
+
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <img
+          src="/games/maskot.png"
+          alt="Maskot ISIKUY"
+          className="mx-auto mb-5 w-28 sm:w-32 drop-shadow-[0_18px_45px_rgba(0,240,255,0.18)] lg:hidden"
+        />
+
         {/* Badge */}
         <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-8">
           <Sparkles className="w-4 h-4 text-[#ff003c]" />
