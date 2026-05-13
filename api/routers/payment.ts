@@ -1,9 +1,69 @@
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gte, lte } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
-import { paymentMethods, products } from "@db/schema";
+import { paymentMethods, products, vouchers } from "@db/schema";
 import { env } from "../lib/env";
+
+async function calculateVoucherDiscount(input: {
+  code?: string;
+  amount: number;
+}) {
+  const code = input.code?.trim().toUpperCase();
+  if (!code) return { discountAmount: 0, voucher: null, message: null };
+
+  const db = getDb();
+  const now = new Date();
+  const [voucher] = await db
+    .select()
+    .from(vouchers)
+    .where(
+      and(
+        eq(vouchers.code, code),
+        eq(vouchers.isActive, true),
+        lte(vouchers.validFrom, now),
+        gte(vouchers.validUntil, now),
+      ),
+    )
+    .limit(1);
+
+  if (!voucher) {
+    return { discountAmount: 0, voucher: null, message: "Voucher tidak valid atau sudah expired" };
+  }
+
+  if (voucher.usageCount >= voucher.usageLimit) {
+    return { discountAmount: 0, voucher: null, message: "Voucher sudah mencapai batas penggunaan" };
+  }
+
+  const minOrder = parseFloat(voucher.minOrder);
+  if (input.amount < minOrder) {
+    return {
+      discountAmount: 0,
+      voucher: null,
+      message: `Minimal pembelian Rp${minOrder.toLocaleString()}`,
+    };
+  }
+
+  const rawDiscount =
+    voucher.type === "percent"
+      ? input.amount * (parseFloat(voucher.value) / 100)
+      : parseFloat(voucher.value);
+  const cappedDiscount = voucher.maxDiscount
+    ? Math.min(rawDiscount, parseFloat(voucher.maxDiscount))
+    : rawDiscount;
+  const discountAmount = Math.min(Math.round(cappedDiscount), input.amount);
+
+  return {
+    discountAmount,
+    voucher: {
+      id: voucher.id,
+      code: voucher.code,
+      type: voucher.type,
+      value: voucher.value,
+    },
+    message: "Voucher diterapkan",
+  };
+}
 
 export const paymentRouter = createRouter({
   methods: publicQuery.query(async () => {
@@ -21,6 +81,7 @@ export const paymentRouter = createRouter({
         productId: z.number(),
         paymentMethodId: z.number(),
         basePrice: z.number().positive().optional(),
+        voucherCode: z.string().optional(),
       })
     )
     .query(async ({ input }) => {
@@ -55,8 +116,13 @@ export const paymentRouter = createRouter({
       const servicePercent = env.checkoutTaxPercent;
       const serviceAmount = Math.round(basePrice * (servicePercent / 100));
       const paymentFeeAmount = Math.round(basePrice * (feePercent / 100) + feeFixed);
+      const { discountAmount, voucher, message: voucherMessage } =
+        await calculateVoucherDiscount({
+          code: input.voucherCode,
+          amount: basePrice,
+        });
       const feeAmount = serviceAmount + paymentFeeAmount;
-      const totalAmount = basePrice + feeAmount;
+      const totalAmount = Math.max(0, basePrice - discountAmount + feeAmount);
 
       return {
         basePrice,
@@ -68,7 +134,10 @@ export const paymentRouter = createRouter({
         taxAmount: serviceAmount,
         paymentFeeAmount,
         feeAmount,
+        discountAmount,
         totalAmount,
+        voucher,
+        voucherMessage,
         product,
         method,
       };

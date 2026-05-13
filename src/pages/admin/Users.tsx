@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { TablePagination } from "@/components/admin/TablePagination";
+import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import {
   Users,
   Shield,
@@ -94,11 +95,12 @@ export default function AdminUsers() {
   return (
     <div className="min-h-[100dvh] bg-[#030305] flex font-terminal">
       <AdminSidebar active="users" />
+      <AdminMobileNav active="users" />
       <main className="flex-1 min-w-0">
         <header className="border-b border-[#222] bg-[#11131a]/50 px-6 py-4">
           <p className="text-[10px] text-[#00f0ff] tracking-wider">INTEL // USER_MANAGEMENT</p>
         </header>
-        <div className="p-6">
+        <div className="p-6 pb-24 lg:pb-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="border border-[#222] bg-[#11131a] p-4">

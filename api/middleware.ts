@@ -23,11 +23,14 @@ const requireAuth = t.middleware(async (opts) => {
   return next({ ctx: { ...ctx, user: ctx.user } });
 });
 
-function requireRole(role: string) {
+function requireRole(role: "admin" | "superadmin") {
   return t.middleware(async (opts) => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || ctx.user.role !== role) {
+    const allowedRoles =
+      role === "admin" ? ["admin", "superadmin"] : ["superadmin"];
+
+    if (!ctx.user || !allowedRoles.includes(ctx.user.role)) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: ErrorMessages.insufficientRole,

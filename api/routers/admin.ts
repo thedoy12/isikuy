@@ -81,6 +81,31 @@ export const adminRouter = createRouter({
       .from(transactions)
       .where(eq(transactions.status, "success"));
 
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    const recentRevenueRows = await db
+      .select({
+        totalAmount: transactions.totalAmount,
+        feeAmount: transactions.feeAmount,
+        createdAt: transactions.createdAt,
+      })
+      .from(transactions)
+      .where(gte(transactions.createdAt, sevenDaysAgo));
+
+    const dailyRevenue = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(sevenDaysAgo);
+      date.setDate(sevenDaysAgo.getDate() + index);
+      const key = date.toISOString().slice(0, 10);
+      const rows = recentRevenueRows.filter(
+        (row) => row.createdAt.toISOString().slice(0, 10) === key,
+      );
+      return {
+        name: date.toLocaleDateString("id-ID", { weekday: "short" }),
+        sales: rows.reduce((sum, row) => sum + parseFloat(row.totalAmount), 0),
+        profit: rows.reduce((sum, row) => sum + parseFloat(row.feeAmount || "0"), 0),
+      };
+    });
+
     return {
       totalUsers: totalUsers.count,
       totalGames: totalGames.count,
@@ -89,6 +114,7 @@ export const adminRouter = createRouter({
       todayTransactions: todaySales.count,
       pendingTransactions: pendingTransactions.count,
       successTransactions: successTransactions.count,
+      dailyRevenue,
     };
   }),
 

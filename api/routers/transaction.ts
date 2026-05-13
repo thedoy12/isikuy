@@ -1,9 +1,10 @@
 import { z } from "zod";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc, gte, lte, sql } from "drizzle-orm";
 import { createRouter, publicQuery, authedQuery } from "../middleware";
 import { getDb } from "../queries/connection";
-import { transactions, games, products, paymentMethods } from "@db/schema";
+import { transactions, games, products, paymentMethods, vouchers } from "@db/schema";
 import { createFlowixDeposit, isFlowixConfigured } from "../flowix/client";
+import { env } from "../lib/env";
 
 function generateInvoice(): string {
   const date = new Date();
@@ -13,20 +14,59 @@ function generateInvoice(): string {
   return `${prefix}-${timestamp}-${random}`;
 }
 
+async function validateVoucher(input: { code?: string; amount: number }) {
+  const code = input.code?.trim().toUpperCase();
+  if (!code) return null;
+
+  const db = getDb();
+  const now = new Date();
+  const [voucher] = await db
+    .select()
+    .from(vouchers)
+    .where(
+      and(
+        eq(vouchers.code, code),
+        eq(vouchers.isActive, true),
+        lte(vouchers.validFrom, now),
+        gte(vouchers.validUntil, now),
+      ),
+    )
+    .limit(1);
+
+  if (!voucher) throw new Error("Voucher tidak valid atau sudah expired");
+  if (voucher.usageCount >= voucher.usageLimit) {
+    throw new Error("Voucher sudah mencapai batas penggunaan");
+  }
+
+  const minOrder = parseFloat(voucher.minOrder);
+  if (input.amount < minOrder) {
+    throw new Error(`Minimal pembelian Rp${minOrder.toLocaleString()}`);
+  }
+
+  const rawDiscount =
+    voucher.type === "percent"
+      ? input.amount * (parseFloat(voucher.value) / 100)
+      : parseFloat(voucher.value);
+  const cappedDiscount = voucher.maxDiscount
+    ? Math.min(rawDiscount, parseFloat(voucher.maxDiscount))
+    : rawDiscount;
+
+  return {
+    id: voucher.id,
+    discountAmount: Math.min(Math.round(cappedDiscount), input.amount),
+  };
+}
+
 export const transactionRouter = createRouter({
   create: publicQuery
     .input(
       z.object({
         gameId: z.number(),
-        productId: z.number().optional(),
-        providerProductCode: z.string().optional(),
-        providerProductName: z.string().optional(),
+        productId: z.number(),
         playerId: z.string().min(1),
         serverId: z.string().optional(),
         paymentMethodId: z.number(),
-        baseAmount: z.number().positive(),
-        feeAmount: z.number().default(0),
-        totalAmount: z.number().positive(),
+        voucherCode: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -35,39 +75,82 @@ export const transactionRouter = createRouter({
       const expiryAt = new Date();
       expiryAt.setHours(expiryAt.getHours() + 24);
 
+      const [product] = await db
+        .select()
+        .from(products)
+        .where(and(eq(products.id, input.productId), eq(products.isActive, true)))
+        .limit(1);
+      if (!product || product.gameId !== input.gameId) {
+        throw new Error("Produk tidak ditemukan");
+      }
+
+      const [game] = await db
+        .select()
+        .from(games)
+        .where(and(eq(games.id, product.gameId), eq(games.isActive, true)))
+        .limit(1);
+      if (!game) throw new Error("Game tidak ditemukan");
+      if (game.hasServerId && !input.serverId?.trim()) {
+        throw new Error(`${game.serverIdLabel || "Server ID"} wajib diisi`);
+      }
+
+      const [method] = await db
+        .select()
+        .from(paymentMethods)
+        .where(
+          and(
+            eq(paymentMethods.id, input.paymentMethodId),
+            eq(paymentMethods.code, "qris"),
+            eq(paymentMethods.isActive, true),
+          ),
+        )
+        .limit(1);
+      if (!method) throw new Error("Metode pembayaran belum tersedia");
+      if (env.isProduction && method.code === "qris" && !isFlowixConfigured()) {
+        throw new Error("Pembayaran QRIS belum dikonfigurasi.");
+      }
+
+      const baseAmount = parseFloat(product.salePrice || product.basePrice);
+      const serviceAmount = Math.round(baseAmount * (env.checkoutTaxPercent / 100));
+      const paymentFeeAmount = Math.round(
+        baseAmount * (parseFloat(method.feePercent || "0") / 100) +
+          parseFloat(method.feeFixed || "0"),
+      );
+      const voucher = await validateVoucher({
+        code: input.voucherCode,
+        amount: baseAmount,
+      });
+      const feeAmount = serviceAmount + paymentFeeAmount;
+      const totalAmount = Math.max(1, baseAmount - (voucher?.discountAmount || 0) + feeAmount);
+
       const result = await db.insert(transactions).values({
         userId: ctx.user?.id || null,
         invoiceNumber,
-        gameId: input.gameId,
-        productId: input.productId && input.productId > 0 ? input.productId : null,
-        providerProductCode: input.providerProductCode || null,
-        providerProductName: input.providerProductName || null,
+        gameId: game.id,
+        productId: product.id,
+        providerProductCode: product.nominalAmount || null,
+        providerProductName: product.name,
         playerId: input.playerId,
         serverId: input.serverId || null,
         paymentMethodId: input.paymentMethodId,
-        baseAmount: input.baseAmount.toString(),
-        feeAmount: input.feeAmount.toString(),
-        totalAmount: input.totalAmount.toString(),
+        baseAmount: baseAmount.toString(),
+        feeAmount: feeAmount.toString(),
+        totalAmount: totalAmount.toString(),
         status: "pending",
         paymentStatus: "unpaid",
         expiryAt,
       }).returning({ id: transactions.id });
 
       let payment = null;
-      const [method] = await db
-        .select()
-        .from(paymentMethods)
-        .where(eq(paymentMethods.id, input.paymentMethodId))
-        .limit(1);
 
       if (method?.code === "qris" && isFlowixConfigured()) {
         const flowixDeposit = await createFlowixDeposit({
-          amount: Math.round(input.totalAmount),
+          amount: Math.round(totalAmount),
           methodCode: "QRIS",
           feeByCustomer: true,
         });
-        const flowixTotal = Number(flowixDeposit.amount_total || input.totalAmount);
-        const flowixFee = Math.max(0, flowixTotal - input.baseAmount);
+        const flowixTotal = Number(flowixDeposit.amount_total || totalAmount);
+        const flowixFee = Math.max(0, flowixTotal - baseAmount + (voucher?.discountAmount || 0));
 
         await db
           .update(transactions)
@@ -93,6 +176,13 @@ export const transactionRouter = createRouter({
           instructions: flowixDeposit.instructions ?? [],
           expiredAt: flowixDeposit.expired_at,
         };
+      }
+
+      if (voucher) {
+        await db
+          .update(vouchers)
+          .set({ usageCount: sql`${vouchers.usageCount} + 1` })
+          .where(eq(vouchers.id, voucher.id));
       }
 
       return { id: result[0].id, invoiceNumber, payment };

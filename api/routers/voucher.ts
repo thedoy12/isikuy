@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, gte } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { vouchers } from "@db/schema";
@@ -23,6 +23,7 @@ export const voucherRouter = createRouter({
           and(
             eq(vouchers.code, input.code),
             eq(vouchers.isActive, true),
+            lte(vouchers.validFrom, now),
             gte(vouchers.validUntil, now)
           )
         )

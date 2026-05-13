@@ -63,6 +63,7 @@ export default function GameDetail() {
       setPaymentDetails(data.payment);
       setStep("payment");
     },
+    onError: (err) => setCheckoutError(err.message),
   });
   const processPayment = trpc.transaction.processPayment.useMutation({
     onSuccess: () => {
@@ -78,6 +79,7 @@ export default function GameDetail() {
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [paymentDetails, setPaymentDetails] = useState<CheckoutPayment>(null);
   const [voucherCode, setVoucherCode] = useState("");
+  const [checkoutError, setCheckoutError] = useState("");
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState(3600);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
@@ -111,6 +113,7 @@ export default function GameDetail() {
       productId: selectedProduct || 0,
       paymentMethodId: selectedPayment || 0,
       basePrice: selectedProductPrice || undefined,
+      voucherCode: voucherCode.trim() || undefined,
     },
     { enabled: !!selectedProduct && !!selectedPayment }
   );
@@ -149,24 +152,18 @@ export default function GameDetail() {
   }, [step]);
 
   const handleCheckout = () => {
-    if (!game || !selectedProduct || !selectedPayment || !playerId) return;
+    setCheckoutError("");
+    if (!game || !selectedProduct || !selectedPayment || !playerId || !paymentCalc) return;
     const product = game.products.find((p) => p.id === selectedProduct);
     if (!product) return;
 
-    const price = parseFloat(product.salePrice || product.basePrice);
-    const fee = paymentCalc?.feeAmount || 0;
-
     createTransaction.mutate({
       gameId: game.id,
-      productId: selectedProduct > 0 ? selectedProduct : undefined,
-      providerProductCode: product.providerProductCode || undefined,
-      providerProductName: product.providerProductName || undefined,
+      productId: selectedProduct,
       playerId,
       serverId: game.hasServerId ? serverId : undefined,
       paymentMethodId: selectedPayment,
-      baseAmount: price,
-      feeAmount: fee,
-      totalAmount: price + fee,
+      voucherCode: voucherCode.trim() || undefined,
     });
   };
 
@@ -176,7 +173,9 @@ export default function GameDetail() {
       utils.transaction.checkStatus.invalidate({ invoiceNumber });
       return;
     }
-    processPayment.mutate({ invoiceNumber });
+    if (import.meta.env.DEV) {
+      processPayment.mutate({ invoiceNumber });
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -315,7 +314,7 @@ export default function GameDetail() {
                   alt="QRIS pembayaran"
                   className="w-48 h-48 mx-auto bg-white rounded-xl object-contain p-2"
                 />
-              ) : (
+              ) : import.meta.env.DEV ? (
                 <div className="w-48 h-48 mx-auto bg-white rounded-xl flex items-center justify-center">
                   <div className="text-center">
                     <QrCode className="w-12 h-12 text-black/20 mx-auto mb-2" />
@@ -323,6 +322,10 @@ export default function GameDetail() {
                       QRIS Code
                     </p>
                   </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-[#ff003c]/20 bg-[#ff003c]/10 px-4 py-3 text-sm text-[#ffb8c7]">
+                  Detail pembayaran belum tersedia. Silakan hubungi admin dengan nomor invoice ini.
                 </div>
               )}
               {paymentDetails?.payCode && (
@@ -337,10 +340,10 @@ export default function GameDetail() {
               )}
             </div>
 
-            {/* Simulate Pay Button */}
+            {/* Status / dev simulation button */}
             <button
               onClick={handlePayNow}
-              disabled={processPayment.isPending}
+              disabled={processPayment.isPending || (!paymentDetails && !import.meta.env.DEV)}
               className="w-full py-4 bg-gradient-to-r from-[#00f0ff] to-[#00b8c4] text-black font-semibold rounded-xl hover:shadow-lg hover:shadow-[#00f0ff]/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {processPayment.isPending ? (
@@ -348,7 +351,11 @@ export default function GameDetail() {
               ) : (
                 <CheckCircle2 className="w-5 h-5" />
               )}
-              {paymentDetails ? "Cek Status Pesanan" : "Simulasikan Pembayaran"}
+              {paymentDetails
+                ? "Cek Status Pesanan"
+                : import.meta.env.DEV
+                  ? "Simulasikan Pembayaran"
+                  : "Menunggu Callback Pembayaran"}
             </button>
 
             <button
@@ -652,6 +659,11 @@ export default function GameDetail() {
                     </button>
                   );
                 })}
+                {paymentMethods?.length === 0 && (
+                  <div className="rounded-xl border border-[#ff003c]/20 bg-[#ff003c]/10 px-4 py-3 text-sm text-[#ffb8c7]">
+                    Metode pembayaran belum tersedia.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -672,6 +684,15 @@ export default function GameDetail() {
                   className="flex-1 px-4 py-3 rounded-xl glass text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[#ffb800]/50 transition-colors uppercase"
                 />
               </div>
+              {voucherCode.trim() && paymentCalc?.voucherMessage && (
+                <p
+                  className={`mt-3 text-xs ${
+                    paymentCalc.voucher ? "text-[#0aff00]" : "text-[#ffb800]"
+                  }`}
+                >
+                  {paymentCalc.voucherMessage}
+                </p>
+              )}
             </div>
           </div>
 
@@ -723,6 +744,14 @@ export default function GameDetail() {
                         : "0"}
                     </span>
                   </div>
+                  {paymentCalc?.discountAmount ? (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-white/50">Diskon Voucher</span>
+                      <span className="text-[#0aff00]">
+                        -Rp{Math.round(paymentCalc.discountAmount).toLocaleString()}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="h-px bg-white/10 mb-5" />
@@ -746,6 +775,7 @@ export default function GameDetail() {
                     !playerId ||
                     (game.hasServerId && !serverId) ||
                     !selectedPayment ||
+                    !paymentCalc ||
                     createTransaction.isPending
                   }
                   className="w-full py-4 bg-gradient-to-r from-[#ff003c] to-[#b30029] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#ff003c]/25 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -764,6 +794,11 @@ export default function GameDetail() {
                   <Shield className="w-3 h-3" />
                   <span>Pembayaran aman & terenkripsi</span>
                 </div>
+                {checkoutError && (
+                  <p className="mt-4 rounded-xl border border-[#ff003c]/20 bg-[#ff003c]/10 px-4 py-3 text-xs text-[#ffb8c7]">
+                    {checkoutError}
+                  </p>
+                )}
               </div>
             </div>
           </div>

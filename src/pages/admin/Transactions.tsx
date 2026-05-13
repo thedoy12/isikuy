@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { TablePagination } from "@/components/admin/TablePagination";
+import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import {
   Receipt,
   Shield,
@@ -113,6 +114,7 @@ export default function AdminTransactions() {
   return (
     <div className="min-h-[100dvh] bg-[#030305] flex font-terminal">
       <AdminSidebar active="transactions" />
+      <AdminMobileNav active="transactions" />
       <main className="flex-1 min-w-0">
         <header className="border-b border-[#222] bg-[#11131a]/50 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -129,7 +131,7 @@ export default function AdminTransactions() {
             </div>
           </div>
         </header>
-        <div className="p-6">
+        <div className="p-6 pb-24 lg:pb-6">
           <div className="border border-[#222] bg-[#11131a] overflow-x-auto">
             <table className="w-full">
               <thead>

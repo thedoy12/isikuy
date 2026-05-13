@@ -28,8 +28,14 @@ export const env = {
   appSecret: required("APP_SECRET"),
   isProduction: process.env.NODE_ENV === "production",
   databaseUrl: required("DATABASE_URL"),
-  adminUsername: process.env.ADMIN_USERNAME || "admin",
-  adminPassword: process.env.ADMIN_PASSWORD || "dev12345",
+  adminUsername:
+    process.env.NODE_ENV === "production"
+      ? required("ADMIN_USERNAME")
+      : process.env.ADMIN_USERNAME || "admin",
+  adminPassword:
+    process.env.NODE_ENV === "production"
+      ? required("ADMIN_PASSWORD")
+      : process.env.ADMIN_PASSWORD || "dev12345",
   flowixBaseUrl: process.env.FLOWIX_BASE_URL || "https://flowix.web.id/api/v1",
   flowixApiKey: process.env.FLOWIX_API_KEY ?? "",
   flowixMerchantId: process.env.FLOWIX_MERCHANT_ID ?? "",

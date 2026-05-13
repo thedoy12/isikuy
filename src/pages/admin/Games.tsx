@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { TablePagination } from "@/components/admin/TablePagination";
+import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import {
   Gamepad2,
   Shield,
@@ -145,6 +146,7 @@ export default function AdminGames() {
   return (
     <div className="min-h-[100dvh] bg-[#030305] flex font-terminal">
       <AdminSidebar active="games" />
+      <AdminMobileNav active="games" />
       <main className="flex-1 min-w-0">
         <header className="border-b border-[#222] bg-[#11131a]/50 px-6 py-4">
           <div className="flex items-center justify-between gap-4">
@@ -170,7 +172,7 @@ export default function AdminGames() {
             </button>
           </div>
         </header>
-        <div className="p-6">
+        <div className="p-6 pb-24 lg:pb-6">
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[10px] text-white/50 tracking-wider">

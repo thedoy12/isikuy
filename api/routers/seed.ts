@@ -347,7 +347,7 @@ export const seedRouter = createRouter({
         { question: "Bagaimana cara melakukan top-up?", answer: "Pilih game yang ingin di-top-up, pilih nominal, masukkan Player ID, pilih metode pembayaran, lalu klik Bayar. Ikuti instruksi pembayaran dan top-up akan diproses otomatis.", category: "general", sortOrder: 1 },
         { question: "Berapa lama proses top-up?", answer: "Proses top-up biasanya memakan waktu 1-5 menit setelah pembayaran berhasil. Dalam kondisi normal, top-up akan masuk ke akun game Anda kurang dari 3 menit.", category: "general", sortOrder: 2 },
         { question: "Apakah transaksi di sini aman?", answer: "Ya, 100% aman. Kami menggunakan enkripsi SSL 256-bit untuk melindungi data Anda. Semua transaksi diproses secara otomatis tanpa intervensi manual.", category: "general", sortOrder: 3 },
-        { question: "Metode pembayaran apa saja yang tersedia?", answer: "Kami menerima QRIS, GoPay, OVO, DANA, Virtual Account (BCA, BNI, BRI, Mandiri), dan Saldo Internal.", category: "payment", sortOrder: 4 },
+        { question: "Metode pembayaran apa saja yang tersedia?", answer: "Saat ini checkout publik menggunakan QRIS. Metode lain dapat ditambahkan setelah kanal pembayaran aktif dan terkonfigurasi.", category: "payment", sortOrder: 4 },
         { question: "Bagaimana jika top-up gagal?", answer: "Jika top-up gagal, uang Anda akan dikembalikan secara otomatis ke metode pembayaran yang digunakan. Proses refund memakan waktu 1x24 jam.", category: "payment", sortOrder: 5 },
       ]);
 

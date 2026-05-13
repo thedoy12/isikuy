@@ -6,7 +6,7 @@ import { trpc } from "@/providers/trpc";
 export default function Login() {
   const navigate = useNavigate();
   const utils = trpc.useUtils();
-  const [username, setUsername] = useState("admin");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 

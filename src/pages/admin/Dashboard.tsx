@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import {
   Users,
   Gamepad2,
@@ -139,17 +140,6 @@ function AdminSidebar({ active }: { active: string }) {
   );
 }
 
-// ─── Demo Chart Data ───
-const chartData = [
-  { name: "Mon", sales: 4200, profit: 2400 },
-  { name: "Tue", sales: 5100, profit: 3100 },
-  { name: "Wed", sales: 3800, profit: 2200 },
-  { name: "Thu", sales: 6200, profit: 3800 },
-  { name: "Fri", sales: 7500, profit: 4500 },
-  { name: "Sat", sales: 8900, profit: 5200 },
-  { name: "Sun", sales: 6800, profit: 4100 },
-];
-
 // ─── Main Dashboard ───
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -180,11 +170,13 @@ export default function AdminDashboard() {
   }
 
   if (!isAdmin) return null;
+  const chartData = stats?.dailyRevenue ?? [];
 
   return (
     <div className="min-h-[100dvh] bg-[#030305] flex font-terminal">
       <ScanlineOverlay />
       <AdminSidebar active="dashboard" />
+      <AdminMobileNav active="dashboard" />
 
       <main className="flex-1 min-w-0">
         {/* Header */}
@@ -207,7 +199,7 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 pb-24 lg:pb-6 space-y-6">
           {/* Stats Grid */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             <StatCard
