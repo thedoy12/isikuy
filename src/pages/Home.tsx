@@ -67,10 +67,10 @@ function HeroSection() {
         src="/games/maskot.png"
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-[-4rem] right-1/2 z-[1] w-[560px] translate-x-1/2 opacity-[0.08] blur-[0.2px] drop-shadow-[0_35px_90px_rgba(0,240,255,0.14)] animate-mascot-float sm:w-[680px] lg:bottom-[-7rem] lg:right-[-3rem] lg:w-[760px] lg:translate-x-0 lg:opacity-[0.12] xl:right-[-1rem] xl:w-[880px]"
+        className="pointer-events-none absolute bottom-[-3rem] right-[-12rem] z-[1] w-[520px] opacity-[0.08] blur-[0.2px] drop-shadow-[0_35px_90px_rgba(0,240,255,0.12)] animate-mascot-float [mask-image:linear-gradient(90deg,transparent_0%,rgba(0,0,0,0.25)_22%,black_48%)] sm:right-[-14rem] sm:w-[620px] lg:bottom-[-5rem] lg:right-[-12rem] lg:w-[700px] lg:opacity-[0.1] xl:right-[-8rem] xl:w-[780px]"
       />
-      <div className="pointer-events-none absolute bottom-16 right-0 z-[1] h-64 w-64 rounded-full bg-[#00f0ff]/5 blur-[90px] animate-mascot-glow lg:h-80 lg:w-80" />
-      <div className="absolute inset-0 z-[2] bg-[radial-gradient(circle_at_70%_58%,transparent_0%,rgba(3,3,5,0.22)_38%,rgba(3,3,5,0.78)_72%)]" />
+      <div className="pointer-events-none absolute bottom-16 right-0 z-[1] h-64 w-64 rounded-full bg-[#00f0ff]/4 blur-[90px] animate-mascot-glow lg:h-80 lg:w-80" />
+      <div className="absolute inset-0 z-[2] bg-[radial-gradient(circle_at_50%_52%,rgba(3,3,5,0.12)_0%,rgba(3,3,5,0.54)_58%,rgba(3,3,5,0.82)_100%)]" />
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 text-center">
         {/* Badge */}
