@@ -207,6 +207,11 @@ export async function syncFlowixCatalog() {
     .filter((product) => product.status.toLowerCase() === "aktif")
     .filter(isAllowedFlowixProduct);
 
+  if (flowixProducts.length === 0) {
+    console.warn("[catalog] Sync skipped because provider returned an empty catalog.");
+    return { games: [], productCodes: [] };
+  }
+
   const categorySlugs = Array.from(new Set(flowixProducts.map(productCategorySlug)));
   const categoryBySlug = new Map<string, typeof categories.$inferSelect>();
   for (const [index, slug] of categorySlugs.entries()) {
@@ -249,6 +254,11 @@ export async function syncFlowixCatalog() {
       }),
     ).values(),
   );
+
+  if (groups.length === 0) {
+    console.warn("[catalog] Sync skipped because no catalog groups could be built.");
+    return { games: [], productCodes: [] };
+  }
   const existingGames = await db.select().from(games);
   const syncedGames: SyncedGame[] = [];
 
@@ -431,33 +441,40 @@ export const gameRouter = createRouter({
       if (input?.trending) filters.push(eq(games.isTrending, true));
       if (input?.popular) filters.push(eq(games.isPopular, true));
 
-      const rows = await db
-        .select({
-          id: games.id,
-          name: games.name,
-          slug: games.slug,
-          description: games.description,
-          coverImage: games.coverImage,
-          cardImage: games.cardImage,
-          bannerImage: games.bannerImage,
-          publisher: games.publisher,
-          platform: games.platform,
-          isTrending: games.isTrending,
-          isPopular: games.isPopular,
-          isNew: games.isNew,
-          hasServerId: games.hasServerId,
-          serverIdLabel: games.serverIdLabel,
-          serverIdPlaceholder: games.serverIdPlaceholder,
-          sortOrder: games.sortOrder,
-          categoryId: games.categoryId,
-          categoryName: categories.name,
-        })
-        .from(games)
-        .leftJoin(categories, eq(games.categoryId, categories.id))
-        .where(and(...filters))
-        .orderBy(asc(games.sortOrder), asc(games.name))
-        .limit((input?.limit || 50) * 3)
-        .offset(input?.offset || 0);
+      const loadRows = () =>
+        db
+          .select({
+            id: games.id,
+            name: games.name,
+            slug: games.slug,
+            description: games.description,
+            coverImage: games.coverImage,
+            cardImage: games.cardImage,
+            bannerImage: games.bannerImage,
+            publisher: games.publisher,
+            platform: games.platform,
+            isTrending: games.isTrending,
+            isPopular: games.isPopular,
+            isNew: games.isNew,
+            hasServerId: games.hasServerId,
+            serverIdLabel: games.serverIdLabel,
+            serverIdPlaceholder: games.serverIdPlaceholder,
+            sortOrder: games.sortOrder,
+            categoryId: games.categoryId,
+            categoryName: categories.name,
+          })
+          .from(games)
+          .leftJoin(categories, eq(games.categoryId, categories.id))
+          .where(and(...filters))
+          .orderBy(asc(games.sortOrder), asc(games.name))
+          .limit((input?.limit || 50) * 3)
+          .offset(input?.offset || 0);
+
+      let rows = await loadRows();
+      if (rows.length === 0 && isFlowixConfigured()) {
+        await syncFlowixCatalog();
+        rows = await loadRows();
+      }
 
       return uniqueGamesByName(rows).slice(0, input?.limit || 50).map((game) => ({
         ...game,
@@ -470,11 +487,18 @@ export const gameRouter = createRouter({
     .input(z.object({ slug: z.string() }))
     .query(async ({ input }) => {
       const db = getDb();
-      const [game] = await db
-        .select()
-        .from(games)
-        .where(and(eq(games.slug, input.slug), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
-        .limit(1);
+      const loadGame = () =>
+        db
+          .select()
+          .from(games)
+          .where(and(eq(games.slug, input.slug), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
+          .limit(1);
+
+      let [game] = await loadGame();
+      if (!game && isFlowixConfigured()) {
+        await syncFlowixCatalog();
+        [game] = await loadGame();
+      }
 
       if (!game) return null;
 
@@ -566,19 +590,28 @@ export const gameRouter = createRouter({
 
   categories: publicQuery.query(async () => {
     const db = getDb();
-    return db
-      .selectDistinct({
-        id: categories.id,
-        name: categories.name,
-        slug: categories.slug,
-        icon: categories.icon,
-        sortOrder: categories.sortOrder,
-        isActive: categories.isActive,
-        createdAt: categories.createdAt,
-      })
-      .from(categories)
-      .innerJoin(games, eq(games.categoryId, categories.id))
-      .where(and(eq(categories.isActive, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
-      .orderBy(asc(categories.sortOrder));
+    const loadCategories = () =>
+      db
+        .selectDistinct({
+          id: categories.id,
+          name: categories.name,
+          slug: categories.slug,
+          icon: categories.icon,
+          sortOrder: categories.sortOrder,
+          isActive: categories.isActive,
+          createdAt: categories.createdAt,
+        })
+        .from(categories)
+        .innerJoin(games, eq(games.categoryId, categories.id))
+        .where(and(eq(categories.isActive, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
+        .orderBy(asc(categories.sortOrder));
+
+    let rows = await loadCategories();
+    if (rows.length === 0 && isFlowixConfigured()) {
+      await syncFlowixCatalog();
+      rows = await loadCategories();
+    }
+
+    return rows;
   }),
 });
