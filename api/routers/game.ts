@@ -172,6 +172,7 @@ function isRegionalGameProduct(product: FlowixProduct) {
 function isAllowedFlowixProduct(product: FlowixProduct) {
   if (productCategorySlug(product) !== "game") return true;
   const knownName = knownGameName(product);
+  if (mobileLegendsVariant(product) === "b") return false;
   if (isRegionalGameProduct(product)) return false;
   if (knownName === "Mobile Legends Gift") {
     return true;
