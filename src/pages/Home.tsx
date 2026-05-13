@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import Navbar from "@/components/layout/Navbar";
@@ -21,22 +21,12 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-/* ─── Seed on first load ─── */
-function SeedOnMount() {
-  const seedMutation = trpc.seed.run.useMutation();
-  const [seeded, setSeeded] = useState(false);
-
-  useEffect(() => {
-    if (!seeded) {
-      seedMutation.mutate(undefined, {
-        onSuccess: () => setSeeded(true),
-        onError: () => setSeeded(true),
-      });
-    }
-  }, [seeded]);
-
-  return null;
-}
+const HERO_PARTICLES = Array.from({ length: 20 }, (_, i) => ({
+  left: `${(i * 37) % 100}%`,
+  top: `${(i * 53) % 100}%`,
+  animationDelay: `${(i % 5) * 0.8}s`,
+  animationDuration: `${3 + (i % 4)}s`,
+}));
 
 /* ─── Hero Section ─── */
 function HeroSection() {
@@ -63,16 +53,11 @@ function HeroSection() {
 
       {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {Array.from({ length: 20 }).map((_, i) => (
+        {HERO_PARTICLES.map((particle, i) => (
           <div
             key={i}
             className="absolute w-1 h-1 bg-[#ff003c]/30 rounded-full animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${3 + Math.random() * 4}s`,
-            }}
+            style={particle}
           />
         ))}
       </div>
@@ -588,7 +573,6 @@ function MarqueeSection() {
 export default function Home() {
   return (
     <div className="min-h-[100dvh] bg-[#030305]">
-      <SeedOnMount />
       <Navbar />
       <main>
         <HeroSection />

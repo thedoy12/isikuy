@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, like, asc, desc, notIn } from "drizzle-orm";
+import { eq, and, like, asc, not, notInArray } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { games, categories, products } from "@db/schema";
@@ -12,6 +12,9 @@ import {
 
 type GameRow = typeof games.$inferSelect;
 type SyncedGame = GameRow & { categoryName: string };
+
+const FLOWIX_PUBLISHER = "Flowix";
+const FLOWIX_ONLY_GAME_FILTER = eq(games.publisher, FLOWIX_PUBLISHER);
 
 function slugify(value: string) {
   return value
@@ -48,7 +51,15 @@ function cleanFlowixName(value: string) {
 }
 
 function productCategorySlug(product: FlowixProduct) {
-  return slugify(product.sourceCategory || product.category || "produk");
+  const slug = slugify(product.sourceCategory || product.category || "produk");
+  const aliases: Record<string, string> = {
+    "e-wallet": "ewallet",
+    "e-walet": "ewallet",
+    "dompet-digital": "ewallet",
+    "paket-data": "data",
+    "internet": "data",
+  };
+  return aliases[slug] ?? slug;
 }
 
 function productGroupBaseName(product: FlowixProduct) {
@@ -182,7 +193,7 @@ export async function syncFlowixCatalog() {
       name: group.name,
       slug: group.slug,
       description: `${productCategoryName(group.categorySlug)} ${group.name} via Flowix.`,
-      publisher: "Flowix",
+      publisher: FLOWIX_PUBLISHER,
       platform: productPlatform(group.categorySlug),
       isActive: true,
       hasServerId: false,
@@ -250,17 +261,26 @@ export async function syncFlowixCatalog() {
     await db
       .update(products)
       .set({ isActive: false })
-      .where(and(eq(products.gameId, gameId), notIn(products.nominalAmount, Array.from(codes))));
+      .where(and(eq(products.gameId, gameId), notInArray(products.nominalAmount, Array.from(codes))));
   }
 
   const syncedGameIds = syncedGames.map((game) => game.id);
   const allFlowixGames = await db
     .select({ id: games.id })
     .from(games)
-    .where(eq(games.publisher, "Flowix"));
+    .where(FLOWIX_ONLY_GAME_FILTER);
   for (const stale of allFlowixGames.filter((game) => !syncedGameIds.includes(game.id))) {
     await db.update(games).set({ isActive: false }).where(eq(games.id, stale.id));
     await db.update(products).set({ isActive: false }).where(eq(products.gameId, stale.id));
+  }
+
+  const nonFlowixGames = await db
+    .select({ id: games.id })
+    .from(games)
+    .where(and(eq(games.isActive, true), not(FLOWIX_ONLY_GAME_FILTER)));
+  for (const localGame of nonFlowixGames) {
+    await db.update(games).set({ isActive: false }).where(eq(games.id, localGame.id));
+    await db.update(products).set({ isActive: false }).where(eq(products.gameId, localGame.id));
   }
 
   return { games: syncedGames, productCodes: Array.from(activeCodes) };
@@ -281,7 +301,7 @@ export const gameRouter = createRouter({
     )
     .query(async ({ input }) => {
       const db = getDb();
-      const filters = [eq(games.isActive, true)];
+      const filters = [eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER];
       if (input?.categoryId) filters.push(eq(games.categoryId, input.categoryId));
       if (input?.search) filters.push(like(games.name, `%${input.search}%`));
       if (input?.platform) {
@@ -314,7 +334,7 @@ export const gameRouter = createRouter({
         .from(games)
         .leftJoin(categories, eq(games.categoryId, categories.id))
         .where(and(...filters))
-        .orderBy(desc(games.publisher), asc(games.sortOrder))
+        .orderBy(asc(games.sortOrder), asc(games.name))
         .limit(input?.limit || 50)
         .offset(input?.offset || 0);
     }),
@@ -326,7 +346,7 @@ export const gameRouter = createRouter({
       const [game] = await db
         .select()
         .from(games)
-        .where(and(eq(games.slug, input.slug), eq(games.isActive, true)))
+        .where(and(eq(games.slug, input.slug), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
         .limit(1);
 
       if (!game) return null;
@@ -343,15 +363,14 @@ export const gameRouter = createRouter({
         .where(and(eq(products.gameId, game.id), eq(products.isActive, true)))
         .orderBy(asc(products.sortOrder));
 
-      const isFlowixGame = game.publisher === "Flowix";
       return {
         ...game,
         category,
         products: localProducts.map((product) => ({
           ...product,
-          provider: isFlowixGame ? ("flowix" as const) : ("local" as const),
-          providerProductCode: isFlowixGame ? product.nominalAmount : null,
-          providerProductName: isFlowixGame ? product.name : null,
+          provider: "flowix" as const,
+          providerProductCode: product.nominalAmount,
+          providerProductName: product.name,
         })),
       };
     }),
@@ -375,8 +394,8 @@ export const gameRouter = createRouter({
       })
       .from(games)
       .leftJoin(categories, eq(games.categoryId, categories.id))
-      .where(and(eq(games.isTrending, true), eq(games.isActive, true)))
-      .orderBy(desc(games.publisher), asc(games.sortOrder))
+      .where(and(eq(games.isTrending, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
+      .orderBy(asc(games.sortOrder), asc(games.name))
       .limit(8);
   }),
 
@@ -399,17 +418,26 @@ export const gameRouter = createRouter({
       })
       .from(games)
       .leftJoin(categories, eq(games.categoryId, categories.id))
-      .where(and(eq(games.isPopular, true), eq(games.isActive, true)))
-      .orderBy(desc(games.publisher), asc(games.sortOrder))
+      .where(and(eq(games.isPopular, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
+      .orderBy(asc(games.sortOrder), asc(games.name))
       .limit(12);
   }),
 
   categories: publicQuery.query(async () => {
     const db = getDb();
     return db
-      .select()
+      .selectDistinct({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+        icon: categories.icon,
+        sortOrder: categories.sortOrder,
+        isActive: categories.isActive,
+        createdAt: categories.createdAt,
+      })
       .from(categories)
-      .where(eq(categories.isActive, true))
+      .innerJoin(games, eq(games.categoryId, categories.id))
+      .where(and(eq(categories.isActive, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
       .orderBy(asc(categories.sortOrder));
   }),
 });

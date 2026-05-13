@@ -8,13 +8,25 @@ import {
   faqs,
   siteSettings,
 } from "./schema";
+import { isFlowixConfigured } from "../api/flowix/client";
+import { seedSupportContent } from "../api/queries/seedSupport";
+import { syncFlowixCatalog } from "../api/routers/game";
 
 async function seed() {
   const db = getDb();
 
+  if (isFlowixConfigured()) {
+    const result = await syncFlowixCatalog();
+    await seedSupportContent();
+    console.log(`Synced Flowix catalog: ${result.games.length} catalogs / ${result.productCodes.length} products`);
+    console.log("Seeded support content");
+    return;
+  }
+
   const existingCategories = await db.select().from(categories).limit(1);
   if (existingCategories.length > 0) {
-    console.log("Database already seeded. Skipping seed.");
+    await seedSupportContent();
+    console.log("Database already seeded. Support content checked.");
     return;
   }
 

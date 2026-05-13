@@ -9,6 +9,9 @@ import {
   faqs,
   siteSettings,
 } from "@db/schema";
+import { isFlowixConfigured } from "../flowix/client";
+import { seedSupportContent } from "../queries/seedSupport";
+import { syncFlowixCatalog } from "./game";
 
 const GAME_DATA = [
   {
@@ -239,9 +242,20 @@ export const seedRouter = createRouter({
     const db = getDb();
 
     try {
+      if (isFlowixConfigured()) {
+        const result = await syncFlowixCatalog();
+        await seedSupportContent();
+        return {
+          success: true,
+          message: "Flowix catalog synced successfully",
+          games: result.games.length,
+        };
+      }
+
       // Check if data already exists
       const existingCats = await db.select().from(categories).limit(1);
       if (existingCats.length > 0) {
+        await seedSupportContent();
         return { success: false, message: "Database already seeded" };
       }
 

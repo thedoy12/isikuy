@@ -29,7 +29,10 @@ export const adminRouter = createRouter({
     const db = getDb();
 
     const [totalUsers] = await db.select({ count: count() }).from(users);
-    const [totalGames] = await db.select({ count: count() }).from(games);
+    const [totalGames] = await db
+      .select({ count: count() })
+      .from(games)
+      .where(eq(games.publisher, "Flowix"));
     const [totalTransactions] = await db.select({ count: count() }).from(transactions);
 
     const today = new Date();
@@ -239,7 +242,8 @@ export const adminRouter = createRouter({
       const db = getDb();
       const limit = input?.limit || 50;
       const offset = input?.offset || 0;
-      const [totalRow] = await db.select({ count: count() }).from(games);
+      const flowixFilter = eq(games.publisher, "Flowix");
+      const [totalRow] = await db.select({ count: count() }).from(games).where(flowixFilter);
       const items = await db
         .select({
           id: games.id,
@@ -259,6 +263,7 @@ export const adminRouter = createRouter({
         })
         .from(games)
         .leftJoin(categories, eq(games.categoryId, categories.id))
+        .where(flowixFilter)
         .orderBy(games.sortOrder)
         .limit(limit)
         .offset(offset);
@@ -299,10 +304,15 @@ export const adminRouter = createRouter({
       const offset = input?.offset || 0;
       const filters = [];
       if (input?.gameId) filters.push(eq(products.gameId, input.gameId));
+      filters.push(eq(games.publisher, "Flowix"));
 
-      const where = filters.length > 0 ? and(...filters) : undefined;
+      const where = and(...filters);
 
-      const [totalRow] = await db.select({ count: count() }).from(products).where(where);
+      const [totalRow] = await db
+        .select({ count: count() })
+        .from(products)
+        .leftJoin(games, eq(products.gameId, games.id))
+        .where(where);
       const items = await db
         .select({
           id: products.id,
