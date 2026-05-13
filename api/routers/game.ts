@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, like, asc, desc } from "drizzle-orm";
+import { eq, and, like, asc, desc, notIn } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { games, categories, products } from "@db/schema";
@@ -74,14 +74,13 @@ function isRegionalGameProduct(product: FlowixProduct) {
   ].some((region) => text.includes(region));
 }
 
-function isAllowedGameProduct(product: FlowixProduct) {
+function isAllowedFlowixProduct(product: FlowixProduct) {
   if (productCategorySlug(product) !== "game") return true;
   if (isRegionalGameProduct(product)) return false;
   if (/\b(gift|test|promo|voucher\s+gift)\b/i.test(`${product.brand} ${product.name}`)) {
     return false;
   }
-  const haystack = matchKey(`${product.brand || ""} ${product.name || ""}`);
-  return env.flowixGameWhitelist.some((item) => haystack.includes(matchKey(item)));
+  return true;
 }
 
 function productCategoryName(slug: string) {
@@ -103,6 +102,10 @@ function productGroupSlug(product: FlowixProduct) {
   return categorySlug === "game" ? brandSlug : `${categorySlug}-${brandSlug}`;
 }
 
+function productPlatform(categorySlug: string) {
+  return categorySlug === "game" ? ("mobile" as const) : ("voucher" as const);
+}
+
 function productGroupName(product: FlowixProduct) {
   return titleCase(productGroupBaseName(product));
 }
@@ -117,7 +120,7 @@ export async function syncFlowixCatalog() {
   const db = getDb();
   const flowixProducts = (await listFlowixCatalog())
     .filter((product) => product.status.toLowerCase() === "aktif")
-    .filter(isAllowedGameProduct);
+    .filter(isAllowedFlowixProduct);
 
   const categorySlugs = Array.from(new Set(flowixProducts.map(productCategorySlug)));
   const categoryBySlug = new Map<string, typeof categories.$inferSelect>();
@@ -168,17 +171,19 @@ export async function syncFlowixCatalog() {
     const category = categoryBySlug.get(group.categorySlug);
     if (!category) continue;
 
+    const slugKey = matchKey(group.slug);
+    const nameKey = matchKey(group.name);
     const existing =
-      existingGames.find((game) => game.slug === group.slug) ??
-      existingGames.find((game) => matchKey(game.slug) === matchKey(group.slug)) ??
-      existingGames.find((game) => matchKey(game.name) === matchKey(group.name));
+      existingGames.find((game) => matchKey(game.slug) === slugKey) ??
+      existingGames.find((game) => matchKey(game.name) === nameKey);
 
     const gameData = {
       categoryId: category.id,
       name: group.name,
+      slug: group.slug,
       description: `${productCategoryName(group.categorySlug)} ${group.name} via Flowix.`,
       publisher: "Flowix",
-      platform: "mobile" as const,
+      platform: productPlatform(group.categorySlug),
       isActive: true,
       hasServerId: false,
     };
@@ -189,7 +194,6 @@ export async function syncFlowixCatalog() {
           .insert(games)
           .values({
             ...gameData,
-            slug: group.slug,
             sortOrder: syncedGames.length + 1,
             isTrending: syncedGames.length < 8,
             isPopular: syncedGames.length < 12,
@@ -204,10 +208,15 @@ export async function syncFlowixCatalog() {
 
   const gamesBySlug = new Map(syncedGames.map((game) => [game.slug, game]));
   const activeCodes = new Set(flowixProducts.map((product) => product.code));
+  const activeCodesByGame = new Map<number, Set<string>>();
 
   for (const [index, product] of flowixProducts.entries()) {
     const game = gamesBySlug.get(productGroupSlug(product));
     if (!game) continue;
+
+    const gameCodes = activeCodesByGame.get(game.id) ?? new Set<string>();
+    gameCodes.add(product.code);
+    activeCodesByGame.set(game.id, gameCodes);
 
     const [existing] = await db
       .select()
@@ -234,6 +243,14 @@ export async function syncFlowixCatalog() {
     } else {
       await db.insert(products).values(productData);
     }
+  }
+
+  for (const [gameId, codes] of activeCodesByGame.entries()) {
+    if (codes.size === 0) continue;
+    await db
+      .update(products)
+      .set({ isActive: false })
+      .where(and(eq(products.gameId, gameId), notIn(products.nominalAmount, Array.from(codes))));
   }
 
   const syncedGameIds = syncedGames.map((game) => game.id);
