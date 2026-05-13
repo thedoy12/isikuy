@@ -260,6 +260,7 @@ export const adminRouter = createRouter({
   games: adminQuery
     .input(
       z.object({
+        search: z.string().optional(),
         limit: z.number().default(50),
         offset: z.number().default(0),
       }).optional(),
@@ -268,7 +269,11 @@ export const adminRouter = createRouter({
       const db = getDb();
       const limit = input?.limit || 50;
       const offset = input?.offset || 0;
-      const flowixFilter = and(eq(games.publisher, "Flowix"), eq(games.isActive, true));
+      const filters = [eq(games.publisher, "Flowix"), eq(games.isActive, true)];
+      if (input?.search) {
+        filters.push(ilike(games.name, `%${input.search}%`));
+      }
+      const flowixFilter = and(...filters);
       const items = await db
         .select({
           id: games.id,
@@ -292,9 +297,7 @@ export const adminRouter = createRouter({
         .from(games)
         .leftJoin(categories, eq(games.categoryId, categories.id))
         .where(flowixFilter)
-        .orderBy(games.sortOrder)
-        .limit(limit * 3)
-        .offset(offset);
+        .orderBy(games.sortOrder, games.name);
 
       const seen = new Set<string>();
       const uniqueItems = items.filter((item) => {
@@ -302,9 +305,14 @@ export const adminRouter = createRouter({
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
-      }).slice(0, limit);
+      });
 
-      return { items: uniqueItems, total: uniqueItems.length, limit, offset };
+      return {
+        items: uniqueItems.slice(offset, offset + limit),
+        total: uniqueItems.length,
+        limit,
+        offset,
+      };
     }),
 
   updateGame: adminQuery

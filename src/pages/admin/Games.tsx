@@ -78,6 +78,7 @@ export default function AdminGames() {
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
   const utils = trpc.useUtils();
   const [page, setPage] = useState(0);
+  const [search, setSearch] = useState("");
   const [editingGameId, setEditingGameId] = useState<number | null>(null);
   const [imageDraft, setImageDraft] = useState({
     coverImage: "",
@@ -87,7 +88,7 @@ export default function AdminGames() {
   const pageSize = 10;
 
   const { data: gamesList } = trpc.admin.games.useQuery(
-    { limit: pageSize, offset: page * pageSize },
+    { search: search.trim() || undefined, limit: pageSize, offset: page * pageSize },
     { enabled: isAdmin },
   );
   const updateGame = trpc.admin.updateGame.useMutation({
@@ -111,6 +112,10 @@ export default function AdminGames() {
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isAdmin)) navigate("/");
   }, [authLoading, isAuthenticated, isAdmin, navigate]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [search]);
 
   if (authLoading) {
     return <div className="min-h-[100dvh] bg-[#030305] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#ff003c] animate-spin" /></div>;
@@ -166,6 +171,19 @@ export default function AdminGames() {
           </div>
         </header>
         <div className="p-6">
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[10px] text-white/50 tracking-wider">
+                CARI GAME FLOWIX LALU EDIT GAMBAR DARI KOLOM IMAGES
+              </p>
+            </div>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="SEARCH_GAME"
+              className="w-full lg:w-72 bg-[#0b0d14] border border-[#222] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+            />
+          </div>
           <div className="border border-[#222] bg-[#11131a] overflow-x-auto">
             <table className="w-full">
               <thead>
