@@ -15,6 +15,15 @@ import {
 } from "@db/schema";
 import { syncFlowixCatalog } from "./game";
 
+function adminMatchKey(value: string | null | undefined) {
+  return (value || "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .map((part) => (part.length > 3 && part.endsWith("s") ? part.slice(0, -1) : part))
+    .join("");
+}
+
 export const adminRouter = createRouter({
   syncFlowixCatalog: adminQuery.mutation(async () => {
     const result = await syncFlowixCatalog();
@@ -242,8 +251,7 @@ export const adminRouter = createRouter({
       const db = getDb();
       const limit = input?.limit || 50;
       const offset = input?.offset || 0;
-      const flowixFilter = eq(games.publisher, "Flowix");
-      const [totalRow] = await db.select({ count: count() }).from(games).where(flowixFilter);
+      const flowixFilter = and(eq(games.publisher, "Flowix"), eq(games.isActive, true));
       const items = await db
         .select({
           id: games.id,
@@ -259,16 +267,25 @@ export const adminRouter = createRouter({
           isActive: games.isActive,
           hasServerId: games.hasServerId,
           sortOrder: games.sortOrder,
+          categoryId: games.categoryId,
           categoryName: categories.name,
         })
         .from(games)
         .leftJoin(categories, eq(games.categoryId, categories.id))
         .where(flowixFilter)
         .orderBy(games.sortOrder)
-        .limit(limit)
+        .limit(limit * 3)
         .offset(offset);
 
-      return { items, total: totalRow.count, limit, offset };
+      const seen = new Set<string>();
+      const uniqueItems = items.filter((item) => {
+        const key = `${item.categoryId}:${adminMatchKey(item.slug) || adminMatchKey(item.name)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).slice(0, limit);
+
+      return { items: uniqueItems, total: uniqueItems.length, limit, offset };
     }),
 
   updateGame: adminQuery
@@ -305,14 +322,11 @@ export const adminRouter = createRouter({
       const filters = [];
       if (input?.gameId) filters.push(eq(products.gameId, input.gameId));
       filters.push(eq(games.publisher, "Flowix"));
+      filters.push(eq(games.isActive, true));
+      filters.push(eq(products.isActive, true));
 
       const where = and(...filters);
 
-      const [totalRow] = await db
-        .select({ count: count() })
-        .from(products)
-        .leftJoin(games, eq(products.gameId, games.id))
-        .where(where);
       const items = await db
         .select({
           id: products.id,
@@ -326,16 +340,25 @@ export const adminRouter = createRouter({
           stock: products.stock,
           isActive: products.isActive,
           sortOrder: products.sortOrder,
+          gameId: products.gameId,
           gameName: games.name,
         })
         .from(products)
         .leftJoin(games, eq(products.gameId, games.id))
         .where(where)
         .orderBy(products.sortOrder)
-        .limit(limit)
+        .limit(limit * 3)
         .offset(offset);
 
-      return { items, total: totalRow.count, limit, offset };
+      const seen = new Set<string>();
+      const uniqueItems = items.filter((item) => {
+        const key = `${item.gameId}:${adminMatchKey(item.nominalAmount) || adminMatchKey(item.name)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).slice(0, limit);
+
+      return { items: uniqueItems, total: uniqueItems.length, limit, offset };
     }),
 
   updateProduct: adminQuery

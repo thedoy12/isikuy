@@ -35,6 +35,44 @@ export type FlowixProduct = {
   sourceCategory?: string;
 };
 
+function normalizeFlowixCategory(value?: string) {
+  const slug = (value || "produk")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const aliases: Record<string, string> = {
+    "e-wallet": "ewallet",
+    "e-walet": "ewallet",
+    "dompet-digital": "ewallet",
+    "paket-data": "data",
+    internet: "data",
+  };
+  return aliases[slug] ?? slug;
+}
+
+function categoryRank(value?: string) {
+  const category = normalizeFlowixCategory(value);
+  const rank: Record<string, number> = {
+    game: 1,
+    pulsa: 2,
+    data: 3,
+    ewallet: 4,
+    voucher: 5,
+    pln: 6,
+    produk: 99,
+  };
+  return rank[category] ?? 50;
+}
+
+function shouldReplaceProduct(current: FlowixProduct, next: FlowixProduct) {
+  const currentRank = categoryRank(current.sourceCategory || current.category);
+  const nextRank = categoryRank(next.sourceCategory || next.category);
+  if (nextRank !== currentRank) return nextRank < currentRank;
+  if (next.status.toLowerCase() === "aktif" && current.status.toLowerCase() !== "aktif") return true;
+  return false;
+}
+
 function assertConfigured() {
   if (!env.flowixApiKey || !env.flowixMerchantId) {
     throw new Error("Flowix API key dan merchant ID belum diisi.");
@@ -97,7 +135,7 @@ export async function listFlowixProducts(category?: string) {
 
   return response.data.map((product) => ({
     ...product,
-    sourceCategory: product.category || category || "produk",
+    sourceCategory: normalizeFlowixCategory(product.category || category || "produk"),
   }));
 }
 
@@ -116,12 +154,15 @@ export async function listFlowixCatalog() {
   const productsByKey = new Map<string, FlowixProduct>();
 
   for (const product of groups.flat()) {
-    const key = [
-      product.sourceCategory || product.category || "produk",
+    const key = product.code || [
+      normalizeFlowixCategory(product.sourceCategory || product.category),
       product.brand || "",
-      product.code,
+      product.name || "",
     ].join(":");
-    productsByKey.set(key, product);
+    const existing = productsByKey.get(key);
+    if (!existing || shouldReplaceProduct(existing, product)) {
+      productsByKey.set(key, product);
+    }
   }
 
   return Array.from(productsByKey.values());
