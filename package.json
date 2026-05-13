@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "cross-env NODE_ENV=production node dist/boot.js",
-    "start:railway": "npm run db:push && npm run db:seed && npm run start",
+    "start:railway": "npm run db:push && npm run start",
     "check": "tsc -b",
     "format": "prettier --write .",
     "test": "vitest run",
