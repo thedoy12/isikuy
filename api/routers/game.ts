@@ -13,6 +13,7 @@ import {
 
 type GameRow = typeof games.$inferSelect;
 type ProductRow = typeof products.$inferSelect;
+type ProductDedupeInput = Pick<ProductRow, "nominalAmount" | "name" | "description">;
 type SyncedGame = GameRow & { categoryName: string };
 
 const FLOWIX_PUBLISHER = "Flowix";
@@ -138,6 +139,30 @@ function productGroupName(product: FlowixProduct) {
   return titleCase(productGroupBaseName(product));
 }
 
+function cleanProductDisplayName(name: string, brand?: string | null) {
+  let value = cleanFlowixName(name)
+    .replace(/\b(top[\s-]*up|voucher|produk\s+digital)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const cleanBrand = brand ? cleanFlowixName(brand) : "";
+  if (cleanBrand) {
+    const escapedBrand = cleanBrand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    value = value
+      .replace(new RegExp(`^${escapedBrand}\\s*[-:]?\\s*`, "i"), "")
+      .replace(new RegExp(`\\s*[-:]?\\s*${escapedBrand}$`, "i"), "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  return value || cleanFlowixName(name);
+}
+
+function productBrandFromDescription(description: string | null) {
+  if (!description) return null;
+  return description.split(" - ")[0] || null;
+}
+
 function withMarkup(price: number) {
   return Math.ceil((price * (1 + env.productMarkupPercent / 100)) / 100) * 100;
 }
@@ -146,11 +171,15 @@ function gameDedupeKey(game: Pick<GameRow, "slug" | "name" | "categoryId">) {
   return `${game.categoryId}:${matchKey(game.slug) || matchKey(game.name)}`;
 }
 
-function productDedupeKey(product: Pick<ProductRow, "nominalAmount" | "name">) {
-  return matchKey(product.nominalAmount || product.name);
+function productDedupeKey(product: ProductDedupeInput) {
+  const displayName = cleanProductDisplayName(
+    product.name,
+    productBrandFromDescription(product.description),
+  );
+  return matchKey(displayName) || matchKey(product.nominalAmount || product.name);
 }
 
-function uniqueProductsByCode<T extends Pick<ProductRow, "nominalAmount" | "name">>(items: T[]) {
+function uniqueProductsByName<T extends ProductDedupeInput>(items: T[]) {
   const seen = new Set<string>();
   return items.filter((item) => {
     const key = productDedupeKey(item);
@@ -283,7 +312,7 @@ export async function syncFlowixCatalog() {
 
     const productData = {
       gameId: game.id,
-      name: cleanFlowixName(product.name),
+      name: cleanProductDisplayName(product.name, product.brand),
       description: `${cleanFlowixName(product.brand)} - ${product.code}`,
       nominalAmount: product.code,
       basePrice: String(product.price),
@@ -346,6 +375,7 @@ export async function syncFlowixCatalog() {
       gameId: products.gameId,
       nominalAmount: products.nominalAmount,
       name: products.name,
+      description: products.description,
     })
     .from(products)
     .innerJoin(games, eq(products.gameId, games.id))
@@ -465,7 +495,7 @@ export const gameRouter = createRouter({
         description: sanitizePublicText(game.description),
         publisher: publicProviderLabel,
         category,
-        products: uniqueProductsByCode(localProducts).map((product) => ({
+        products: uniqueProductsByName(localProducts).map((product) => ({
           ...product,
           provider: "flowix" as const,
           providerProductCode: product.nominalAmount,

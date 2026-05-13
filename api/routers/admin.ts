@@ -24,6 +24,23 @@ function adminMatchKey(value: string | null | undefined) {
     .join("");
 }
 
+function adminProductKey(input: {
+  name: string;
+  description: string | null;
+  nominalAmount: string | null;
+}) {
+  const brand = input.description?.split(" - ")[0] || "";
+  const escapedBrand = brand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const displayName = input.name
+    .replace(/\b(top[\s-]*up|voucher|produk\s+digital)\b/gi, " ")
+    .replace(brand ? new RegExp(`^${escapedBrand}\\s*[-:]?\\s*`, "i") : /^$/, "")
+    .replace(brand ? new RegExp(`\\s*[-:]?\\s*${escapedBrand}$`, "i") : /^$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return adminMatchKey(displayName) || adminMatchKey(input.nominalAmount) || adminMatchKey(input.name);
+}
+
 export const adminRouter = createRouter({
   syncFlowixCatalog: adminQuery.mutation(async () => {
     const result = await syncFlowixCatalog();
@@ -352,7 +369,7 @@ export const adminRouter = createRouter({
 
       const seen = new Set<string>();
       const uniqueItems = items.filter((item) => {
-        const key = `${item.gameId}:${adminMatchKey(item.nominalAmount) || adminMatchKey(item.name)}`;
+        const key = `${item.gameId}:${adminProductKey(item)}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
