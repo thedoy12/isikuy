@@ -20,10 +20,10 @@ const FLOWIX_PUBLISHER = "Flowix";
 const FLOWIX_ONLY_GAME_FILTER = eq(games.publisher, FLOWIX_PUBLISHER);
 
 const categoryGroupSlugs: Record<string, string[]> = {
-  game: ["game"],
-  pulsa: ["pulsa"],
-  ewallet: ["ewallet"],
-  digital: ["data", "voucher", "pln", "produk"],
+  game: ["game", "games", "game-online", "top-up-game", "topup-game", "voucher-game"],
+  pulsa: ["pulsa", "pulsa-reguler", "pulsa-transfer"],
+  ewallet: ["ewallet", "e-wallet", "e-walet", "e-money", "dompet-digital"],
+  digital: ["data", "paket-data", "data-internet", "internet", "voucher", "pln", "token-pln", "listrik", "produk"],
 };
 
 function slugify(value: string) {
@@ -65,11 +65,20 @@ function cleanFlowixName(value: string) {
 function productCategorySlug(product: FlowixProduct) {
   const slug = slugify(product.sourceCategory || product.category || "produk");
   const aliases: Record<string, string> = {
+    games: "game",
+    "game-online": "game",
+    "top-up-game": "game",
+    "topup-game": "game",
+    "voucher-game": "game",
     "e-wallet": "ewallet",
     "e-walet": "ewallet",
+    "e-money": "ewallet",
     "dompet-digital": "ewallet",
     "paket-data": "data",
+    "data-internet": "data",
     "internet": "data",
+    "token-pln": "pln",
+    listrik: "pln",
   };
   return aliases[slug] ?? slug;
 }
@@ -79,7 +88,8 @@ function productGroupBaseName(product: FlowixProduct) {
   const rawName = cleanFlowixName(product.brand || product.name || "Produk");
   if (categorySlug !== "game") return rawName;
   return rawName
-    .replace(/\b(top[\s-]*up|voucher|diamonds?|diamond|uc|point|points|cash|coin|coins|gem|gems)\b/gi, " ")
+    .replace(/^\s*(top[\s-]*up|voucher)\s+/gi, " ")
+    .replace(/\s+\b(diamonds?|points?|uc|vp|cash|coins?|gems?|credits?|tokens?|cp)\b$/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }

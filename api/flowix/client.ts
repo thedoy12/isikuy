@@ -42,11 +42,20 @@ function normalizeFlowixCategory(value?: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
   const aliases: Record<string, string> = {
+    games: "game",
+    "game-online": "game",
+    "top-up-game": "game",
+    "topup-game": "game",
+    "voucher-game": "game",
     "e-wallet": "ewallet",
     "e-walet": "ewallet",
+    "e-money": "ewallet",
     "dompet-digital": "ewallet",
     "paket-data": "data",
+    "data-internet": "data",
     internet: "data",
+    "token-pln": "pln",
+    listrik: "pln",
   };
   return aliases[slug] ?? slug;
 }
