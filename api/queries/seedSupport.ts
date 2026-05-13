@@ -8,11 +8,6 @@ export async function seedSupportContent() {
   if (existingPaymentMethods.length === 0) {
     await db.insert(paymentMethods).values([
       { name: "QRIS", code: "qris", type: "qris", icon: "QrCode", feePercent: "1.00", feeFixed: "0", sortOrder: 1 },
-      { name: "GoPay", code: "gopay", type: "ewallet", icon: "Wallet", feePercent: "2.00", feeFixed: "0", sortOrder: 2 },
-      { name: "OVO", code: "ovo", type: "ewallet", icon: "CreditCard", feePercent: "2.00", feeFixed: "0", sortOrder: 3 },
-      { name: "DANA", code: "dana", type: "ewallet", icon: "Wallet", feePercent: "1.50", feeFixed: "0", sortOrder: 4 },
-      { name: "Virtual Account", code: "va", type: "va", icon: "Landmark", feePercent: "0", feeFixed: "4000", sortOrder: 5 },
-      { name: "Saldo Internal", code: "saldo", type: "saldo", icon: "Wallet", feePercent: "0", feeFixed: "0", sortOrder: 6 },
     ]);
   }
 
@@ -31,7 +26,7 @@ export async function seedSupportContent() {
       { question: "Bagaimana cara melakukan top-up?", answer: "Pilih produk, pilih nominal, masukkan tujuan, pilih metode pembayaran, lalu ikuti instruksi pembayaran.", category: "general", sortOrder: 1 },
       { question: "Produk apa saja yang tersedia?", answer: "Katalog game, pulsa, paket data, e-wallet, voucher, dan PLN tersedia dalam satu tempat.", category: "general", sortOrder: 2 },
       { question: "Berapa lama proses top-up?", answer: "Pesanan diproses setelah pembayaran berhasil. Waktu proses mengikuti status dan respons provider.", category: "general", sortOrder: 3 },
-      { question: "Metode pembayaran apa saja yang tersedia?", answer: "Metode pembayaran aktif dapat dilihat saat checkout.", category: "payment", sortOrder: 4 },
+      { question: "Metode pembayaran apa saja yang tersedia?", answer: "Saat ini checkout aktif menggunakan QRIS.", category: "payment", sortOrder: 4 },
       { question: "Bagaimana jika top-up gagal?", answer: "Silakan cek riwayat transaksi dan hubungi support dengan nomor invoice jika status belum berubah.", category: "payment", sortOrder: 5 },
     ]);
   }

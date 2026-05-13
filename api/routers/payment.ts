@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { paymentMethods, products } from "@db/schema";
@@ -11,7 +11,7 @@ export const paymentRouter = createRouter({
     return db
       .select()
       .from(paymentMethods)
-      .where(eq(paymentMethods.isActive, true))
+      .where(and(eq(paymentMethods.isActive, true), eq(paymentMethods.code, "qris")))
       .orderBy(paymentMethods.sortOrder);
   }),
 
@@ -42,10 +42,10 @@ export const paymentRouter = createRouter({
       const [method] = await db
         .select()
         .from(paymentMethods)
-        .where(eq(paymentMethods.id, input.paymentMethodId))
+        .where(and(eq(paymentMethods.id, input.paymentMethodId), eq(paymentMethods.code, "qris")))
         .limit(1);
 
-      if (!method) throw new Error("Payment method not found");
+      if (!method) throw new Error("Metode pembayaran belum tersedia");
 
       const basePrice = product
         ? parseFloat(product.salePrice || product.basePrice)
