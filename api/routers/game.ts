@@ -26,6 +26,18 @@ const categoryGroupSlugs: Record<string, string[]> = {
   digital: ["data", "paket-data", "data-internet", "internet", "voucher", "pln", "token-pln", "listrik", "produk"],
 };
 
+const favoriteGameOrder = [
+  "mobile-legends",
+  "pubg-mobile",
+  "point-blank",
+  "valorant",
+  "free-fire",
+  "genshin-impact",
+  "roblox",
+  "call-of-duty-mobile",
+  "honor-of-kings",
+];
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -203,6 +215,11 @@ function gameDedupeKey(game: Pick<GameRow, "slug" | "name" | "categoryId">) {
   return `${game.categoryId}:${matchKey(game.slug) || matchKey(game.name)}`;
 }
 
+function favoriteRank(slug: string) {
+  const index = favoriteGameOrder.indexOf(slug);
+  return index === -1 ? null : index + 1;
+}
+
 function productDedupeKey(product: ProductDedupeInput) {
   const displayName = cleanProductDisplayName(
     product.name,
@@ -285,7 +302,12 @@ export async function syncFlowixCatalog() {
         return [slug, { slug, name: productGroupName(product), categorySlug }] as const;
       }),
     ).values(),
-  );
+  ).sort((a, b) => {
+    const rankA = favoriteRank(a.slug) ?? Number.MAX_SAFE_INTEGER;
+    const rankB = favoriteRank(b.slug) ?? Number.MAX_SAFE_INTEGER;
+    if (rankA !== rankB) return rankA - rankB;
+    return a.name.localeCompare(b.name);
+  });
 
   if (groups.length === 0) {
     console.warn("[catalog] Sync skipped because no catalog groups could be built.");
@@ -312,7 +334,10 @@ export async function syncFlowixCatalog() {
       publisher: FLOWIX_PUBLISHER,
       platform: productPlatform(group.categorySlug),
       isActive: true,
+      isTrending: syncedGames.length < 8 || favoriteRank(group.slug) !== null,
+      isPopular: syncedGames.length < 12 || favoriteRank(group.slug) !== null,
       hasServerId: false,
+      sortOrder: favoriteRank(group.slug) ?? syncedGames.length + favoriteGameOrder.length + 1,
     };
 
     const syncedRows: GameRow[] = existing
@@ -321,9 +346,6 @@ export async function syncFlowixCatalog() {
           .insert(games)
           .values({
             ...gameData,
-            sortOrder: syncedGames.length + 1,
-            isTrending: syncedGames.length < 8,
-            isPopular: syncedGames.length < 12,
             isNew: false,
           })
           .returning();
