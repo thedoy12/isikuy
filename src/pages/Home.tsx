@@ -70,7 +70,6 @@ function HeroSection() {
           <div className="text-center lg:text-left">
             <img
               src="/games/maskot-isikuy.png"
-              alt="Maskot ISIKUY"
               className="mx-auto mb-5 w-36 drop-shadow-[0_20px_48px_rgba(0,240,255,0.2)] sm:w-44 lg:hidden"
             />
 
