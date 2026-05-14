@@ -4,6 +4,7 @@ import {
   BarChart3,
   Gamepad2,
   Receipt,
+  Settings,
   Users,
   Zap,
 } from "lucide-react";
@@ -14,6 +15,7 @@ const navItems = [
   { id: "games", label: "Games", icon: Gamepad2, href: "/admin/games" },
   { id: "transactions", label: "Tx", icon: Receipt, href: "/admin/transactions" },
   { id: "users", label: "Users", icon: Users, href: "/admin/users" },
+  { id: "settings", label: "Set", icon: Settings, href: "/admin/settings" },
 ];
 
 export function AdminMobileNav({ active }: { active: string }) {
@@ -21,7 +23,7 @@ export function AdminMobileNav({ active }: { active: string }) {
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-[#222] bg-[#0b0d14]/95 backdrop-blur-xl px-2 py-2">
-      <div className="grid grid-cols-6 gap-1">
+      <div className="grid grid-cols-7 gap-1">
         {navItems.map((item) => (
           <Link
             key={item.id}

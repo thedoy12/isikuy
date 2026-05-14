@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { and, eq, desc, gte, lte, sql } from "drizzle-orm";
 import { createRouter, publicQuery, authedQuery } from "../middleware";
@@ -57,14 +58,46 @@ async function validateVoucher(input: { code?: string; amount: number }) {
   };
 }
 
+function getVoucherState(raw: string | null) {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as {
+      voucher?: { id: number; discountAmount: number; usageCounted?: boolean };
+    };
+    return parsed.voucher ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function countVoucherUsageOnce(raw: string | null) {
+  const voucher = getVoucherState(raw);
+  if (!voucher || voucher.usageCounted) return raw;
+
+  const db = getDb();
+  await db
+    .update(vouchers)
+    .set({ usageCount: sql`${vouchers.usageCount} + 1` })
+    .where(eq(vouchers.id, voucher.id));
+
+  try {
+    return JSON.stringify({
+      ...JSON.parse(raw || "{}"),
+      voucher: { ...voucher, usageCounted: true },
+    });
+  } catch {
+    return raw;
+  }
+}
+
 export const transactionRouter = createRouter({
   create: publicQuery
     .input(
       z.object({
         gameId: z.number(),
         productId: z.number(),
-        playerId: z.string().min(1),
-        serverId: z.string().optional(),
+        playerId: z.string().trim().min(1),
+        serverId: z.string().trim().optional(),
         paymentMethodId: z.number(),
         voucherCode: z.string().optional(),
       })
@@ -122,6 +155,41 @@ export const transactionRouter = createRouter({
       });
       const feeAmount = serviceAmount + paymentFeeAmount;
       const totalAmount = Math.max(1, baseAmount - (voucher?.discountAmount || 0) + feeAmount);
+      let finalFeeAmount = feeAmount;
+      let finalTotalAmount = totalAmount;
+      let providerReference: string | null = null;
+      let providerPaymentId: string | null = null;
+      let providerResponse: string | null = voucher ? JSON.stringify({ voucher }) : null;
+      let payment = null;
+
+      if (method.code === "qris" && isFlowixConfigured()) {
+        const flowixDeposit = await createFlowixDeposit({
+          amount: Math.round(totalAmount),
+          methodCode: "QRIS",
+          feeByCustomer: true,
+        });
+        finalTotalAmount = Number(flowixDeposit.amount_total || totalAmount);
+        finalFeeAmount = Math.max(0, finalTotalAmount - baseAmount + (voucher?.discountAmount || 0));
+        providerReference = flowixDeposit.reff_id;
+        providerPaymentId = flowixDeposit.pay_id;
+        providerResponse = JSON.stringify({
+          ...(voucher ? { voucher } : {}),
+          deposit: flowixDeposit,
+        });
+        payment = {
+          provider: "flowix",
+          reference: flowixDeposit.reff_id,
+          paymentId: flowixDeposit.pay_id,
+          amountTotal: finalTotalAmount,
+          amountReceived: flowixDeposit.amount_received,
+          payUrl: flowixDeposit.pay_url,
+          payCode: flowixDeposit.pay_code,
+          qrString: flowixDeposit.qr_string,
+          qrImage: flowixDeposit.qr_image,
+          instructions: flowixDeposit.instructions ?? [],
+          expiredAt: flowixDeposit.expired_at,
+        };
+      }
 
       const result = await db.insert(transactions).values({
         userId: ctx.user?.id || null,
@@ -134,56 +202,15 @@ export const transactionRouter = createRouter({
         serverId: input.serverId || null,
         paymentMethodId: input.paymentMethodId,
         baseAmount: baseAmount.toString(),
-        feeAmount: feeAmount.toString(),
-        totalAmount: totalAmount.toString(),
+        feeAmount: finalFeeAmount.toString(),
+        totalAmount: finalTotalAmount.toString(),
         status: "pending",
         paymentStatus: "unpaid",
         expiryAt,
+        providerReference,
+        providerPaymentId,
+        providerResponse,
       }).returning({ id: transactions.id });
-
-      let payment = null;
-
-      if (method?.code === "qris" && isFlowixConfigured()) {
-        const flowixDeposit = await createFlowixDeposit({
-          amount: Math.round(totalAmount),
-          methodCode: "QRIS",
-          feeByCustomer: true,
-        });
-        const flowixTotal = Number(flowixDeposit.amount_total || totalAmount);
-        const flowixFee = Math.max(0, flowixTotal - baseAmount + (voucher?.discountAmount || 0));
-
-        await db
-          .update(transactions)
-          .set({
-            feeAmount: flowixFee.toString(),
-            totalAmount: flowixTotal.toString(),
-            providerReference: flowixDeposit.reff_id,
-            providerPaymentId: flowixDeposit.pay_id,
-            providerResponse: JSON.stringify({ deposit: flowixDeposit }),
-          })
-          .where(eq(transactions.id, result[0].id));
-
-        payment = {
-          provider: "flowix",
-          reference: flowixDeposit.reff_id,
-          paymentId: flowixDeposit.pay_id,
-          amountTotal: flowixTotal,
-          amountReceived: flowixDeposit.amount_received,
-          payUrl: flowixDeposit.pay_url,
-          payCode: flowixDeposit.pay_code,
-          qrString: flowixDeposit.qr_string,
-          qrImage: flowixDeposit.qr_image,
-          instructions: flowixDeposit.instructions ?? [],
-          expiredAt: flowixDeposit.expired_at,
-        };
-      }
-
-      if (voucher) {
-        await db
-          .update(vouchers)
-          .set({ usageCount: sql`${vouchers.usageCount} + 1` })
-          .where(eq(vouchers.id, voucher.id));
-      }
 
       return { id: result[0].id, invoiceNumber, payment };
     }),
@@ -193,7 +220,25 @@ export const transactionRouter = createRouter({
     .query(async ({ input }) => {
       const db = getDb();
       const [transaction] = await db
-        .select()
+        .select({
+          id: transactions.id,
+          invoiceNumber: transactions.invoiceNumber,
+          playerId: transactions.playerId,
+          serverId: transactions.serverId,
+          baseAmount: transactions.baseAmount,
+          feeAmount: transactions.feeAmount,
+          totalAmount: transactions.totalAmount,
+          status: transactions.status,
+          paymentStatus: transactions.paymentStatus,
+          paidAt: transactions.paidAt,
+          completedAt: transactions.completedAt,
+          expiryAt: transactions.expiryAt,
+          createdAt: transactions.createdAt,
+          gameId: transactions.gameId,
+          productId: transactions.productId,
+          paymentMethodId: transactions.paymentMethodId,
+          providerProductName: transactions.providerProductName,
+        })
         .from(transactions)
         .where(eq(transactions.invoiceNumber, input.invoiceNumber))
         .limit(1);
@@ -268,9 +313,6 @@ export const transactionRouter = createRouter({
           createdAt: transactions.createdAt,
           paidAt: transactions.paidAt,
           completedAt: transactions.completedAt,
-          providerReference: transactions.providerReference,
-          providerPaymentId: transactions.providerPaymentId,
-          providerResponse: transactions.providerResponse,
         })
         .from(transactions)
         .where(eq(transactions.invoiceNumber, input.invoiceNumber))
@@ -279,14 +321,37 @@ export const transactionRouter = createRouter({
       return transaction || null;
     }),
 
-  cancel: publicQuery
+  cancel: authedQuery
     .input(z.object({ invoiceNumber: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
+      const [transaction] = await db
+        .select({
+          id: transactions.id,
+          userId: transactions.userId,
+          status: transactions.status,
+          paymentStatus: transactions.paymentStatus,
+        })
+        .from(transactions)
+        .where(eq(transactions.invoiceNumber, input.invoiceNumber))
+        .limit(1);
+
+      if (!transaction) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Transaksi tidak ditemukan" });
+      }
+
+      const isAdmin = ctx.user.role === "admin" || ctx.user.role === "superadmin";
+      if (!isAdmin && transaction.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Tidak boleh membatalkan transaksi ini" });
+      }
+      if (transaction.status !== "pending" || transaction.paymentStatus !== "unpaid") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Transaksi tidak bisa dibatalkan" });
+      }
+
       await db
         .update(transactions)
         .set({ status: "cancelled", paymentStatus: "expired" })
-        .where(eq(transactions.invoiceNumber, input.invoiceNumber));
+        .where(eq(transactions.id, transaction.id));
 
       return { success: true };
     }),
@@ -299,12 +364,23 @@ export const transactionRouter = createRouter({
       }
 
       const db = getDb();
+      const [transaction] = await db
+        .select({
+          id: transactions.id,
+          providerResponse: transactions.providerResponse,
+        })
+        .from(transactions)
+        .where(eq(transactions.invoiceNumber, input.invoiceNumber))
+        .limit(1);
+
+      const providerResponse = await countVoucherUsageOnce(transaction?.providerResponse ?? null);
       await db
         .update(transactions)
         .set({
           status: "processing",
           paymentStatus: "paid",
           paidAt: new Date(),
+          ...(providerResponse ? { providerResponse } : {}),
         })
         .where(eq(transactions.invoiceNumber, input.invoiceNumber));
 

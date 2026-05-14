@@ -137,6 +137,14 @@ export default function GameDetail() {
   }, [txStatus]);
 
   useEffect(() => {
+    if (selectedPayment || !paymentMethods?.length) return;
+    const qrisMethod =
+      paymentMethods.find((method) => method.code === "qris") ??
+      paymentMethods[0];
+    setSelectedPayment(qrisMethod.id);
+  }, [paymentMethods, selectedPayment]);
+
+  useEffect(() => {
     if (step === "payment") {
       const timer = setInterval(() => {
         setTimeLeft((prev) => {
@@ -614,22 +622,21 @@ export default function GameDetail() {
                   3
                 </div>
                 <h3 className="font-display text-lg font-semibold text-white">
-                  Metode Pembayaran
+                  Pembayaran QRIS
                 </h3>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {paymentMethods?.map((method) => {
                   const isSelected = selectedPayment === method.id;
                   const fee = parseFloat(method.feePercent ?? "0");
                   return (
-                    <button
+                    <div
                       key={method.id}
-                      onClick={() => setSelectedPayment(method.id)}
                       className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
                         isSelected
                           ? "border-[#00f0ff] bg-[#00f0ff]/5"
-                          : "border-white/5 bg-white/[0.02] hover:border-white/10"
+                          : "border-white/5 bg-white/[0.02]"
                       }`}
                     >
                       <div
@@ -650,18 +657,25 @@ export default function GameDetail() {
                         <p className="text-xs text-white/40">
                           {fee > 0
                             ? `Biaya ${fee}%`
-                            : "Tanpa biaya"}
+                            : "Tanpa biaya"}{" "}
+                          - scan dengan e-wallet atau mobile banking
                         </p>
                       </div>
                       {isSelected && (
                         <CheckCircle2 className="w-5 h-5 text-[#00f0ff]" />
                       )}
-                    </button>
+                    </div>
                   );
                 })}
                 {paymentMethods?.length === 0 && (
                   <div className="rounded-xl border border-[#ff003c]/20 bg-[#ff003c]/10 px-4 py-3 text-sm text-[#ffb8c7]">
                     Metode pembayaran belum tersedia.
+                  </div>
+                )}
+                {!!paymentMethods?.length && (
+                  <div className="rounded-xl bg-white/[0.03] px-4 py-3 text-xs leading-relaxed text-white/45">
+                    QRIS dipilih otomatis karena saat ini menjadi satu-satunya
+                    sistem pembayaran aktif.
                   </div>
                 )}
               </div>

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { Session } from "@contracts/constants";
 import { getSessionCookieOptions } from "./lib/cookies";
 import { createRouter, authedQuery, publicQuery } from "./middleware";
-import { env } from "./lib/env";
+import { getAdminCredentials, verifyAdminPassword } from "./lib/adminCredentials";
 import { signSessionToken } from "./auth/session";
 import { findUserByUsername, upsertUser } from "./queries/users";
 
@@ -17,10 +17,10 @@ export const authRouter = createRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      if (
-        input.username !== env.adminUsername ||
-        input.password !== env.adminPassword
-      ) {
+      const credentials = await getAdminCredentials();
+      const passwordIsValid = await verifyAdminPassword(input.password);
+
+      if (input.username !== credentials.username || !passwordIsValid) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "Username atau password salah",
@@ -28,14 +28,14 @@ export const authRouter = createRouter({
       }
 
       await upsertUser({
-        username: env.adminUsername,
+        username: credentials.username,
         name: "Admin ISIKUY",
         role: "admin",
         lastSignInAt: new Date(),
       });
 
       const token = await signSessionToken({
-        username: env.adminUsername,
+        username: credentials.username,
       });
       const opts = getSessionCookieOptions(ctx.req.headers);
       ctx.resHeaders.append(
@@ -49,7 +49,7 @@ export const authRouter = createRouter({
         }),
       );
 
-      return findUserByUsername(env.adminUsername);
+      return findUserByUsername(credentials.username);
     }),
   me: authedQuery.query((opts) => opts.ctx.user),
   logout: authedQuery.mutation(async ({ ctx }) => {

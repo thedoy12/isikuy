@@ -16,6 +16,7 @@ import {
   UserCheck,
   UserX,
   Crown,
+  Settings,
 } from "lucide-react";
 
 function AdminSidebar({ active }: { active: string }) {
@@ -25,6 +26,7 @@ function AdminSidebar({ active }: { active: string }) {
     { id: "games", label: "ARSENAL", icon: Gamepad2, href: "/admin/games" },
     { id: "transactions", label: "FINANCIALS", icon: Receipt, href: "/admin/transactions" },
     { id: "users", label: "INTEL", icon: Users, href: "/admin/users" },
+    { id: "settings", label: "SETTINGS", icon: Settings, href: "/admin/settings" },
   ];
   return (
     <aside className="w-64 bg-[#0b0d14] border-r border-[#222] flex-shrink-0 hidden lg:flex flex-col">

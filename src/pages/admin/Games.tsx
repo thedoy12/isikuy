@@ -19,6 +19,7 @@ import {
   RefreshCw,
   BarChart3,
   Receipt,
+  Settings,
   Users,
   Zap,
 } from "lucide-react";
@@ -30,6 +31,7 @@ function AdminSidebar({ active }: { active: string }) {
     { id: "games", label: "ARSENAL", icon: Gamepad2, href: "/admin/games" },
     { id: "transactions", label: "FINANCIALS", icon: Receipt, href: "/admin/transactions" },
     { id: "users", label: "INTEL", icon: Users, href: "/admin/users" },
+    { id: "settings", label: "SETTINGS", icon: Settings, href: "/admin/settings" },
   ];
 
   return (

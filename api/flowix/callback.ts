@@ -1,9 +1,9 @@
 import type { Context } from "hono";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { eq, or } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import { env } from "../lib/env";
 import { getDb } from "../queries/connection";
-import { activityLogs, transactions } from "@db/schema";
+import { activityLogs, transactions, vouchers } from "@db/schema";
 import {
   checkFlowixTransaction,
   createFlowixTransaction,
@@ -28,6 +28,11 @@ type FlowixStatusUpdate = {
 };
 
 type ProviderState = {
+  voucher?: {
+    id: number;
+    discountAmount: number;
+    usageCounted?: boolean;
+  };
   deposit?: unknown;
   depositCallback?: unknown;
   productOrder?: FlowixTransaction;
@@ -174,6 +179,7 @@ function parseProviderState(raw: string | null): ProviderState {
       parsed &&
       typeof parsed === "object" &&
       ("deposit" in parsed ||
+        "voucher" in parsed ||
         "productOrder" in parsed ||
         "depositCallback" in parsed ||
         "productCallback" in parsed)
@@ -195,6 +201,23 @@ function stringifyProviderState(
     ...parseProviderState(raw),
     ...patch,
   });
+}
+
+async function countVoucherUsageOnce(state: ProviderState) {
+  if (!state.voucher || state.voucher.usageCounted) return state;
+
+  await getDb()
+    .update(vouchers)
+    .set({ usageCount: sql`${vouchers.usageCount} + 1` })
+    .where(eq(vouchers.id, state.voucher.id));
+
+  return {
+    ...state,
+    voucher: {
+      ...state.voucher,
+      usageCounted: true,
+    },
+  };
 }
 
 async function submitFlowixProductOrder(transaction: {
@@ -365,6 +388,7 @@ export async function handleFlowixCallback(c: Context) {
 
   let nextStatus = status.status;
   let nextPaymentStatus = status.paymentStatus;
+  const previousProviderState = parseProviderState(matched.providerResponse);
   let providerResponse = stringifyProviderState(matched.providerResponse, {
     lastCallback: payload,
   });
@@ -413,6 +437,14 @@ export async function handleFlowixCallback(c: Context) {
   }
 
   try {
+    if (status.paid && matched.paymentStatus !== "paid") {
+      const countedProviderState = await countVoucherUsageOnce({
+        ...parseProviderState(providerResponse),
+        voucher: previousProviderState.voucher,
+      });
+      providerResponse = JSON.stringify(countedProviderState);
+    }
+
     await db
       .update(transactions)
       .set({

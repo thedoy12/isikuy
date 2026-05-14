@@ -328,11 +328,6 @@ export const seedRouter = createRouter({
       // Seed payment methods
       await db.insert(paymentMethods).values([
         { name: "QRIS", code: "qris", type: "qris", icon: "QrCode", feePercent: "1.00", feeFixed: "0", sortOrder: 1 },
-        { name: "GoPay", code: "gopay", type: "ewallet", icon: "Wallet", feePercent: "2.00", feeFixed: "0", sortOrder: 2 },
-        { name: "OVO", code: "ovo", type: "ewallet", icon: "CreditCard", feePercent: "2.00", feeFixed: "0", sortOrder: 3 },
-        { name: "DANA", code: "dana", type: "ewallet", icon: "Wallet", feePercent: "1.50", feeFixed: "0", sortOrder: 4 },
-        { name: "Virtual Account", code: "va", type: "va", icon: "Landmark", feePercent: "0", feeFixed: "4000", sortOrder: 5 },
-        { name: "Saldo Internal", code: "saldo", type: "saldo", icon: "Wallet", feePercent: "0", feeFixed: "0", sortOrder: 6 },
       ]);
 
       // Seed banners
@@ -344,7 +339,7 @@ export const seedRouter = createRouter({
 
       // Seed FAQs
       await db.insert(faqs).values([
-        { question: "Bagaimana cara melakukan top-up?", answer: "Pilih game yang ingin di-top-up, pilih nominal, masukkan Player ID, pilih metode pembayaran, lalu klik Bayar. Ikuti instruksi pembayaran dan top-up akan diproses otomatis.", category: "general", sortOrder: 1 },
+        { question: "Bagaimana cara melakukan top-up?", answer: "Pilih game yang ingin di-top-up, pilih nominal, masukkan Player ID, lalu klik Bayar. Selesaikan pembayaran QRIS dan top-up akan diproses otomatis.", category: "general", sortOrder: 1 },
         { question: "Berapa lama proses top-up?", answer: "Proses top-up biasanya memakan waktu 1-5 menit setelah pembayaran berhasil. Dalam kondisi normal, top-up akan masuk ke akun game Anda kurang dari 3 menit.", category: "general", sortOrder: 2 },
         { question: "Apakah transaksi di sini aman?", answer: "Ya, 100% aman. Kami menggunakan enkripsi SSL 256-bit untuk melindungi data Anda. Semua transaksi diproses secara otomatis tanpa intervensi manual.", category: "general", sortOrder: 3 },
         { question: "Metode pembayaran apa saja yang tersedia?", answer: "Saat ini checkout publik menggunakan QRIS. Metode lain dapat ditambahkan setelah kanal pembayaran aktif dan terkonfigurasi.", category: "payment", sortOrder: 4 },

@@ -16,14 +16,14 @@ export async function seedSupportContent() {
     await db.insert(banners).values([
       { title: "HOT PROMO", subtitle: "Produk game, pulsa, dan e-wallet lengkap", position: "hero", bgColor: "#ff003c", textColor: "#ffffff", sortOrder: 1, isActive: true },
       { title: "KATALOG DIGITAL", subtitle: "Harga dan produk tersinkron otomatis", position: "promo", bgColor: "#11131a", textColor: "#00f0ff", sortOrder: 2, isActive: true },
-      { title: "PEMBAYARAN CEPAT", subtitle: "Checkout QRIS dan metode pembayaran lain", position: "promo", bgColor: "#b30029", textColor: "#ffffff", sortOrder: 3, isActive: true },
+      { title: "PEMBAYARAN CEPAT", subtitle: "Checkout QRIS cepat dan otomatis", position: "promo", bgColor: "#b30029", textColor: "#ffffff", sortOrder: 3, isActive: true },
     ]);
   }
 
   const existingFaqs = await db.select().from(faqs).limit(1);
   if (existingFaqs.length === 0) {
     await db.insert(faqs).values([
-      { question: "Bagaimana cara melakukan top-up?", answer: "Pilih produk, pilih nominal, masukkan tujuan, pilih metode pembayaran, lalu ikuti instruksi pembayaran.", category: "general", sortOrder: 1 },
+      { question: "Bagaimana cara melakukan top-up?", answer: "Pilih produk, pilih nominal, masukkan tujuan, lalu selesaikan pembayaran QRIS.", category: "general", sortOrder: 1 },
       { question: "Produk apa saja yang tersedia?", answer: "Katalog game, pulsa, paket data, e-wallet, voucher, dan PLN tersedia dalam satu tempat.", category: "general", sortOrder: 2 },
       { question: "Berapa lama proses top-up?", answer: "Pesanan diproses setelah pembayaran berhasil. Waktu proses mengikuti status dan respons provider.", category: "general", sortOrder: 3 },
       { question: "Metode pembayaran apa saja yang tersedia?", answer: "Saat ini checkout aktif menggunakan QRIS.", category: "payment", sortOrder: 4 },

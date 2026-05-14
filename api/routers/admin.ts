@@ -14,6 +14,11 @@ import {
   activityLogs,
 } from "@db/schema";
 import { syncFlowixCatalog } from "./game";
+import {
+  getAdminCredentials,
+  setAdminPassword,
+  verifyAdminPassword,
+} from "../lib/adminCredentials";
 
 function adminMatchKey(value: string | null | undefined) {
   return (value || "")
@@ -42,6 +47,31 @@ function adminProductKey(input: {
 }
 
 export const adminRouter = createRouter({
+  settings: adminQuery.query(async () => {
+    const credentials = await getAdminCredentials();
+    return {
+      adminUsername: credentials.username,
+      hasCustomPassword: !!credentials.passwordHash,
+    };
+  }),
+
+  updateAdminPassword: adminQuery
+    .input(
+      z.object({
+        currentPassword: z.string().min(1),
+        newPassword: z.string().min(8),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const currentPasswordIsValid = await verifyAdminPassword(input.currentPassword);
+      if (!currentPasswordIsValid) {
+        throw new Error("Password lama tidak sesuai");
+      }
+
+      await setAdminPassword(input.newPassword);
+      return { success: true };
+    }),
+
   syncFlowixCatalog: adminQuery.mutation(async () => {
     const result = await syncFlowixCatalog();
     return {
@@ -69,7 +99,7 @@ export const adminRouter = createRouter({
         revenue: sql<string>`COALESCE(SUM(${transactions.totalAmount}), 0)`,
       })
       .from(transactions)
-      .where(gte(transactions.createdAt, today));
+      .where(and(gte(transactions.createdAt, today), eq(transactions.paymentStatus, "paid")));
 
     const [pendingTransactions] = await db
       .select({ count: count() })
@@ -90,7 +120,7 @@ export const adminRouter = createRouter({
         createdAt: transactions.createdAt,
       })
       .from(transactions)
-      .where(gte(transactions.createdAt, sevenDaysAgo));
+      .where(and(gte(transactions.createdAt, sevenDaysAgo), eq(transactions.paymentStatus, "paid")));
 
     const dailyRevenue = Array.from({ length: 7 }, (_, index) => {
       const date = new Date(sevenDaysAgo);

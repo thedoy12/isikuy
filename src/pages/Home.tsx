@@ -11,9 +11,6 @@ import {
   ChevronRight,
   Star,
   QrCode,
-  Wallet,
-  CreditCard,
-  Landmark,
   TrendingUp,
   Flame,
   Sparkles,
@@ -401,44 +398,60 @@ function WhyChooseSection() {
 /* ─── Payment Methods ─── */
 function PaymentSection() {
   const { data: methods } = trpc.payment.methods.useQuery();
-
-  const iconMap: Record<string, React.ReactNode> = {
-    qris: <QrCode className="w-8 h-8" />,
-    ewallet: <Wallet className="w-8 h-8" />,
-    va: <Landmark className="w-8 h-8" />,
-    saldo: <CreditCard className="w-8 h-8" />,
-  };
+  const qrisMethod = methods?.find((m) => m.code === "qris") ?? methods?.[0];
+  const fee = qrisMethod ? parseFloat(qrisMethod.feePercent ?? "0") : 0;
 
   return (
-    <section className="relative py-24">
+    <section className="relative py-20 sm:py-24">
       <div className="absolute inset-0 bg-gradient-to-b from-[#030305] via-[#0b0d14] to-[#030305]" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
+        <div className="text-center mb-10">
           <span className="text-xs font-medium text-[#00f0ff] tracking-wider uppercase">
             Pembayaran
           </span>
           <h2 className="font-display text-3xl sm:text-4xl font-bold text-white mt-2">
-            Metode Pembayaran
+            Pembayaran QRIS
           </h2>
           <p className="text-sm text-white/50 mt-3 max-w-lg mx-auto">
-            Berbagai metode pembayaran yang aman dan nyaman
+            Satu metode pembayaran yang praktis untuk e-wallet dan mobile banking
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {methods?.map((m) => (
-            <div
-              key={m.id}
-              className="glass rounded-xl p-5 flex flex-col items-center gap-3 hover:bg-white/5 transition-colors group"
-            >
-              <div className="text-white/60 group-hover:text-[#00f0ff] transition-colors">
-                {iconMap[m.type] || <Wallet className="w-8 h-8" />}
-              </div>
-              <span className="text-sm font-medium text-white/70 group-hover:text-white transition-colors">
-                {m.name}
-              </span>
+        <div className="mx-auto max-w-3xl glass rounded-2xl border border-[#00f0ff]/15 p-6 sm:p-8">
+          <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:text-left">
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl border border-[#00f0ff]/25 bg-[#00f0ff]/10 text-[#00f0ff] shadow-[0_0_40px_rgba(0,240,255,0.12)]">
+              <QrCode className="h-12 w-12" />
             </div>
-          ))}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                <h3 className="font-display text-2xl font-bold text-white">
+                  {qrisMethod?.name ?? "QRIS"}
+                </h3>
+                <span className="rounded-full border border-[#0aff00]/25 bg-[#0aff00]/10 px-3 py-1 text-xs font-medium text-[#0aff00]">
+                  Aktif
+                </span>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-white/55">
+                Scan kode QR saat checkout dan bayar dari aplikasi yang
+                mendukung QRIS. Status pembayaran akan diperbarui otomatis
+                setelah transaksi diterima.
+              </p>
+              <div className="mt-5 grid gap-3 text-xs text-white/50 sm:grid-cols-3">
+                <div className="rounded-xl bg-white/[0.03] px-4 py-3">
+                  <span className="block text-white/80">Metode</span>
+                  QRIS
+                </div>
+                <div className="rounded-xl bg-white/[0.03] px-4 py-3">
+                  <span className="block text-white/80">Biaya</span>
+                  {fee > 0 ? `${fee}%` : "Tanpa biaya"}
+                </div>
+                <div className="rounded-xl bg-white/[0.03] px-4 py-3">
+                  <span className="block text-white/80">Status</span>
+                  Otomatis
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
