@@ -5,6 +5,7 @@ import { getDb } from "../queries/connection";
 import { games, categories, products } from "@db/schema";
 import { env } from "../lib/env";
 import { publicProviderLabel, sanitizePublicText } from "../lib/publicText";
+import { gameAssetPath } from "../lib/gameAssets";
 import {
   isFlowixConfigured,
   listFlowixCatalog,
@@ -407,15 +408,19 @@ export async function syncFlowixCatalog() {
     const existing =
       existingGames.find((game) => matchKey(game.slug) === slugKey) ??
       existingGames.find((game) => matchKey(game.name) === nameKey);
+    const assetPath = gameAssetPath(group.slug, group.name);
 
     const gameData = {
       categoryId: category.id,
       name: group.name,
       slug: group.slug,
       description: `${productCategoryName(group.categorySlug)} ${group.name} tersedia instan.`,
+      coverImage: assetPath ?? existing?.coverImage ?? null,
+      cardImage: assetPath ?? existing?.cardImage ?? null,
+      bannerImage: assetPath ?? existing?.bannerImage ?? null,
       publisher: FLOWIX_PUBLISHER,
       platform: productPlatform(group.categorySlug),
-      isActive: true,
+      isActive: existing ? !existing.isManuallyHidden : true,
       isTrending: syncedGames.length < 8 || favoriteRank(group.slug) !== null,
       isPopular: syncedGames.length < 12 || favoriteRank(group.slug) !== null,
       ...targetInputMetadata(group.slug, group.categorySlug),
@@ -466,7 +471,7 @@ export async function syncFlowixCatalog() {
       discountPercent: 0,
       isPromo: false,
       stock: 999,
-      isActive: true,
+      isActive: existing ? !existing.isManuallyHidden : true,
       sortOrder: index + 1,
     };
 

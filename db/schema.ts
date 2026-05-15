@@ -64,6 +64,7 @@ export const games = pgTable("games", {
   serverIdPlaceholder: varchar("serverIdPlaceholder", { length: 100 }),
   sortOrder: integer("sortOrder").default(0),
   isActive: boolean("isActive").default(true).notNull(),
+  isManuallyHidden: boolean("isManuallyHidden").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
 });
@@ -81,6 +82,7 @@ export const products = pgTable("products", {
   stock: integer("stock").default(999),
   sortOrder: integer("sortOrder").default(0),
   isActive: boolean("isActive").default(true).notNull(),
+  isManuallyHidden: boolean("isManuallyHidden").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
 });

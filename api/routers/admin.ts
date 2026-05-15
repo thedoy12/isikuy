@@ -325,7 +325,7 @@ export const adminRouter = createRouter({
       const db = getDb();
       const limit = input?.limit || 50;
       const offset = input?.offset || 0;
-      const filters = [eq(games.publisher, "Flowix"), eq(games.isActive, true)];
+      const filters = [eq(games.publisher, "Flowix")];
       if (input?.search) {
         filters.push(ilike(games.name, `%${input.search}%`));
       }
@@ -345,6 +345,7 @@ export const adminRouter = createRouter({
           isPopular: games.isPopular,
           isNew: games.isNew,
           isActive: games.isActive,
+          isManuallyHidden: games.isManuallyHidden,
           hasServerId: games.hasServerId,
           sortOrder: games.sortOrder,
           categoryId: games.categoryId,
@@ -353,7 +354,7 @@ export const adminRouter = createRouter({
         .from(games)
         .leftJoin(categories, eq(games.categoryId, categories.id))
         .where(flowixFilter)
-        .orderBy(games.sortOrder, games.name);
+        .orderBy(desc(games.isActive), games.sortOrder, games.name);
 
       const seen = new Set<string>();
       const uniqueItems = items.filter((item) => {
@@ -390,7 +391,12 @@ export const adminRouter = createRouter({
     .mutation(async ({ input }) => {
       const db = getDb();
       const { id, ...updateData } = input;
-      await db.update(games).set(updateData).where(eq(games.id, id));
+      const values: typeof updateData & { isManuallyHidden?: boolean } = { ...updateData };
+      if (input.isActive !== undefined) {
+        values.isManuallyHidden = !input.isActive;
+      }
+
+      await db.update(games).set(values).where(eq(games.id, id));
       return { success: true };
     }),
 
@@ -410,7 +416,6 @@ export const adminRouter = createRouter({
       if (input?.gameId) filters.push(eq(products.gameId, input.gameId));
       filters.push(eq(games.publisher, "Flowix"));
       filters.push(eq(games.isActive, true));
-      filters.push(eq(products.isActive, true));
 
       const where = and(...filters);
 
@@ -426,6 +431,7 @@ export const adminRouter = createRouter({
           isPromo: products.isPromo,
           stock: products.stock,
           isActive: products.isActive,
+          isManuallyHidden: products.isManuallyHidden,
           sortOrder: products.sortOrder,
           gameId: products.gameId,
           gameName: games.name,
@@ -433,7 +439,7 @@ export const adminRouter = createRouter({
         .from(products)
         .leftJoin(games, eq(products.gameId, games.id))
         .where(where)
-        .orderBy(products.sortOrder)
+        .orderBy(desc(products.isActive), products.sortOrder)
         .limit(limit * 3)
         .offset(offset);
 
@@ -471,7 +477,10 @@ export const adminRouter = createRouter({
       if (data.discountPercent !== undefined) updateData.discountPercent = data.discountPercent;
       if (data.isPromo !== undefined) updateData.isPromo = data.isPromo;
       if (data.stock !== undefined) updateData.stock = data.stock;
-      if (data.isActive !== undefined) updateData.isActive = data.isActive;
+      if (data.isActive !== undefined) {
+        updateData.isActive = data.isActive;
+        updateData.isManuallyHidden = !data.isActive;
+      }
 
       await db.update(products).set(updateData).where(eq(products.id, id));
       return { success: true };
