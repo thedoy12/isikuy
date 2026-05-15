@@ -34,6 +34,7 @@ const ASSET_BY_SLUG: Record<string, string> = {
 const ASSET_ALIASES: Record<string, string> = {
   "arena-of-valor": "aov",
   "league-of-legends-wild-rift": "wild-rift",
+  "league-of-legends": "wild-rift",
   "mobile-legends-a": "mobile-legends",
   "mobile-legends-global": "mobile-legends",
   "mlbb": "mobile-legends",
@@ -51,6 +52,7 @@ const ASSET_ALIASES: Record<string, string> = {
   "dragon-raja-sea": "dragon-raja",
   "dynasty-warriors-overlords": "dynasty-warriors",
   "castle-duels-tower-defense": "castle-duels",
+  "bstation-premium": "bstation",
 };
 
 const CATEGORY_PREFIXES = ["game", "pulsa", "data", "ewallet", "voucher", "pln", "produk", "digital"];
