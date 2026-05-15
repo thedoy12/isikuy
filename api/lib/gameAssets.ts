@@ -46,6 +46,7 @@ const ASSET_ALIASES: Record<string, string> = {
   "fifa-mobile": "fc-mobile",
   "magic-chess-go-go": "magic-chess",
   "arena-breakout-infinite": "arena-breakout",
+  "age-of-empires-mobile": "age-of-empires",
   "astral-guardians-cyber-fantasy": "astral-guardians",
   "dragon-raja-sea": "dragon-raja",
   "dynasty-warriors-overlords": "dynasty-warriors",
