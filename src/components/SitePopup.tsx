@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { Gamepad2, X, Zap } from "lucide-react";
+import { X, Zap } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import BrandLogo from "@/components/BrandLogo";
 
 const DISMISS_KEY = "isikuy_popup_dismissed_until";
 
@@ -54,9 +55,7 @@ export default function SitePopup() {
         </button>
 
         <div className="relative">
-          <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-[#ff003c]/15 text-[#ff4967]">
-            <Gamepad2 className="h-6 w-6" />
-          </div>
+          <BrandLogo compact className="mb-5" imageClassName="h-14" />
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ff6a82]">
             ISIKUY ALERT
           </p>

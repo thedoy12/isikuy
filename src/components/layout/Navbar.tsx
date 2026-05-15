@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router";
+import BrandLogo from "@/components/BrandLogo";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Gamepad2,
   Search,
   User,
   LogOut,
@@ -44,22 +44,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#ff003c] to-[#b30029] flex items-center justify-center">
-                <Gamepad2 className="w-5 h-5 text-white" />
-              </div>
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-[#ff003c] to-[#b30029] blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-            </div>
-            <div>
-              <span className="font-display text-2xl font-bold tracking-wider text-white">
-                ISIKUY
-              </span>
-              <span className="hidden sm:inline font-display text-xs tracking-[0.3em] text-[#00f0ff] ml-2">
-                TOPUP
-              </span>
-            </div>
-          </Link>
+          <BrandLogo imageClassName="h-11" />
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">

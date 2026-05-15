@@ -3,13 +3,13 @@ import { Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
+import BrandLogo from "@/components/BrandLogo";
 import {
   Users,
   Gamepad2,
   Receipt,
   TrendingUp,
   Clock,
-  Shield,
   Activity,
   Zap,
   BarChart3,
@@ -89,17 +89,7 @@ function AdminSidebar({ active }: { active: string }) {
   return (
     <aside className="w-64 bg-[#0b0d14] border-r border-[#222] flex-shrink-0 hidden lg:flex flex-col">
       <div className="p-5 border-b border-[#222]">
-        <Link to="/" className="flex items-center gap-3">
-          <Shield className="w-5 h-5 text-[#ff003c]" />
-          <div>
-            <p className="font-terminal text-sm text-white tracking-wider">
-              ISIKUY_INTEL
-            </p>
-            <p className="text-[9px] text-[#00f0ff] tracking-wider">
-              OPERATOR_CONSOLE
-            </p>
-          </div>
-        </Link>
+        <BrandLogo consoleLabel imageClassName="h-10" />
       </div>
 
       <nav className="flex-1 p-3">

@@ -1,5 +1,6 @@
 import { Link } from "react-router";
-import { Gamepad2, ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowLeft, AlertCircle } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function NotFound() {
   return (
@@ -27,10 +28,7 @@ export default function NotFound() {
           Kembali ke Beranda
         </Link>
 
-        <div className="mt-8 flex items-center justify-center gap-2 text-white/10">
-          <Gamepad2 className="w-4 h-4" />
-          <span className="font-display text-sm tracking-wider">ISIKUY TOPUP</span>
-        </div>
+        <BrandLogo className="mt-8 justify-center opacity-20" imageClassName="h-8" />
       </div>
     </div>
   );

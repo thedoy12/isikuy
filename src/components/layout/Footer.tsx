@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
+import BrandLogo from "@/components/BrandLogo";
 import {
-  Gamepad2,
   Mail,
   Phone,
   MapPin,
@@ -63,19 +63,7 @@ export default function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-16">
             {/* Brand */}
             <div>
-              <Link to="/" className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#ff003c] to-[#b30029] flex items-center justify-center">
-                  <Gamepad2 className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <span className="font-display text-xl font-bold tracking-wider text-white">
-                    ISIKUY
-                  </span>
-                  <span className="font-display text-[10px] tracking-[0.3em] text-[#00f0ff] block">
-                    TOPUP
-                  </span>
-                </div>
-              </Link>
+              <BrandLogo className="mb-5" imageClassName="h-11" />
               <p className="text-sm text-white/50 leading-relaxed mb-5">
                 Platform top-up game terpercaya dengan proses cepat dan
                 harga terbaik. Melayani ribuan transaksi setiap harinya.

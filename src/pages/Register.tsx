@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
   CheckCircle2,
-  Gamepad2,
   Globe,
   Loader2,
   Shield,
@@ -10,6 +9,7 @@ import {
   Zap,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -58,19 +58,7 @@ export default function Register() {
 
       <div className="relative z-10 grid w-full max-w-5xl overflow-hidden rounded-2xl border border-[#ff4967]/20 bg-[#080407]/88 shadow-[0_30px_100px_rgba(0,0,0,0.55)] backdrop-blur-xl lg:grid-cols-[0.9fr_1.1fr]">
         <aside className="hidden min-h-full border-r border-white/10 bg-[#12060b]/70 p-8 lg:block">
-          <Link to="/" className="mb-10 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff003c] to-[#b30029]">
-              <Gamepad2 className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <span className="block font-display text-2xl font-bold tracking-wider text-white">
-                ISIKUY
-              </span>
-              <span className="font-display text-[10px] tracking-[0.3em] text-[#00f0ff]">
-                TOPUP
-              </span>
-            </div>
-          </Link>
+          <BrandLogo className="mb-10" imageClassName="h-14" />
 
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#ff6a82]">
             Player Account
@@ -103,14 +91,7 @@ export default function Register() {
 
         <section className="p-6 sm:p-8">
           <div className="mb-7 text-center lg:text-left">
-            <Link to="/" className="mb-6 inline-flex items-center gap-3 lg:hidden">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff003c] to-[#b30029]">
-                <Gamepad2 className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-display text-2xl font-bold tracking-wider text-white">
-                ISIKUY
-              </span>
-            </Link>
+            <BrandLogo className="mb-6 justify-center lg:hidden" imageClassName="h-12" />
             <h2 className="font-display text-3xl font-bold text-white">
               Buat Akun
             </h2>
@@ -215,4 +196,3 @@ export default function Register() {
     </div>
   );
 }
-

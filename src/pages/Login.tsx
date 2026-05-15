@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Gamepad2, Shield, Zap, Globe, Loader2 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -43,19 +44,7 @@ export default function Login() {
       <div className="relative z-10 w-full max-w-md mx-4">
         <div className="glass rounded-2xl p-8">
           <div className="text-center mb-8">
-            <Link to="/" className="inline-flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ff003c] to-[#b30029] flex items-center justify-center">
-                <Gamepad2 className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <span className="font-display text-2xl font-bold tracking-wider text-white block">
-                  ISIKUY
-                </span>
-                <span className="font-display text-[10px] tracking-[0.3em] text-[#00f0ff]">
-                  TOPUP
-                </span>
-              </div>
-            </Link>
+            <BrandLogo className="mb-6 justify-center" imageClassName="h-14" />
             <h2 className="font-display text-xl font-semibold text-white mb-1">
               Masuk ke ISIKUY
             </h2>
