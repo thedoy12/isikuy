@@ -28,8 +28,8 @@ const productFilters: Array<{
 }> = [
   { value: "game", label: "Game", icon: Gamepad2, slugs: ["game", "games", "game-online", "top-up-game", "topup-game", "voucher-game"] },
   { value: "pulsa", label: "Pulsa", icon: Smartphone, slugs: ["pulsa", "pulsa-reguler", "pulsa-transfer"] },
-  { value: "ewallet", label: "E-Wallet", icon: Wallet, slugs: ["ewallet", "e-wallet", "e-walet", "e-money", "dompet-digital"] },
-  { value: "digital", label: "Digital", icon: Boxes, slugs: ["data", "paket-data", "data-internet", "internet", "voucher", "pln", "token-pln", "listrik", "produk"] },
+  { value: "ewallet", label: "E-Wallet", icon: Wallet, slugs: ["ewallet", "e-wallet", "e-walet", "e-money", "emoney", "dompet-digital"] },
+  { value: "digital", label: "Digital", icon: Boxes, slugs: ["data", "paket-data", "data-internet", "internet", "voucher", "premium", "pln", "token-pln", "listrik", "tagihan", "produk"] },
 ];
 
 export default function Games() {

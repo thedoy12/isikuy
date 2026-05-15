@@ -23,8 +23,20 @@ const FLOWIX_ONLY_GAME_FILTER = eq(games.publisher, FLOWIX_PUBLISHER);
 const categoryGroupSlugs: Record<string, string[]> = {
   game: ["game", "games", "game-online", "top-up-game", "topup-game", "voucher-game"],
   pulsa: ["pulsa", "pulsa-reguler", "pulsa-transfer"],
-  ewallet: ["ewallet", "e-wallet", "e-walet", "e-money", "dompet-digital"],
-  digital: ["data", "paket-data", "data-internet", "internet", "voucher", "pln", "token-pln", "listrik", "produk"],
+  ewallet: ["ewallet", "e-wallet", "e-walet", "e-money", "emoney", "dompet-digital"],
+  digital: [
+    "data",
+    "paket-data",
+    "data-internet",
+    "internet",
+    "voucher",
+    "premium",
+    "pln",
+    "token-pln",
+    "listrik",
+    "tagihan",
+    "produk",
+  ],
 };
 
 const favoriteGameOrder = [
@@ -79,6 +91,13 @@ function cleanFlowixName(value: string) {
 function productCategorySlug(product: FlowixProduct) {
   const slug = slugify(product.sourceCategory || product.category || "produk");
   if (knownGameName(product)) return "game";
+  const text = `${product.brand || ""} ${product.name || ""} ${product.code || ""}`;
+  if (/\b(dana|gopay|go\s*pay|ovo|shopee\s*pay|grab)\b/i.test(text)) return "ewallet";
+  if (/\b(pln|token\s*pln|listrik)\b/i.test(text)) return "pln";
+  if (/\b(amazon\s*prime|bstation|alight\s*motion|razer\s*gold|steam\s*wallet|voucher|premium)\b/i.test(text)) {
+    return "premium";
+  }
+
   const aliases: Record<string, string> = {
     games: "game",
     "game-online": "game",
@@ -88,7 +107,9 @@ function productCategorySlug(product: FlowixProduct) {
     "e-wallet": "ewallet",
     "e-walet": "ewallet",
     "e-money": "ewallet",
+    emoney: "ewallet",
     "dompet-digital": "ewallet",
+    "akun-premium": "premium",
     "paket-data": "data",
     "data-internet": "data",
     "internet": "data",
@@ -190,8 +211,11 @@ function productCategoryName(slug: string) {
     pulsa: "Pulsa",
     data: "Paket Data",
     ewallet: "E-Wallet",
+    emoney: "E-Wallet",
     voucher: "Voucher",
+    premium: "Akun Premium",
     pln: "PLN",
+    tagihan: "Tagihan",
     produk: "Lainnya",
   };
   return labels[slug] ?? titleCase(slug.replace(/-/g, " "));
