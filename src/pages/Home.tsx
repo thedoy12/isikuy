@@ -30,28 +30,36 @@ function HeroSection() {
   const { data: banners } = trpc.banner.list.useQuery({ position: "hero" });
   const heroBanner = banners?.[0];
   const featuredProducts = [
-    { name: "Mobile Legends", image: "/aset/mobile-legends.png", tag: "Game" },
-    { name: "Free Fire", image: "/aset/free-fire.png", tag: "Game" },
-    { name: "Go Pay", image: "/aset/go-pay.jpg", tag: "E-Wallet" },
-    { name: "Telkomsel", image: "/aset/telkomsel.jpg", tag: "Pulsa" },
+    { name: "Mobile Legends", image: "/games/mobile-legends.jpg", tag: "Hot" },
+    { name: "Free Fire", image: "/games/free-fire.jpg", tag: "Fast" },
+    { name: "Valorant", image: "/games/valorant.jpg", tag: "New" },
+    { name: "PUBG Mobile", image: "/games/pubg-mobile.jpg", tag: "Top" },
   ];
 
   return (
-    <section className="relative min-h-[100dvh] overflow-hidden">
+    <section className="relative min-h-[100dvh] overflow-hidden bg-[#050307]">
       {/* Animated Background */}
-      <div className="absolute inset-0 bg-[#030305]">
+      <div className="absolute inset-0 bg-[#050307]">
         {/* Grid Pattern */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.08]"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,0,60,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,0,60,0.3) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
+              "linear-gradient(rgba(255,45,77,0.32) 1px, transparent 1px), linear-gradient(90deg, rgba(255,45,77,0.24) 1px, transparent 1px)",
+            backgroundSize: "64px 64px",
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.12]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(135deg, transparent 0 32px, rgba(255,0,60,0.22) 33px, transparent 34px)",
           }}
         />
         {/* Radial Glow */}
-        <div className="absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(circle_at_30%_20%,rgba(255,0,60,0.16),transparent_34%),radial-gradient(circle_at_76%_24%,rgba(0,240,255,0.12),transparent_28%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#030305] to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-[620px] bg-[radial-gradient(circle_at_22%_18%,rgba(255,0,60,0.34),transparent_34%),radial-gradient(circle_at_80%_20%,rgba(255,45,77,0.22),transparent_30%),radial-gradient(circle_at_68%_58%,rgba(0,240,255,0.1),transparent_24%)]" />
+        <div className="absolute left-0 top-0 h-full w-[52%] bg-[linear-gradient(100deg,rgba(76,0,18,0.74),rgba(5,3,7,0.36)_58%,transparent)]" />
+        <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-[#050307] to-transparent" />
       </div>
 
       {/* Floating particles */}
@@ -65,11 +73,11 @@ function HeroSection() {
         ))}
       </div>
 
-      <div className="absolute inset-0 z-[2] bg-[linear-gradient(110deg,rgba(3,3,5,0.52)_0%,rgba(3,3,5,0.2)_48%,rgba(3,3,5,0.6)_100%)]" />
+      <div className="absolute inset-0 z-[2] bg-[linear-gradient(110deg,rgba(5,3,7,0.2)_0%,rgba(5,3,7,0.08)_42%,rgba(5,3,7,0.54)_100%)]" />
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 lg:pt-32">
-        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(420px,1.08fr)]">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)]">
           <div className="text-center lg:text-left">
             <img
               src="/games/maskot-isikuy.png"
@@ -103,8 +111,8 @@ function HeroSection() {
                 { icon: Clock, title: "Proses Cepat", desc: "Tanpa antri" },
                 { icon: Headphones, title: "Bantuan Siaga", desc: "Admin online" },
               ].map((item) => (
-                <div key={item.title} className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-left">
-                  <item.icon className="h-4 w-4 shrink-0 text-[#00f0ff]" />
+                <div key={item.title} className="flex items-center gap-3 rounded-lg border border-[#ff003c]/20 bg-[#13060b]/70 px-4 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                  <item.icon className="h-4 w-4 shrink-0 text-[#ff4967]" />
                   <div>
                     <p className="text-xs font-semibold text-white">{item.title}</p>
                     <p className="text-[11px] text-white/40">{item.desc}</p>
@@ -117,7 +125,7 @@ function HeroSection() {
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
               <Link
                 to="/games"
-                className="group flex items-center gap-3 bg-gradient-to-r from-[#ff003c] to-[#b30029] text-white px-8 py-4 rounded-xl text-base font-semibold hover:shadow-lg hover:shadow-[#ff003c]/25 transition-all"
+                className="group flex items-center gap-3 rounded-lg bg-gradient-to-r from-[#ff003c] via-[#ff3158] to-[#a60027] px-8 py-4 text-base font-semibold text-white shadow-[0_18px_45px_rgba(255,0,60,0.28)] transition-all hover:-translate-y-0.5 hover:shadow-[#ff003c]/35"
               >
                 <Gamepad2 className="w-5 h-5" />
                 Mulai Top Up
@@ -125,7 +133,7 @@ function HeroSection() {
               </Link>
               <Link
                 to="/games?trending=true"
-                className="flex items-center gap-3 glass text-white px-8 py-4 rounded-xl text-base font-semibold hover:bg-white/10 transition-all"
+                className="flex items-center gap-3 rounded-lg border border-[#ff003c]/25 bg-[#13060b]/70 px-8 py-4 text-base font-semibold text-white transition-all hover:border-[#ff4967]/50 hover:bg-[#240910]"
               >
                 <TrendingUp className="w-5 h-5" />
                 Lihat Trending
@@ -139,7 +147,7 @@ function HeroSection() {
                 { value: "4", label: "Kategori" },
                 { value: "24/7", label: "Checkout" },
               ].map((s) => (
-                <div key={s.label} className="rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-3 text-center lg:text-left">
+                <div key={s.label} className="rounded-lg border border-[#ff003c]/18 bg-[#090508]/80 px-4 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] lg:text-left">
                   <p className="font-display text-2xl sm:text-3xl font-bold text-white">
                     {s.value}
                   </p>
@@ -149,52 +157,63 @@ function HeroSection() {
             </div>
           </div>
 
-          <div className="relative hidden min-h-[580px] lg:block">
-            <div className="absolute inset-x-2 top-4 h-[520px] rounded-[2rem] border border-white/10 bg-[#0b0d14]/70 shadow-2xl shadow-black/40 backdrop-blur-xl" />
-            <div className="absolute left-8 right-8 top-10 flex items-center justify-between rounded-2xl border border-white/[0.08] bg-black/30 px-4 py-3">
+          <div className="relative hidden min-h-[610px] lg:block">
+            <div className="absolute inset-x-2 top-2 h-[560px] overflow-hidden rounded-[1.35rem] border border-[#ff4967]/20 bg-[#080407]/88 shadow-[0_30px_90px_rgba(0,0,0,0.58),0_0_70px_rgba(255,0,60,0.14)] backdrop-blur-xl">
+              <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_22%_8%,rgba(255,0,60,0.32),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(0,240,255,0.12),transparent_24%)]" />
+              <div
+                className="absolute inset-0 opacity-[0.14]"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(rgba(255,55,86,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,55,86,0.42) 1px, transparent 1px)",
+                  backgroundSize: "42px 42px",
+                }}
+              />
+            </div>
+            <div className="absolute left-8 right-8 top-8 flex items-center justify-between rounded-xl border border-[#ff4967]/18 bg-black/45 px-4 py-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-[#00f0ff]">Live Catalog</p>
+                <p className="text-[10px] uppercase tracking-wider text-[#ff4967]">Live Catalog</p>
                 <p className="font-display text-xl font-bold text-white">Pilih produk favorit</p>
               </div>
-              <span className="rounded-full bg-[#0aff00]/10 px-3 py-1 text-xs font-semibold text-[#0aff00]">
+              <span className="rounded-full border border-[#0aff00]/20 bg-[#0aff00]/10 px-3 py-1 text-xs font-semibold text-[#0aff00]">
                 Online
               </span>
             </div>
 
-            <div className="absolute left-8 right-8 top-32 grid grid-cols-2 gap-3">
+            <div className="absolute left-8 right-8 top-28 grid grid-cols-4 gap-3">
               {featuredProducts.map((product) => (
                 <Link
                   key={product.name}
                   to="/games"
-                  className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035]"
+                  className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-[#ff4967]/25 bg-[#12060b] shadow-[0_12px_40px_rgba(0,0,0,0.34)]"
                 >
                   <img
                     src={product.image}
                     alt={product.name}
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/18 to-transparent" />
+                  <div className="absolute inset-0 opacity-0 ring-1 ring-inset ring-[#ff4967]/60 transition-opacity group-hover:opacity-100" />
                   <div className="absolute left-3 right-3 top-3 flex justify-end">
-                    <span className="rounded-md bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase text-white/70">
+                    <span className="rounded bg-[#ff003c]/20 px-2 py-1 text-[10px] font-semibold uppercase text-white/80">
                       {product.tag}
                     </span>
                   </div>
-                  <p className="absolute bottom-3 left-3 right-3 font-display text-base font-semibold leading-tight text-white">
+                  <p className="absolute bottom-3 left-3 right-3 font-display text-sm font-semibold leading-tight text-white">
                     {product.name}
                   </p>
                 </Link>
               ))}
             </div>
 
-            <div className="absolute bottom-4 left-8 right-8 rounded-2xl border border-[#00f0ff]/15 bg-[#00f0ff]/10 p-4">
-              <div className="flex items-center gap-4">
+            <div className="absolute bottom-10 left-8 right-8 rounded-xl border border-[#ff4967]/22 bg-[#12060b]/90 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <div className="flex items-center gap-5">
                 <img
                   src="/games/maskot-isikuy.png"
                   alt="Maskot ISIKUY"
-                  className="h-24 w-24 shrink-0 object-contain drop-shadow-[0_18px_36px_rgba(0,240,255,0.2)]"
+                  className="h-28 w-28 shrink-0 object-contain drop-shadow-[0_18px_36px_rgba(255,0,60,0.28)]"
                 />
                 <div>
-                  <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-black/25 px-3 py-1 text-[10px] font-semibold uppercase text-[#00f0ff]">
+                  <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#ff003c]/12 px-3 py-1 text-[10px] font-semibold uppercase text-[#ff6a82]">
                     <Sparkles className="h-3 w-3" />
                     Maskot ISIKUY
                   </div>
