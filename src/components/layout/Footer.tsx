@@ -13,6 +13,10 @@ import {
   Headphones,
 } from "lucide-react";
 
+const WHATSAPP_NUMBER = "62895393061538";
+const DISPLAY_PHONE = "0895393061538";
+const SUPPORT_EMAIL = "putradadoy@gmail.com";
+
 export default function Footer() {
   return (
     <footer className="relative overflow-hidden">
@@ -69,20 +73,23 @@ export default function Footer() {
               </p>
               <div className="flex items-center gap-3">
                 <a
-                  href="#"
+                  href="https://www.instagram.com/"
                   className="w-9 h-9 rounded-lg glass flex items-center justify-center hover:bg-[#ff003c]/20 transition-colors"
+                  aria-label="Instagram ISIKUY"
                 >
                   <Instagram className="w-4 h-4 text-white/60" />
                 </a>
                 <a
-                  href="#"
+                  href={`https://wa.me/${WHATSAPP_NUMBER}`}
                   className="w-9 h-9 rounded-lg glass flex items-center justify-center hover:bg-[#ff003c]/20 transition-colors"
+                  aria-label="WhatsApp ISIKUY"
                 >
                   <MessageCircle className="w-4 h-4 text-white/60" />
                 </a>
                 <a
-                  href="#"
+                  href="/kontak"
                   className="w-9 h-9 rounded-lg glass flex items-center justify-center hover:bg-[#ff003c]/20 transition-colors"
+                  aria-label="Kontak ISIKUY"
                 >
                   <Globe className="w-4 h-4 text-white/60" />
                 </a>
@@ -100,6 +107,9 @@ export default function Footer() {
                   { label: "Daftar Game", href: "/games" },
                   { label: "Trending", href: "/games?trending=true" },
                   { label: "Cek Status", href: "/history" },
+                  { label: "Tentang ISIKUY", href: "/tentang" },
+                  { label: "Bantuan", href: "/bantuan" },
+                  { label: "Kontak", href: "/kontak" },
                 ].map((link) => (
                   <Link
                     key={link.label}
@@ -144,15 +154,21 @@ export default function Footer() {
               <div className="flex flex-col gap-4">
                 <div className="flex items-start gap-3">
                   <Mail className="w-4 h-4 text-[#ff003c] mt-1 flex-shrink-0" />
-                  <span className="text-sm text-white/50">
-                    support@isikuy.id
-                  </span>
+                  <a
+                    href={`mailto:${SUPPORT_EMAIL}`}
+                    className="text-sm text-white/50 hover:text-[#00f0ff] transition-colors"
+                  >
+                    {SUPPORT_EMAIL}
+                  </a>
                 </div>
                 <div className="flex items-start gap-3">
                   <Phone className="w-4 h-4 text-[#ff003c] mt-1 flex-shrink-0" />
-                  <span className="text-sm text-white/50">
-                    +62 812-3456-7890
-                  </span>
+                  <a
+                    href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                    className="text-sm text-white/50 hover:text-[#00f0ff] transition-colors"
+                  >
+                    {DISPLAY_PHONE}
+                  </a>
                 </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="w-4 h-4 text-[#ff003c] mt-1 flex-shrink-0" />
@@ -167,18 +183,27 @@ export default function Footer() {
           {/* Bottom Bar */}
           <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-white/30">
-              &copy; 2025 ISIKUY TOPUP. All rights reserved.
+              &copy; 2026 ISIKUY TOPUP. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
-              <span className="text-xs text-white/30 hover:text-white/50 cursor-pointer transition-colors">
+              <Link
+                to="/privacy"
+                className="text-xs text-white/30 hover:text-white/50 transition-colors"
+              >
                 Privacy Policy
-              </span>
-              <span className="text-xs text-white/30 hover:text-white/50 cursor-pointer transition-colors">
+              </Link>
+              <Link
+                to="/terms"
+                className="text-xs text-white/30 hover:text-white/50 transition-colors"
+              >
                 Terms of Service
-              </span>
-              <span className="text-xs text-white/30 hover:text-white/50 cursor-pointer transition-colors">
+              </Link>
+              <Link
+                to="/refund"
+                className="text-xs text-white/30 hover:text-white/50 transition-colors"
+              >
                 Refund Policy
-              </span>
+              </Link>
             </div>
           </div>
         </div>

@@ -80,7 +80,7 @@ function HeroSection() {
       <div className="absolute inset-0 z-[2] bg-[linear-gradient(110deg,rgba(5,3,7,0.2)_0%,rgba(5,3,7,0.08)_42%,rgba(5,3,7,0.54)_100%)]" />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 lg:pt-32">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 lg:pt-28">
         <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)]">
           <div className="text-center lg:text-left">
             {/* Badge */}
@@ -156,8 +156,8 @@ function HeroSection() {
             </div>
           </div>
 
-          <div className="relative hidden min-h-[610px] lg:block">
-            <div className="absolute inset-x-2 top-2 h-[560px] overflow-hidden rounded-[1.35rem] border border-[#ff4967]/20 bg-[#080407]/88 shadow-[0_30px_90px_rgba(0,0,0,0.58),0_0_70px_rgba(255,0,60,0.14)] backdrop-blur-xl">
+          <div className="relative hidden min-h-[560px] lg:block">
+            <div className="absolute inset-x-2 -top-3 h-[530px] overflow-hidden rounded-[1.35rem] border border-[#ff4967]/20 bg-[#080407]/88 shadow-[0_30px_90px_rgba(0,0,0,0.58),0_0_70px_rgba(255,0,60,0.14)] backdrop-blur-xl">
               <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_22%_8%,rgba(255,0,60,0.32),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(0,240,255,0.12),transparent_24%)]" />
               <img
                 src="/games/valorant.jpg"
@@ -176,7 +176,7 @@ function HeroSection() {
               <div className="absolute -right-16 top-28 h-64 w-64 rotate-45 border border-[#ff003c]/20" />
               <div className="absolute -right-8 top-36 h-44 w-44 rotate-45 border border-[#00f0ff]/10" />
             </div>
-            <div className="absolute left-8 right-8 top-8 flex items-center justify-between rounded-xl border border-[#ff4967]/18 bg-black/45 px-4 py-3">
+            <div className="absolute left-8 right-8 top-3 flex items-center justify-between rounded-xl border border-[#ff4967]/18 bg-black/45 px-4 py-3">
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-[#ff4967]">Live Catalog</p>
                 <p className="font-display text-xl font-bold text-white">Pilih produk favorit</p>
@@ -186,7 +186,7 @@ function HeroSection() {
               </span>
             </div>
 
-            <div className="absolute left-8 right-8 top-28 grid h-[300px] grid-cols-[1.18fr_0.82fr] grid-rows-2 gap-4">
+            <div className="absolute left-8 right-8 top-24 grid h-[270px] grid-cols-[1.18fr_0.82fr] grid-rows-2 gap-4">
               {featuredProducts.map((product) => (
                 <Link
                   key={product.name}
@@ -219,18 +219,18 @@ function HeroSection() {
               ))}
             </div>
 
-            <div className="absolute bottom-9 left-8 right-8 overflow-hidden rounded-xl border border-[#ff4967]/22 bg-[#0d0509]/92 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <div className="absolute bottom-10 left-8 right-8 overflow-hidden rounded-xl border border-[#ff4967]/22 bg-[#0d0509]/92 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
               <div className="absolute inset-y-0 right-0 w-1/2 bg-[linear-gradient(135deg,transparent_0%,rgba(255,0,60,0.18)_48%,transparent_49%)]" />
               <div className="relative flex items-center justify-between gap-5">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.22em] text-[#ff6a82]">
                     Battle-ready checkout
                   </p>
-                  <p className="mt-2 font-display text-2xl font-bold leading-none text-white">
+                  <p className="mt-2 max-w-sm font-display text-xl font-bold leading-tight text-white">
                     Top up cepat, katalog rapi, pembayaran otomatis.
                   </p>
                 </div>
-                <div className="grid w-[310px] shrink-0 grid-cols-3 gap-2">
+                <div className="grid w-[300px] shrink-0 grid-cols-3 gap-2">
                   {[
                     { icon: Gamepad2, label: "60+ Game" },
                     { icon: QrCode, label: "QRIS" },
@@ -238,7 +238,7 @@ function HeroSection() {
                   ].map((item) => (
                     <div
                       key={item.label}
-                      className="rounded-lg border border-white/10 bg-black/32 px-3 py-3 text-center"
+                      className="rounded-lg border border-white/10 bg-black/30 px-3 py-3 text-center"
                     >
                       <item.icon className="mx-auto mb-2 h-4 w-4 text-[#ff4967]" />
                       <p className="text-[11px] font-semibold text-white/75">

@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Games from './pages/Games'
 import GameDetail from './pages/GameDetail'
 import History from './pages/History'
+import InfoPage from './pages/InfoPage'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminGames from './pages/admin/Games'
 import AdminTransactions from './pages/admin/Transactions'
@@ -19,6 +20,12 @@ export default function App() {
       <Route path="/games" element={<Games />} />
       <Route path="/games/:slug" element={<GameDetail />} />
       <Route path="/history" element={<History />} />
+      <Route path="/tentang" element={<InfoPage />} />
+      <Route path="/kontak" element={<InfoPage />} />
+      <Route path="/bantuan" element={<InfoPage />} />
+      <Route path="/privacy" element={<InfoPage />} />
+      <Route path="/terms" element={<InfoPage />} />
+      <Route path="/refund" element={<InfoPage />} />
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/admin/games" element={<AdminGames />} />
       <Route path="/admin/transactions" element={<AdminTransactions />} />
