@@ -8,6 +8,7 @@ import { bannerRouter } from "./routers/banner";
 import { faqRouter } from "./routers/faq";
 import { adminRouter } from "./routers/admin";
 import { seedRouter } from "./routers/seed";
+import { siteRouter } from "./routers/site";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now() })),
@@ -20,6 +21,7 @@ export const appRouter = createRouter({
   faq: faqRouter,
   admin: adminRouter,
   seed: seedRouter,
+  site: siteRouter,
 });
 
 export type AppRouter = typeof appRouter;

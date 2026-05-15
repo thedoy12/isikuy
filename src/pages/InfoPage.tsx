@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { trpc } from "@/providers/trpc";
 
 const WHATSAPP_NUMBER = "62895393061538";
 const DISPLAY_PHONE = "0895393061538";
@@ -155,16 +156,22 @@ export default function InfoPage() {
   const location = useLocation();
   const slug = location.pathname.replace(/^\//, "") || "bantuan";
   const page = pages[slug] ?? fallback;
+  const { data: settings } = trpc.site.publicSettings.useQuery(undefined, {
+    staleTime: 60_000,
+  });
+  const whatsappNumber = settings?.whatsappNumber || WHATSAPP_NUMBER;
+  const displayPhone = settings?.contactPhone || DISPLAY_PHONE;
+  const supportEmail = settings?.contactEmail || SUPPORT_EMAIL;
 
   useEffect(() => {
-    document.title = `${page.eyebrow} | ISIKUY TOPUP`;
+    document.title = `${page.eyebrow} | ${settings?.siteName || "ISIKUY TOPUP"}`;
     const description = document.querySelector<HTMLMetaElement>(
       'meta[name="description"]',
     );
     if (description) {
       description.content = page.description;
     }
-  }, [page]);
+  }, [page, settings?.siteName]);
 
   return (
     <div className="min-h-[100dvh] bg-[#050307]">
@@ -229,18 +236,18 @@ export default function InfoPage() {
 
               <div className="mt-5 grid gap-3">
                 <a
-                  href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                  href={`https://wa.me/${whatsappNumber}`}
                   className="flex items-center gap-3 rounded-lg border border-[#0aff00]/20 bg-[#0aff00]/10 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#0aff00]/15"
                 >
                   <MessageCircle className="h-4 w-4 text-[#0aff00]" />
-                  WhatsApp {DISPLAY_PHONE}
+                  WhatsApp {displayPhone}
                 </a>
                 <a
-                  href={`mailto:${SUPPORT_EMAIL}`}
+                  href={`mailto:${supportEmail}`}
                   className="flex items-center gap-3 rounded-lg border border-[#00f0ff]/20 bg-[#00f0ff]/10 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#00f0ff]/15"
                 >
                   <Mail className="h-4 w-4 text-[#00f0ff]" />
-                  {SUPPORT_EMAIL}
+                  {supportEmail}
                 </a>
               </div>
 

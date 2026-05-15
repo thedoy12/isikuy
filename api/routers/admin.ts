@@ -12,6 +12,7 @@ import {
   faqs,
   categories,
   activityLogs,
+  siteSettings,
 } from "@db/schema";
 import { syncFlowixCatalog } from "./game";
 import {
@@ -19,6 +20,7 @@ import {
   setAdminPassword,
   verifyAdminPassword,
 } from "../lib/adminCredentials";
+import { getPublicSiteSettings } from "./site";
 
 function adminMatchKey(value: string | null | undefined) {
   return (value || "")
@@ -69,6 +71,62 @@ export const adminRouter = createRouter({
       }
 
       await setAdminPassword(input.newPassword);
+      return { success: true };
+    }),
+
+  siteSettings: adminQuery.query(async () => getPublicSiteSettings()),
+
+  updateSiteSettings: adminQuery
+    .input(
+      z.object({
+        siteName: z.string().min(1).max(100),
+        siteTagline: z.string().max(160),
+        metaTitle: z.string().min(1).max(160),
+        metaDescription: z.string().min(1).max(320),
+        metaKeywords: z.string().max(500),
+        canonicalUrl: z.string().max(500),
+        ogImage: z.string().max(500),
+        contactEmail: z.string().email(),
+        contactPhone: z.string().min(5).max(30),
+        whatsappNumber: z.string().min(5).max(30),
+        instagramUrl: z.string().max(500),
+        robotsIndex: z.boolean(),
+        robotsFollow: z.boolean(),
+        popupEnabled: z.boolean(),
+        popupTitle: z.string().max(80),
+        popupMessage: z.string().max(240),
+        popupButtonText: z.string().max(40),
+        popupButtonUrl: z.string().max(500),
+        popupDismissHours: z.number().min(1).max(720),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const entries = Object.entries(input).map(([key, value]) => ({
+        key,
+        value: String(value),
+        type:
+          typeof value === "boolean"
+            ? ("boolean" as const)
+            : typeof value === "number"
+              ? ("number" as const)
+              : ("string" as const),
+      }));
+
+      for (const entry of entries) {
+        await db
+          .insert(siteSettings)
+          .values(entry)
+          .onConflictDoUpdate({
+            target: siteSettings.key,
+            set: {
+              value: entry.value,
+              type: entry.type,
+              updatedAt: new Date(),
+            },
+          });
+      }
+
       return { success: true };
     }),
 

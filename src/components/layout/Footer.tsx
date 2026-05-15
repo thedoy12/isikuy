@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { trpc } from "@/providers/trpc";
 import {
   Gamepad2,
   Mail,
@@ -18,6 +19,14 @@ const DISPLAY_PHONE = "0895393061538";
 const SUPPORT_EMAIL = "putradadoy@gmail.com";
 
 export default function Footer() {
+  const { data: settings } = trpc.site.publicSettings.useQuery(undefined, {
+    staleTime: 60_000,
+  });
+  const whatsappNumber = settings?.whatsappNumber || WHATSAPP_NUMBER;
+  const displayPhone = settings?.contactPhone || DISPLAY_PHONE;
+  const supportEmail = settings?.contactEmail || SUPPORT_EMAIL;
+  const instagramUrl = settings?.instagramUrl || "https://www.instagram.com/";
+
   return (
     <footer className="relative overflow-hidden">
       {/* Top Divider */}
@@ -73,14 +82,14 @@ export default function Footer() {
               </p>
               <div className="flex items-center gap-3">
                 <a
-                  href="https://www.instagram.com/"
+                  href={instagramUrl}
                   className="w-9 h-9 rounded-lg glass flex items-center justify-center hover:bg-[#ff003c]/20 transition-colors"
                   aria-label="Instagram ISIKUY"
                 >
                   <Instagram className="w-4 h-4 text-white/60" />
                 </a>
                 <a
-                  href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                  href={`https://wa.me/${whatsappNumber}`}
                   className="w-9 h-9 rounded-lg glass flex items-center justify-center hover:bg-[#ff003c]/20 transition-colors"
                   aria-label="WhatsApp ISIKUY"
                 >
@@ -155,19 +164,19 @@ export default function Footer() {
                 <div className="flex items-start gap-3">
                   <Mail className="w-4 h-4 text-[#ff003c] mt-1 flex-shrink-0" />
                   <a
-                    href={`mailto:${SUPPORT_EMAIL}`}
+                    href={`mailto:${supportEmail}`}
                     className="text-sm text-white/50 hover:text-[#00f0ff] transition-colors"
                   >
-                    {SUPPORT_EMAIL}
+                    {supportEmail}
                   </a>
                 </div>
                 <div className="flex items-start gap-3">
                   <Phone className="w-4 h-4 text-[#ff003c] mt-1 flex-shrink-0" />
                   <a
-                    href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                    href={`https://wa.me/${whatsappNumber}`}
                     className="text-sm text-white/50 hover:text-[#00f0ff] transition-colors"
                   >
-                    {DISPLAY_PHONE}
+                    {displayPhone}
                   </a>
                 </div>
                 <div className="flex items-start gap-3">

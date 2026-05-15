@@ -11,27 +11,33 @@ import AdminTransactions from './pages/admin/Transactions'
 import AdminUsers from './pages/admin/Users'
 import AdminSettings from './pages/admin/Settings'
 import NotFound from './pages/NotFound'
+import SiteMeta from './components/SiteMeta'
+import SitePopup from './components/SitePopup'
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/games" element={<Games />} />
-      <Route path="/games/:slug" element={<GameDetail />} />
-      <Route path="/history" element={<History />} />
-      <Route path="/tentang" element={<InfoPage />} />
-      <Route path="/kontak" element={<InfoPage />} />
-      <Route path="/bantuan" element={<InfoPage />} />
-      <Route path="/privacy" element={<InfoPage />} />
-      <Route path="/terms" element={<InfoPage />} />
-      <Route path="/refund" element={<InfoPage />} />
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/admin/games" element={<AdminGames />} />
-      <Route path="/admin/transactions" element={<AdminTransactions />} />
-      <Route path="/admin/users" element={<AdminUsers />} />
-      <Route path="/admin/settings" element={<AdminSettings />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      <SiteMeta />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/games" element={<Games />} />
+        <Route path="/games/:slug" element={<GameDetail />} />
+        <Route path="/history" element={<History />} />
+        <Route path="/tentang" element={<InfoPage />} />
+        <Route path="/kontak" element={<InfoPage />} />
+        <Route path="/bantuan" element={<InfoPage />} />
+        <Route path="/privacy" element={<InfoPage />} />
+        <Route path="/terms" element={<InfoPage />} />
+        <Route path="/refund" element={<InfoPage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/games" element={<AdminGames />} />
+        <Route path="/admin/transactions" element={<AdminTransactions />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/settings" element={<AdminSettings />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <SitePopup />
+    </>
   )
 }
