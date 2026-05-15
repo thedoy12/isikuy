@@ -29,9 +29,15 @@ const HERO_PARTICLES = Array.from({ length: 20 }, (_, i) => ({
 function HeroSection() {
   const { data: banners } = trpc.banner.list.useQuery({ position: "hero" });
   const heroBanner = banners?.[0];
+  const featuredProducts = [
+    { name: "Mobile Legends", image: "/aset/mobile-legends.png", tag: "Game" },
+    { name: "Free Fire", image: "/aset/free-fire.png", tag: "Game" },
+    { name: "Go Pay", image: "/aset/go-pay.jpg", tag: "E-Wallet" },
+    { name: "Telkomsel", image: "/aset/telkomsel.jpg", tag: "Pulsa" },
+  ];
 
   return (
-    <section className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-[100dvh] overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0 bg-[#030305]">
         {/* Grid Pattern */}
@@ -44,8 +50,8 @@ function HeroSection() {
           }}
         />
         {/* Radial Glow */}
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#ff003c]/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-[#00f0ff]/3 rounded-full blur-[150px]" />
+        <div className="absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(circle_at_30%_20%,rgba(255,0,60,0.16),transparent_34%),radial-gradient(circle_at_76%_24%,rgba(0,240,255,0.12),transparent_28%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#030305] to-transparent" />
       </div>
 
       {/* Floating particles */}
@@ -59,11 +65,11 @@ function HeroSection() {
         ))}
       </div>
 
-      <div className="absolute inset-0 z-[2] bg-[radial-gradient(circle_at_72%_54%,rgba(0,240,255,0.08)_0%,rgba(3,3,5,0.12)_28%,rgba(3,3,5,0.72)_76%)]" />
+      <div className="absolute inset-0 z-[2] bg-[linear-gradient(110deg,rgba(3,3,5,0.52)_0%,rgba(3,3,5,0.2)_48%,rgba(3,3,5,0.6)_100%)]" />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16">
-        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_430px] xl:grid-cols-[minmax(0,1fr)_500px]">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 lg:pt-32">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(420px,1.08fr)]">
           <div className="text-center lg:text-left">
             <img
               src="/games/maskot-isikuy.png"
@@ -71,7 +77,7 @@ function HeroSection() {
             />
 
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#ff003c]/20 bg-[#ff003c]/10 px-4 py-2 mb-6">
               <Sparkles className="w-4 h-4 text-[#ff003c]" />
               <span className="text-xs font-medium text-[#e1f5fe]">
                 {heroBanner?.subtitle || "Platform Top-Up Game #1 Indonesia"}
@@ -79,17 +85,33 @@ function HeroSection() {
             </div>
 
             {/* Main Title */}
-            <h1 className="font-display text-6xl sm:text-8xl xl:text-[128px] font-bold text-white leading-none mb-6">
+            <h1 className="font-display text-6xl sm:text-7xl xl:text-8xl font-bold text-white leading-none mb-6">
               ISIKUY
-              <span className="block text-gradient text-4xl sm:text-5xl lg:text-6xl mt-2 tracking-[0.2em] lg:tracking-[0.32em]">
+              <span className="block text-gradient text-4xl sm:text-5xl xl:text-6xl mt-2 tracking-[0.18em]">
                 TOPUP
               </span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-[#e1f5fe]/70 max-w-2xl mx-auto lg:mx-0 mb-10 font-body">
-              Top up diamonds, UC, dan game currency favoritmu dengan harga
-              terbaik. Proses cepat, aman, dan terpercaya.
+            <p className="text-base sm:text-lg text-[#e1f5fe]/70 max-w-xl mx-auto lg:mx-0 mb-8 font-body leading-relaxed">
+              Top up game, pulsa, e-wallet, dan voucher digital dalam satu katalog
+              yang rapi. Pilih produk, bayar QRIS, lalu pesanan diproses otomatis.
             </p>
+
+            <div className="mb-9 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {[
+                { icon: Shield, title: "Pembayaran Aman", desc: "QRIS otomatis" },
+                { icon: Clock, title: "Proses Cepat", desc: "Tanpa antri" },
+                { icon: Headphones, title: "Bantuan Siaga", desc: "Admin online" },
+              ].map((item) => (
+                <div key={item.title} className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-left">
+                  <item.icon className="h-4 w-4 shrink-0 text-[#00f0ff]" />
+                  <div>
+                    <p className="text-xs font-semibold text-white">{item.title}</p>
+                    <p className="text-[11px] text-white/40">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
@@ -111,13 +133,13 @@ function HeroSection() {
             </div>
 
             {/* Quick Stats */}
-            <div className="mt-16 grid grid-cols-3 gap-6 max-w-lg mx-auto lg:mx-0">
+            <div className="mt-12 grid grid-cols-3 gap-4 max-w-lg mx-auto lg:mx-0">
               {[
-                { value: "500K+", label: "Transaksi" },
-                { value: "16+", label: "Game" },
-                { value: "<3m", label: "Proses" },
+                { value: "60+", label: "Produk aktif" },
+                { value: "4", label: "Kategori" },
+                { value: "24/7", label: "Checkout" },
               ].map((s) => (
-                <div key={s.label} className="text-center lg:text-left">
+                <div key={s.label} className="rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-3 text-center lg:text-left">
                   <p className="font-display text-2xl sm:text-3xl font-bold text-white">
                     {s.value}
                   </p>
@@ -127,19 +149,61 @@ function HeroSection() {
             </div>
           </div>
 
-          <div className="pointer-events-none relative hidden min-h-[560px] items-end justify-center lg:flex">
-            <div className="absolute bottom-4 h-24 w-80 rounded-full bg-[#00f0ff]/10 blur-3xl animate-mascot-glow" />
-            <div className="absolute bottom-20 h-96 w-96 rounded-full border border-[#00f0ff]/10" />
-            <div className="absolute bottom-28 h-72 w-72 rounded-full border border-[#ff003c]/10" />
-            <div className="absolute left-0 top-24 inline-flex items-center gap-2 rounded-full border border-[#00f0ff]/20 bg-[#00f0ff]/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#00f0ff]">
-              <Sparkles className="h-3.5 w-3.5" />
-              Maskot ISIKUY
+          <div className="relative hidden min-h-[580px] lg:block">
+            <div className="absolute inset-x-2 top-4 h-[520px] rounded-[2rem] border border-white/10 bg-[#0b0d14]/70 shadow-2xl shadow-black/40 backdrop-blur-xl" />
+            <div className="absolute left-8 right-8 top-10 flex items-center justify-between rounded-2xl border border-white/[0.08] bg-black/30 px-4 py-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-[#00f0ff]">Live Catalog</p>
+                <p className="font-display text-xl font-bold text-white">Pilih produk favorit</p>
+              </div>
+              <span className="rounded-full bg-[#0aff00]/10 px-3 py-1 text-xs font-semibold text-[#0aff00]">
+                Online
+              </span>
             </div>
-            <img
-              src="/games/maskot-isikuy.png"
-              alt="Maskot ISIKUY"
-              className="relative z-10 w-[420px] origin-bottom translate-y-4 animate-hero-mascot drop-shadow-[0_30px_80px_rgba(0,240,255,0.24)] xl:w-[500px]"
-            />
+
+            <div className="absolute left-8 right-8 top-32 grid grid-cols-2 gap-3">
+              {featuredProducts.map((product) => (
+                <Link
+                  key={product.name}
+                  to="/games"
+                  className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035]"
+                >
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+                  <div className="absolute left-3 right-3 top-3 flex justify-end">
+                    <span className="rounded-md bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase text-white/70">
+                      {product.tag}
+                    </span>
+                  </div>
+                  <p className="absolute bottom-3 left-3 right-3 font-display text-base font-semibold leading-tight text-white">
+                    {product.name}
+                  </p>
+                </Link>
+              ))}
+            </div>
+
+            <div className="absolute bottom-4 left-8 right-8 rounded-2xl border border-[#00f0ff]/15 bg-[#00f0ff]/10 p-4">
+              <div className="flex items-center gap-4">
+                <img
+                  src="/games/maskot-isikuy.png"
+                  alt="Maskot ISIKUY"
+                  className="h-24 w-24 shrink-0 object-contain drop-shadow-[0_18px_36px_rgba(0,240,255,0.2)]"
+                />
+                <div>
+                  <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-black/25 px-3 py-1 text-[10px] font-semibold uppercase text-[#00f0ff]">
+                    <Sparkles className="h-3 w-3" />
+                    Maskot ISIKUY
+                  </div>
+                  <p className="text-sm leading-relaxed text-white/70">
+                    Katalog sudah dipisah: game, pulsa, e-wallet, dan digital.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
