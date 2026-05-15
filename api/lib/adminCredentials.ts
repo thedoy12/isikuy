@@ -7,13 +7,13 @@ import { env } from "./env";
 const USERNAME_KEY = "adminUsername";
 const PASSWORD_HASH_KEY = "adminPasswordHash";
 
-function hashPassword(password: string) {
+export function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(password, salt, 64).toString("hex");
   return `scrypt:${salt}:${hash}`;
 }
 
-function verifyPassword(password: string, encodedHash: string) {
+export function verifyPassword(password: string, encodedHash: string) {
   const [algorithm, salt, hash] = encodedHash.split(":");
   if (algorithm !== "scrypt" || !salt || !hash) return false;
 

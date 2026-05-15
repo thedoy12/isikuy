@@ -24,6 +24,7 @@ export const settingTypeEnum = pgEnum("setting_type", ["string", "number", "bool
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 255 }).notNull().unique(),
+  passwordHash: text("passwordHash"),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 320 }),
   avatar: text("avatar"),

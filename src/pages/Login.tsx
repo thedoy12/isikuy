@@ -11,9 +11,10 @@ export default function Login() {
   const [error, setError] = useState("");
 
   const login = trpc.auth.login.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (user) => {
       await utils.auth.me.invalidate();
-      navigate("/admin");
+      const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+      navigate(isAdmin ? "/admin" : "/");
     },
     onError: (err) => setError(err.message),
   });
@@ -56,10 +57,10 @@ export default function Login() {
               </div>
             </Link>
             <h2 className="font-display text-xl font-semibold text-white mb-1">
-              Admin Access
+              Masuk ke ISIKUY
             </h2>
             <p className="text-xs text-white/40">
-              Masuk untuk mengakses dashboard operator
+              Login user untuk transaksi, admin untuk dashboard operator
             </p>
           </div>
 
@@ -115,6 +116,13 @@ export default function Login() {
             </span>
             <div className="flex-1 h-px bg-white/10" />
           </div>
+
+          <p className="mb-6 text-center text-xs text-white/40">
+            Belum punya akun?{" "}
+            <Link to="/register" className="font-semibold text-[#00f0ff] hover:underline">
+              Daftar sekarang
+            </Link>
+          </p>
 
           <div className="grid grid-cols-2 gap-3">
             {[

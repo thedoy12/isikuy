@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import Register from './pages/Register'
 import Games from './pages/Games'
 import GameDetail from './pages/GameDetail'
 import History from './pages/History'
@@ -21,6 +22,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/games" element={<Games />} />
         <Route path="/games/:slug" element={<GameDetail />} />
         <Route path="/history" element={<History />} />

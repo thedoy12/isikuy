@@ -152,13 +152,21 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <Link
-                to="/login"
-                className="flex items-center gap-2 bg-gradient-to-r from-[#ff003c] to-[#b30029] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-              >
-                <User className="w-4 h-4" />
-                <span className="hidden sm:inline">Login</span>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/register"
+                  className="hidden sm:flex items-center gap-2 rounded-lg border border-[#ff003c]/25 bg-[#13060b]/70 px-4 py-2 text-sm font-medium text-white hover:border-[#ff4967]/50 transition-colors"
+                >
+                  Daftar
+                </Link>
+                <Link
+                  to="/login"
+                  className="flex items-center gap-2 bg-gradient-to-r from-[#ff003c] to-[#b30029] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  <User className="w-4 h-4" />
+                  <span className="hidden sm:inline">Login</span>
+                </Link>
+              </div>
             )}
 
             {/* Mobile Menu Toggle */}
@@ -197,6 +205,22 @@ export default function Navbar() {
               >
                 Trending
               </Link>
+              {!isAuthenticated && (
+                <>
+                  <Link
+                    to="/register"
+                    className="px-4 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                  >
+                    Daftar
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="px-4 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                  >
+                    Login
+                  </Link>
+                </>
+              )}
               {isAuthenticated && (
                 <>
                   <Link

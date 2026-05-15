@@ -32,12 +32,12 @@ function HeroSection() {
   const featuredProducts = [
     {
       name: "Mobile Legends",
-      image: "/games/mobile-legends.jpg",
+      image: "/aset/mobile-legends.png",
       tag: "Most Played",
       className: "sm:row-span-2",
     },
-    { name: "Free Fire", image: "/games/free-fire.jpg", tag: "Fast" },
-    { name: "Valorant", image: "/games/valorant.jpg", tag: "New" },
+    { name: "Free Fire", image: "/aset/free-fire.png", tag: "Fast" },
+    { name: "Valorant", image: "/aset/valorant.png", tag: "New" },
   ];
 
   return (
@@ -160,7 +160,7 @@ function HeroSection() {
             <div className="absolute inset-x-2 -top-8 h-[500px] overflow-hidden rounded-[1.35rem] border border-[#ff4967]/20 bg-[#080407]/88 shadow-[0_30px_90px_rgba(0,0,0,0.58),0_0_70px_rgba(255,0,60,0.14)] backdrop-blur-xl">
               <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_22%_8%,rgba(255,0,60,0.32),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(0,240,255,0.12),transparent_24%)]" />
               <img
-                src="/games/valorant.jpg"
+                src="/aset/valorant.png"
                 alt=""
                 className="absolute inset-y-0 right-0 h-full w-[54%] object-cover opacity-20 mix-blend-screen"
               />
@@ -219,7 +219,7 @@ function HeroSection() {
               ))}
             </div>
 
-            <div className="absolute bottom-7 left-8 right-8 overflow-hidden rounded-xl border border-[#ff4967]/22 bg-[#0d0509]/92 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <div className="absolute bottom-16 left-8 right-8 overflow-hidden rounded-xl border border-[#ff4967]/22 bg-[#0d0509]/92 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
               <div className="absolute inset-y-0 right-0 w-1/2 bg-[linear-gradient(135deg,transparent_0%,rgba(255,0,60,0.18)_48%,transparent_49%)]" />
               <div className="relative flex items-center justify-between gap-5">
                 <div>
