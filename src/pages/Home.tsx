@@ -30,10 +30,14 @@ function HeroSection() {
   const { data: banners } = trpc.banner.list.useQuery({ position: "hero" });
   const heroBanner = banners?.[0];
   const featuredProducts = [
-    { name: "Mobile Legends", image: "/games/mobile-legends.jpg", tag: "Hot" },
+    {
+      name: "Mobile Legends",
+      image: "/games/mobile-legends.jpg",
+      tag: "Most Played",
+      className: "sm:row-span-2",
+    },
     { name: "Free Fire", image: "/games/free-fire.jpg", tag: "Fast" },
     { name: "Valorant", image: "/games/valorant.jpg", tag: "New" },
-    { name: "PUBG Mobile", image: "/games/pubg-mobile.jpg", tag: "Top" },
   ];
 
   return (
@@ -79,11 +83,6 @@ function HeroSection() {
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 lg:pt-32">
         <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)]">
           <div className="text-center lg:text-left">
-            <img
-              src="/games/maskot-isikuy.png"
-              className="mx-auto mb-5 w-36 drop-shadow-[0_20px_48px_rgba(0,240,255,0.2)] sm:w-44 lg:hidden"
-            />
-
             {/* Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-[#ff003c]/20 bg-[#ff003c]/10 px-4 py-2 mb-6">
               <Sparkles className="w-4 h-4 text-[#ff003c]" />
@@ -160,6 +159,12 @@ function HeroSection() {
           <div className="relative hidden min-h-[610px] lg:block">
             <div className="absolute inset-x-2 top-2 h-[560px] overflow-hidden rounded-[1.35rem] border border-[#ff4967]/20 bg-[#080407]/88 shadow-[0_30px_90px_rgba(0,0,0,0.58),0_0_70px_rgba(255,0,60,0.14)] backdrop-blur-xl">
               <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_22%_8%,rgba(255,0,60,0.32),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(0,240,255,0.12),transparent_24%)]" />
+              <img
+                src="/games/valorant.jpg"
+                alt=""
+                className="absolute inset-y-0 right-0 h-full w-[54%] object-cover opacity-20 mix-blend-screen"
+              />
+              <div className="absolute inset-y-0 right-0 w-[62%] bg-gradient-to-l from-[#050307]/30 via-[#050307]/76 to-[#050307]" />
               <div
                 className="absolute inset-0 opacity-[0.14]"
                 style={{
@@ -168,6 +173,8 @@ function HeroSection() {
                   backgroundSize: "42px 42px",
                 }}
               />
+              <div className="absolute -right-16 top-28 h-64 w-64 rotate-45 border border-[#ff003c]/20" />
+              <div className="absolute -right-8 top-36 h-44 w-44 rotate-45 border border-[#00f0ff]/10" />
             </div>
             <div className="absolute left-8 right-8 top-8 flex items-center justify-between rounded-xl border border-[#ff4967]/18 bg-black/45 px-4 py-3">
               <div>
@@ -179,12 +186,14 @@ function HeroSection() {
               </span>
             </div>
 
-            <div className="absolute left-8 right-8 top-28 grid grid-cols-4 gap-3">
+            <div className="absolute left-8 right-8 top-28 grid h-[300px] grid-cols-[1.18fr_0.82fr] grid-rows-2 gap-4">
               {featuredProducts.map((product) => (
                 <Link
                   key={product.name}
                   to="/games"
-                  className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-[#ff4967]/25 bg-[#12060b] shadow-[0_12px_40px_rgba(0,0,0,0.34)]"
+                  className={`group relative overflow-hidden rounded-xl border border-[#ff4967]/25 bg-[#12060b] shadow-[0_12px_40px_rgba(0,0,0,0.34)] ${
+                    product.className || ""
+                  }`}
                 >
                   <img
                     src={product.image}
@@ -194,32 +203,49 @@ function HeroSection() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/18 to-transparent" />
                   <div className="absolute inset-0 opacity-0 ring-1 ring-inset ring-[#ff4967]/60 transition-opacity group-hover:opacity-100" />
                   <div className="absolute left-3 right-3 top-3 flex justify-end">
-                    <span className="rounded bg-[#ff003c]/20 px-2 py-1 text-[10px] font-semibold uppercase text-white/80">
+                    <span className="rounded bg-[#ff003c]/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/80">
                       {product.tag}
                     </span>
                   </div>
-                  <p className="absolute bottom-3 left-3 right-3 font-display text-sm font-semibold leading-tight text-white">
-                    {product.name}
-                  </p>
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#ff6a82]">
+                      Featured
+                    </p>
+                    <p className="font-display text-xl font-semibold leading-tight text-white">
+                      {product.name}
+                    </p>
+                  </div>
                 </Link>
               ))}
             </div>
 
-            <div className="absolute bottom-10 left-8 right-8 rounded-xl border border-[#ff4967]/22 bg-[#12060b]/90 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <div className="flex items-center gap-5">
-                <img
-                  src="/games/maskot-isikuy.png"
-                  alt="Maskot ISIKUY"
-                  className="h-28 w-28 shrink-0 object-contain drop-shadow-[0_18px_36px_rgba(255,0,60,0.28)]"
-                />
+            <div className="absolute bottom-9 left-8 right-8 overflow-hidden rounded-xl border border-[#ff4967]/22 bg-[#0d0509]/92 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <div className="absolute inset-y-0 right-0 w-1/2 bg-[linear-gradient(135deg,transparent_0%,rgba(255,0,60,0.18)_48%,transparent_49%)]" />
+              <div className="relative flex items-center justify-between gap-5">
                 <div>
-                  <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#ff003c]/12 px-3 py-1 text-[10px] font-semibold uppercase text-[#ff6a82]">
-                    <Sparkles className="h-3 w-3" />
-                    Maskot ISIKUY
-                  </div>
-                  <p className="text-sm leading-relaxed text-white/70">
-                    Katalog sudah dipisah: game, pulsa, e-wallet, dan digital.
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-[#ff6a82]">
+                    Battle-ready checkout
                   </p>
+                  <p className="mt-2 font-display text-2xl font-bold leading-none text-white">
+                    Top up cepat, katalog rapi, pembayaran otomatis.
+                  </p>
+                </div>
+                <div className="grid w-[310px] shrink-0 grid-cols-3 gap-2">
+                  {[
+                    { icon: Gamepad2, label: "60+ Game" },
+                    { icon: QrCode, label: "QRIS" },
+                    { icon: Zap, label: "Instant" },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-lg border border-white/10 bg-black/32 px-3 py-3 text-center"
+                    >
+                      <item.icon className="mx-auto mb-2 h-4 w-4 text-[#ff4967]" />
+                      <p className="text-[11px] font-semibold text-white/75">
+                        {item.label}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
