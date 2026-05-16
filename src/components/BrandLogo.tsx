@@ -1,5 +1,4 @@
 import { Link } from "react-router";
-import { optimizedImagePath } from "@/lib/images";
 
 type BrandLogoProps = {
   compact?: boolean;
@@ -19,7 +18,7 @@ export default function BrandLogo({
       <div className="relative flex shrink-0 items-center justify-center">
         <div className="absolute inset-0 rounded-xl bg-[#ff003c]/25 blur-xl opacity-70 transition-opacity group-hover:opacity-100" />
         <img
-          src={optimizedImagePath("/aset/logoisikuy.png")}
+          src="/aset-optimized/logo-isi-kuy.webp"
           alt="ISIKUY TOPUP"
           loading="eager"
           decoding="async"
