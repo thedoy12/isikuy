@@ -138,7 +138,13 @@ export default function AdminUsers() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {u.avatar ? (
-                          <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full" />
+                          <img
+                            src={u.avatar}
+                            alt={u.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-8 h-8 rounded-full"
+                          />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-[#ff003c]/10 flex items-center justify-center">
                             <span className="text-xs text-[#ff003c] font-bold">

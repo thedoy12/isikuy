@@ -130,7 +130,7 @@ export function gameAssetPath(slug: string | null | undefined, name?: string | n
 
   for (const candidate of candidates) {
     const fileName = ASSET_BY_SLUG[candidate];
-    if (fileName) return `/aset/${fileName}`;
+    if (fileName) return `/aset-optimized/${fileName.replace(/\.[^.]+$/, ".webp")}`;
   }
 
   return null;

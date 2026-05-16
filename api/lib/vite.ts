@@ -9,7 +9,22 @@ type App = Hono<{ Bindings: HttpBindings }>;
 export function serveStaticFiles(app: App) {
   const distPath = path.resolve(import.meta.dirname, "../dist/public");
 
-  app.use("*", serveStatic({ root: "./dist/public" }));
+  app.use(
+    "*",
+    serveStatic({
+      root: "./dist/public",
+      rewriteRequestPath: (requestPath) =>
+        requestPath.replace(
+          /^\/(aset|games)\/(.+)\.(png|jpe?g)$/i,
+          (_match, folder, fileName) => `/${folder}-optimized/${fileName}.webp`,
+        ),
+      onFound: (filePath, c) => {
+        if (/\.(avif|webp|png|jpe?g|svg|ico|css|js)$/i.test(filePath)) {
+          c.header("Cache-Control", "public, max-age=31536000, immutable");
+        }
+      },
+    }),
+  );
 
   app.notFound((c) => {
     const accept = c.req.header("accept") ?? "";

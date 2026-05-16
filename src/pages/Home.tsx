@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
+import { optimizedImagePath } from "@/lib/images";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import {
@@ -160,8 +161,10 @@ function HeroSection() {
             <div className="absolute inset-x-2 -top-8 h-[500px] overflow-hidden rounded-[1.35rem] border border-[#ff4967]/20 bg-[#080407]/88 shadow-[0_30px_90px_rgba(0,0,0,0.58),0_0_70px_rgba(255,0,60,0.14)] backdrop-blur-xl">
               <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_22%_8%,rgba(255,0,60,0.32),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(0,240,255,0.12),transparent_24%)]" />
               <img
-                src="/aset/valorant.png"
+                src={optimizedImagePath("/aset/valorant.png")}
                 alt=""
+                loading="eager"
+                decoding="async"
                 className="absolute inset-y-0 right-0 h-full w-[54%] object-cover opacity-20 mix-blend-screen"
               />
               <div className="absolute inset-y-0 right-0 w-[62%] bg-gradient-to-l from-[#050307]/30 via-[#050307]/76 to-[#050307]" />
@@ -196,8 +199,10 @@ function HeroSection() {
                   }`}
                 >
                   <img
-                    src={product.image}
+                    src={optimizedImagePath(product.image)}
                     alt={product.name}
+                    loading="eager"
+                    decoding="async"
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/18 to-transparent" />
@@ -302,8 +307,10 @@ function TrendingSection() {
                 className="group relative aspect-[3/4] rounded-2xl overflow-hidden"
               >
                 <img
-                  src={game.coverImage || ""}
+                  src={optimizedImagePath(game.coverImage)}
                   alt={game.name}
+                  loading="lazy"
+                  decoding="async"
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -375,8 +382,10 @@ function PopularSection() {
                 >
                   <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-3">
                     <img
-                      src={game.coverImage || ""}
+                      src={optimizedImagePath(game.coverImage)}
                       alt={game.name}
+                      loading="lazy"
+                      decoding="async"
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />

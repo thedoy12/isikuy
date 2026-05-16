@@ -87,6 +87,8 @@ export default function Navbar() {
                     <img
                       src={user.avatar}
                       alt={user.name || "User"}
+                      loading="lazy"
+                      decoding="async"
                       className="w-6 h-6 rounded-full"
                     />
                   ) : (

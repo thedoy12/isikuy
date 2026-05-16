@@ -3,6 +3,7 @@ import type { ComponentType } from "react";
 import { useSearchParams } from "react-router";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
+import { optimizedImagePath } from "@/lib/images";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import {
@@ -57,7 +58,7 @@ export default function Games() {
     categoryGroup: selectedType,
     search: search || undefined,
     trending: trendingParam || undefined,
-    limit: 500,
+    limit: 40,
   });
 
   useEffect(() => {
@@ -244,8 +245,10 @@ export default function Games() {
                 className="group relative aspect-[3/4] rounded-2xl overflow-hidden"
               >
                 <img
-                  src={game.coverImage || game.cardImage || fallbackCover(game.name)}
+                  src={optimizedImagePath(game.coverImage || game.cardImage) || fallbackCover(game.name)}
                   alt={game.name}
+                  loading="lazy"
+                  decoding="async"
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
+import { optimizedImagePath } from "@/lib/images";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import {
@@ -320,6 +321,8 @@ export default function GameDetail() {
                 <img
                   src={paymentDetails.qrImage}
                   alt="QRIS pembayaran"
+                  loading="eager"
+                  decoding="async"
                   className="w-48 h-48 mx-auto bg-white rounded-xl object-contain p-2"
                 />
               ) : import.meta.env.DEV ? (
@@ -457,8 +460,10 @@ export default function GameDetail() {
       <div className="relative pt-20">
         <div className="absolute inset-0 h-72 overflow-hidden">
           <img
-            src={game.bannerImage || game.coverImage || fallbackCover}
+            src={optimizedImagePath(game.bannerImage || game.coverImage) || fallbackCover}
             alt={game.name}
+            loading="eager"
+            decoding="async"
             className="w-full h-full object-cover opacity-30"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#030305] via-[#030305]/70 to-transparent" />
@@ -483,8 +488,10 @@ export default function GameDetail() {
           <div className="flex items-start gap-5">
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden flex-shrink-0 ring-2 ring-[#ff003c]/20">
               <img
-                src={game.cardImage || game.coverImage || fallbackCover}
+                src={optimizedImagePath(game.cardImage || game.coverImage) || fallbackCover}
                 alt={game.name}
+                loading="eager"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>

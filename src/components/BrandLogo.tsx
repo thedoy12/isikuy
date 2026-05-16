@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { optimizedImagePath } from "@/lib/images";
 
 type BrandLogoProps = {
   compact?: boolean;
@@ -18,8 +19,10 @@ export default function BrandLogo({
       <div className="relative flex shrink-0 items-center justify-center">
         <div className="absolute inset-0 rounded-xl bg-[#ff003c]/25 blur-xl opacity-70 transition-opacity group-hover:opacity-100" />
         <img
-          src="/aset/logoisikuy.png"
+          src={optimizedImagePath("/aset/logoisikuy.png")}
           alt="ISIKUY TOPUP"
+          loading="eager"
+          decoding="async"
           className={`relative h-10 w-auto object-contain drop-shadow-[0_10px_26px_rgba(255,0,60,0.25)] ${imageClassName}`}
         />
       </div>
@@ -36,4 +39,3 @@ export default function BrandLogo({
     </Link>
   );
 }
-

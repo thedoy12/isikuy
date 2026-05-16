@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
+import { optimizedImagePath } from "@/lib/images";
 import { useAuth } from "@/hooks/useAuth";
 import { TablePagination } from "@/components/admin/TablePagination";
 import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
@@ -203,7 +204,13 @@ export default function AdminGames() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {g.coverImage ? (
-                            <img src={g.coverImage} alt={g.name} className="w-8 h-8 rounded object-cover" />
+                            <img
+                              src={optimizedImagePath(g.coverImage)}
+                              alt={g.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="w-8 h-8 rounded object-cover"
+                            />
                           ) : (
                             <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center">
                               <ImageIcon className="w-4 h-4 text-white/20" />
@@ -257,7 +264,13 @@ export default function AdminGames() {
                           <div className="grid grid-cols-1 lg:grid-cols-[120px_1fr] gap-4">
                             <div className="w-28 h-28 bg-white/5 border border-white/10 rounded overflow-hidden flex items-center justify-center">
                               {imageDraft.coverImage ? (
-                                <img src={imageDraft.coverImage} alt={g.name} className="w-full h-full object-cover" />
+                                <img
+                                  src={optimizedImagePath(imageDraft.coverImage)}
+                                  alt={g.name}
+                                  loading="lazy"
+                                  decoding="async"
+                                  className="w-full h-full object-cover"
+                                />
                               ) : (
                                 <ImageIcon className="w-8 h-8 text-white/20" />
                               )}

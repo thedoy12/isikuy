@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { optimizedImagePath } from "@/lib/images";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import {
@@ -172,8 +173,10 @@ export default function HistoryPage() {
                           <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-white/5">
                             {tx.gameCover ? (
                               <img
-                                src={tx.gameCover}
+                                src={optimizedImagePath(tx.gameCover)}
                                 alt={tx.gameName}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover"
                               />
                             ) : (
