@@ -165,7 +165,7 @@ export const authRouter = createRouter({
       return publicUser(await findUserByUsername(username));
     }),
   me: authedQuery.query((opts) => publicUser(opts.ctx.user)),
-  logout: authedQuery.mutation(async ({ ctx }) => {
+  logout: publicQuery.mutation(async ({ ctx }) => {
     const opts = getSessionCookieOptions(ctx.req.headers);
     ctx.resHeaders.append(
       "set-cookie",

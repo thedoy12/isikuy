@@ -306,7 +306,9 @@ export default function GameDetail() {
                   <span className="text-[#ff003c] font-semibold">
                     Rp{txStatus?.totalAmount
                       ? parseFloat(txStatus.totalAmount).toLocaleString()
-                      : "-"}
+                      : paymentDetails?.amountTotal
+                        ? paymentDetails.amountTotal.toLocaleString()
+                        : "-"}
                   </span>
                 </div>
               </div>

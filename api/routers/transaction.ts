@@ -166,7 +166,7 @@ export const transactionRouter = createRouter({
         const flowixDeposit = await createFlowixDeposit({
           amount: Math.round(totalAmount),
           methodCode: "QRIS",
-          feeByCustomer: true,
+          feeByCustomer: false,
         });
         finalTotalAmount = Number(flowixDeposit.amount_total || totalAmount);
         finalFeeAmount = Math.max(0, finalTotalAmount - baseAmount + (voucher?.discountAmount || 0));
