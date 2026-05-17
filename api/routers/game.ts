@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, like, asc, not, notInArray, inArray } from "drizzle-orm";
+import { eq, and, like, asc, not, notInArray, inArray, sql } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { games, categories, products } from "@db/schema";
@@ -277,14 +277,34 @@ function targetInputMetadata(slug: string, categorySlug: string) {
   return base;
 }
 
-function cleanProductDisplayName(name: string, brand?: string | null) {
+function extractMobileLegendsName(value: string) {
+  if (/\bweekly\s+diamond\s+pass\b/i.test(value) || /\bwdp\b/i.test(value)) {
+    return "Weekly Diamond Pass";
+  }
+  if (/\btwilight\s+pass\b/i.test(value)) {
+    return "Twilight Pass";
+  }
+
+  const diamondMatch =
+    value.match(/(\d[\d.,]*)\s*(?:\+\s*(\d[\d.,]*))?\s*(?:diamonds?|dm)\b/i) ||
+    value.match(/\b(?:diamonds?|dm)\s*(\d[\d.,]*)(?:\s*\+\s*(\d[\d.,]*))?/i);
+  if (!diamondMatch) return null;
+
+  const base = diamondMatch[1].replace(/[.,]/g, "");
+  const bonus = diamondMatch[2]?.replace(/[.,]/g, "");
+  const amount = bonus ? `${base}+${bonus}` : base;
+  return `${amount} Diamonds`;
+}
+
+function cleanProductDisplayName(name: string, brand?: string | null, code?: string | null) {
   let value = cleanFlowixName(name)
     .replace(/\b(top[\s-]*up|voucher|produk\s+digital)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 
   const cleanBrand = brand ? cleanFlowixName(brand) : "";
-  const isMobileLegendsVariant = /\b(mobile\s*legends?|mlbb|moonton)\b/i.test(`${cleanBrand} ${name}`);
+  const sourceText = `${cleanBrand} ${name} ${code || ""}`;
+  const isMobileLegendsVariant = /\b(mobile\s*legends?|mlbb|moonton)\b/i.test(sourceText);
   if (cleanBrand) {
     const escapedBrand = cleanBrand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     value = value
@@ -295,7 +315,14 @@ function cleanProductDisplayName(name: string, brand?: string | null) {
   }
 
   if (isMobileLegendsVariant) {
-    const variant = `${cleanBrand} ${name}`.match(/\b(global|gift)\b|\bmobile\s*legends\s*(a|b)\b|\bmlbb\s*(a|b)\b|\bml\s*(a|b)\b/i);
+    value = extractMobileLegendsName(sourceText) ?? value;
+    value = value
+      .replace(/\b(mobile\s*legends?|mlbb|moonton)\b/gi, " ")
+      .replace(/\b(global|indonesia|indo|id)\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const variant = sourceText.match(/\b(gift)\b|\bmobile\s*legends\s*(a|b)\b|\bmlbb\s*(a|b)\b|\bml\s*(a|b)\b/i);
     const variantLabel = variant?.[1] || variant?.[2] || variant?.[3] || variant?.[4];
     if (variantLabel && !new RegExp(`\\b${variantLabel}\\b`, "i").test(value)) {
       value = `${value} ${variantLabel.toUpperCase()}`.trim();
@@ -487,7 +514,7 @@ export async function syncFlowixCatalog() {
 
     const productData = {
       gameId: game.id,
-      name: cleanProductDisplayName(product.name, product.brand),
+      name: cleanProductDisplayName(product.name, product.brand, product.code),
       description: `${cleanFlowixName(product.brand)} - ${product.code}`,
       nominalAmount: product.code,
       basePrice: String(product.price),
@@ -677,19 +704,32 @@ export const gameRouter = createRouter({
         .select()
         .from(products)
         .where(and(eq(products.gameId, game.id), eq(products.isActive, true)))
-        .orderBy(asc(products.sortOrder));
+        .orderBy(
+          asc(sql<number>`coalesce(${products.salePrice}, ${products.basePrice})::numeric`),
+          asc(products.sortOrder),
+          asc(products.id),
+        );
 
       return {
         ...game,
         description: sanitizePublicText(game.description),
         publisher: publicProviderLabel,
         category,
-        products: uniqueProductsByName(localProducts).map((product) => ({
-          ...product,
-          provider: "flowix" as const,
-          providerProductCode: product.nominalAmount,
-          providerProductName: product.name,
-        })),
+        products: uniqueProductsByName(localProducts).map((product) => {
+          const displayName = cleanProductDisplayName(
+            product.name,
+            productBrandFromDescription(product.description),
+            product.nominalAmount,
+          );
+
+          return {
+            ...product,
+            name: displayName,
+            provider: "flowix" as const,
+            providerProductCode: product.nominalAmount,
+            providerProductName: displayName,
+          };
+        }),
       };
     }),
 
