@@ -285,23 +285,15 @@ function targetInputMetadata(slug: string, categorySlug: string) {
   return base;
 }
 
-function extractMobileLegendsName(value: string) {
-  if (/\bweekly\s+diamond\s+pass\b/i.test(value) || /\bwdp\b/i.test(value)) {
-    return "Weekly Diamond Pass";
-  }
-  if (/\btwilight\s+pass\b/i.test(value)) {
-    return "Twilight Pass";
-  }
-
-  const diamondMatch =
-    value.match(/(\d[\d.,]*)\s*(?:\+\s*(\d[\d.,]*))?\s*(?:diamonds?|dm)\b/i) ||
-    value.match(/\b(?:diamonds?|dm)\s*(\d[\d.,]*)(?:\s*\+\s*(\d[\d.,]*))?/i);
-  if (!diamondMatch) return null;
-
-  const base = diamondMatch[1].replace(/[.,]/g, "");
-  const bonus = diamondMatch[2]?.replace(/[.,]/g, "");
-  const amount = bonus ? `${base}+${bonus}` : base;
-  return `${amount} Diamonds`;
+function cleanMobileLegendsDisplayName(value: string) {
+  return value
+    .replace(/\[\s*(mobile\s*legends?|mlbb|moonton)(?:\s+(?:a|b|global|indonesia|indo|id))?\s*\]\s*/gi, " ")
+    .replace(/\(\s*(mobile\s*legends?|mlbb|moonton)(?:\s+(?:a|b|global|indonesia|indo|id))?\s*\)\s*/gi, " ")
+    .replace(/\b(mobile\s*legends?|mlbb|moonton)\s+(?:a|b|global|indonesia|indo|id)\b/gi, " ")
+    .replace(/\b(mobile\s*legends?|mlbb|moonton)\b/gi, " ")
+    .replace(/\s+\b(a|b|global|indonesia|indo|id)\b(?=\s*(?:[-:]|$))/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function cleanProductDisplayName(name: string, brand?: string | null, code?: string | null) {
@@ -323,13 +315,7 @@ function cleanProductDisplayName(name: string, brand?: string | null, code?: str
   }
 
   if (isMobileLegendsVariant) {
-    value = extractMobileLegendsName(sourceText) ?? value;
-    value = value
-      .replace(/\b(mobile\s*legends?|mlbb|moonton)\b/gi, " ")
-      .replace(/\b(global|indonesia|indo|id)\b/gi, " ")
-      .replace(/\s+\b(a|b)\b$/i, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+    value = cleanMobileLegendsDisplayName(value);
   }
 
   return value || cleanFlowixName(name);
