@@ -196,6 +196,14 @@ function isAllowedFlowixProduct(product: FlowixProduct) {
   const knownName = knownGameName(product);
   if (mobileLegendsVariant(product) === "b") return false;
   if (isRegionalGameProduct(product)) return false;
+  if (
+    knownName === "Mobile Legends" &&
+    !/\b(diamonds?|dm|weekly\s+diamond\s+pass|wdp|twilight\s+pass)\b/i.test(
+      `${product.brand} ${product.name} ${product.code}`,
+    )
+  ) {
+    return false;
+  }
   if (knownName === "Mobile Legends Gift") {
     return true;
   }
@@ -319,14 +327,9 @@ function cleanProductDisplayName(name: string, brand?: string | null, code?: str
     value = value
       .replace(/\b(mobile\s*legends?|mlbb|moonton)\b/gi, " ")
       .replace(/\b(global|indonesia|indo|id)\b/gi, " ")
+      .replace(/\s+\b(a|b)\b$/i, " ")
       .replace(/\s+/g, " ")
       .trim();
-
-    const variant = sourceText.match(/\b(gift)\b|\bmobile\s*legends\s*(a|b)\b|\bmlbb\s*(a|b)\b|\bml\s*(a|b)\b/i);
-    const variantLabel = variant?.[1] || variant?.[2] || variant?.[3] || variant?.[4];
-    if (variantLabel && !new RegExp(`\\b${variantLabel}\\b`, "i").test(value)) {
-      value = `${value} ${variantLabel.toUpperCase()}`.trim();
-    }
   }
 
   return value || cleanFlowixName(name);
