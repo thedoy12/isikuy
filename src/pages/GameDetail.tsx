@@ -801,19 +801,19 @@ export default function GameDetail() {
 
                 <div className="h-px bg-white/10 mb-5" />
 
-                <div className="flex justify-between mb-6">
+                <div className="flex justify-between mb-3">
                   <span className="text-base font-semibold text-white">
-                    Estimasi Total
+                    Estimasi Checkout
                   </span>
-                  <span className="font-display text-xl font-bold text-[#ff003c]">
+                  <span className="font-display text-xl font-bold text-white">
                     Rp
                     {paymentCalc?.totalAmount
                       ? Math.round(paymentCalc.totalAmount).toLocaleString()
                       : "0"}
                   </span>
                 </div>
-                <p className="text-[10px] text-white/35 -mt-4 mb-6">
-                  Nominal final mengikuti QRIS yang dibuat oleh provider.
+                <p className="text-xs text-[#ffb800] mb-6">
+                  Total bayar final akan muncul setelah QRIS dibuat.
                 </p>
 
                 <button
