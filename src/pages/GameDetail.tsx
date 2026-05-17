@@ -38,6 +38,8 @@ type CheckoutPayment = {
   paymentId: string;
   amountTotal: number;
   amountReceived: number;
+  amountRequested?: number;
+  providerAdjustment?: number;
   payUrl: string | null;
   payCode: string | null;
   qrString: string | null;
@@ -87,6 +89,9 @@ export default function GameDetail() {
   const selectedProductData = game?.products.find((p) => p.id === selectedProduct);
   const selectedProductPrice = selectedProductData
     ? parseFloat(selectedProductData.salePrice || selectedProductData.basePrice)
+    : 0;
+  const qrisAdjustment = paymentDetails?.providerAdjustment
+    ? Math.round(paymentDetails.providerAdjustment)
     : 0;
   const fallbackCover = game
     ? `https://placehold.co/1200x600/09090b/ffffff?text=${encodeURIComponent(game.name)}`
@@ -301,8 +306,25 @@ export default function GameDetail() {
                     <span className="text-white">{serverId}</span>
                   </div>
                 )}
+                {paymentDetails?.amountRequested && qrisAdjustment !== 0 && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-white/50">Estimasi Checkout</span>
+                      <span className="text-white">
+                        Rp{paymentDetails.amountRequested.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-white/50">Penyesuaian QRIS</span>
+                      <span className={qrisAdjustment > 0 ? "text-white" : "text-[#0aff00]"}>
+                        {qrisAdjustment > 0 ? "+" : "-"}Rp
+                        {Math.abs(qrisAdjustment).toLocaleString()}
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/50">Total</span>
+                  <span className="text-white/50">Total Bayar QRIS</span>
                   <span className="text-[#ff003c] font-semibold">
                     Rp{txStatus?.totalAmount
                       ? parseFloat(txStatus.totalAmount).toLocaleString()
@@ -781,7 +803,7 @@ export default function GameDetail() {
 
                 <div className="flex justify-between mb-6">
                   <span className="text-base font-semibold text-white">
-                    Total
+                    Estimasi Total
                   </span>
                   <span className="font-display text-xl font-bold text-[#ff003c]">
                     Rp
@@ -790,6 +812,9 @@ export default function GameDetail() {
                       : "0"}
                   </span>
                 </div>
+                <p className="text-[10px] text-white/35 -mt-4 mb-6">
+                  Nominal final mengikuti QRIS yang dibuat oleh provider.
+                </p>
 
                 <button
                   onClick={handleCheckout}

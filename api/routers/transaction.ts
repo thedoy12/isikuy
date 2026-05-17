@@ -182,6 +182,8 @@ export const transactionRouter = createRouter({
           paymentId: flowixDeposit.pay_id,
           amountTotal: finalTotalAmount,
           amountReceived: flowixDeposit.amount_received,
+          amountRequested: Math.round(totalAmount),
+          providerAdjustment: finalTotalAmount - Math.round(totalAmount),
           payUrl: flowixDeposit.pay_url,
           payCode: flowixDeposit.pay_code,
           qrString: flowixDeposit.qr_string,
