@@ -772,20 +772,11 @@ export default function GameDetail() {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-white/50">Biaya Layanan</span>
+                    <span className="text-white/50">Biaya Admin</span>
                     <span className="text-white">
                       Rp
-                      {paymentCalc?.serviceAmount ?? paymentCalc?.taxAmount
-                        ? Math.round(paymentCalc.serviceAmount ?? paymentCalc.taxAmount).toLocaleString()
-                        : "0"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/50">Biaya Pembayaran</span>
-                    <span className="text-white">
-                      Rp
-                      {paymentCalc?.paymentFeeAmount
-                        ? Math.round(paymentCalc.paymentFeeAmount).toLocaleString()
+                      {paymentCalc?.feeAmount
+                        ? Math.round(paymentCalc.feeAmount).toLocaleString()
                         : "0"}
                     </span>
                   </div>
@@ -834,8 +825,8 @@ export default function GameDetail() {
                     <Zap className="w-5 h-5" />
                   )}
                   {createTransaction.isPending
-                    ? "Memproses..."
-                    : "Bayar Sekarang"}
+                    ? "Membuat QRIS..."
+                    : "Buat QRIS"}
                 </button>
 
                 <div className="flex items-center justify-center gap-2 mt-4 text-xs text-white/30">
