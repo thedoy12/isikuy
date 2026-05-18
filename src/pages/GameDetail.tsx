@@ -709,12 +709,7 @@ export default function GameDetail() {
                     Metode pembayaran belum tersedia.
                   </div>
                 )}
-                {!!paymentMethods?.length && (
-                  <div className="rounded-xl bg-white/[0.03] px-4 py-3 text-xs leading-relaxed text-white/45">
-                    QRIS dipilih otomatis karena saat ini menjadi satu-satunya
-                    sistem pembayaran aktif.
-                  </div>
-                )}
+
               </div>
             </div>
 
