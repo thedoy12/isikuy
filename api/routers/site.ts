@@ -3,6 +3,11 @@ import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { siteSettings } from "@db/schema";
 
+const DEFAULT_META_KEYWORDS =
+  "top up ml murah instant, diamond ml murah legal, top up ff via dana, top up valorant points murah, top up pubg qris, top up hok murah terpercaya, top up game pakai dana, top up qris, top up pakai gopay, top up tanpa login, top up hok, top up zzz, top up wuthering waves, top up hsr murah";
+const LEGACY_META_KEYWORDS =
+  "top up game, topup mobile legends, top up free fire, top up pubg mobile, voucher game, qris";
+
 const DEFAULT_SITE_SETTINGS = {
   siteName: "ISIKUY TOPUP",
   siteTagline: "Top Up Game, Pulsa, dan Voucher Digital",
@@ -10,7 +15,7 @@ const DEFAULT_SITE_SETTINGS = {
   metaDescription:
     "ISIKUY TOPUP melayani top up game, pulsa, e-wallet, dan voucher digital dengan proses cepat, pembayaran praktis, serta bantuan melalui WhatsApp 0895393061538 dan email putradadoy@gmail.com.",
   metaKeywords:
-    "top up game, topup mobile legends, top up free fire, top up pubg mobile, voucher game, qris",
+    DEFAULT_META_KEYWORDS,
   canonicalUrl: "",
   ogImage: "",
   contactEmail: "putradadoy@gmail.com",
@@ -22,6 +27,7 @@ const DEFAULT_SITE_SETTINGS = {
   popupEnabled: "false",
   popupTitle: "Promo ISIKUY",
   popupMessage: "Top up game favorit kamu lebih cepat dengan pembayaran praktis.",
+  popupImage: "",
   popupButtonText: "Lihat Game",
   popupButtonUrl: "/games",
   popupDismissHours: "24",
@@ -56,6 +62,9 @@ function normalizeSiteSettings(values: Record<string, string>) {
   if (merged.whatsappNumber === "+6281234567890") {
     merged.whatsappNumber = DEFAULT_SITE_SETTINGS.whatsappNumber;
   }
+  if (merged.metaKeywords === LEGACY_META_KEYWORDS) {
+    merged.metaKeywords = DEFAULT_META_KEYWORDS;
+  }
   const whatsappNumber = normalizeWhatsapp(merged.whatsappNumber || merged.contactPhone);
 
   return {
@@ -75,6 +84,7 @@ function normalizeSiteSettings(values: Record<string, string>) {
     popupEnabled: toBoolean(merged.popupEnabled),
     popupTitle: merged.popupTitle,
     popupMessage: merged.popupMessage,
+    popupImage: merged.popupImage,
     popupButtonText: merged.popupButtonText,
     popupButtonUrl: merged.popupButtonUrl,
     popupDismissHours: toNumber(merged.popupDismissHours, 24),

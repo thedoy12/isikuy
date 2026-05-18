@@ -10,6 +10,7 @@ import AdminDashboard from './pages/admin/Dashboard'
 import AdminGames from './pages/admin/Games'
 import AdminTransactions from './pages/admin/Transactions'
 import AdminUsers from './pages/admin/Users'
+import AdminUserEdit from './pages/admin/UserEdit'
 import AdminSettings from './pages/admin/Settings'
 import NotFound from './pages/NotFound'
 import SiteMeta from './components/SiteMeta'
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/admin/games" element={<AdminGames />} />
         <Route path="/admin/transactions" element={<AdminTransactions />} />
         <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/users/:id" element={<AdminUserEdit />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

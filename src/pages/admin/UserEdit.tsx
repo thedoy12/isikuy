@@ -1,0 +1,341 @@
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, useNavigate, useParams } from "react-router";
+import { trpc } from "@/providers/trpc";
+import { useAuth } from "@/hooks/useAuth";
+import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
+import BrandLogo from "@/components/BrandLogo";
+import {
+  ArrowLeft,
+  BarChart3,
+  CheckCircle2,
+  Gamepad2,
+  Loader2,
+  Receipt,
+  Save,
+  Settings,
+  Shield,
+  UserRound,
+  Users,
+  Zap,
+} from "lucide-react";
+
+function AdminSidebar({ active }: { active: string }) {
+  const { logout } = useAuth();
+  const navItems = [
+    { id: "dashboard", label: "CONSOLE", icon: BarChart3, href: "/admin" },
+    { id: "games", label: "ARSENAL", icon: Gamepad2, href: "/admin/games" },
+    { id: "transactions", label: "FINANCIALS", icon: Receipt, href: "/admin/transactions" },
+    { id: "users", label: "INTEL", icon: Users, href: "/admin/users" },
+    { id: "settings", label: "SETTINGS", icon: Settings, href: "/admin/settings" },
+  ];
+
+  return (
+    <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-[#222] bg-[#0b0d14] lg:flex">
+      <div className="border-b border-[#222] p-5">
+        <BrandLogo consoleLabel imageClassName="h-10" />
+      </div>
+      <nav className="flex-1 p-3">
+        <p className="mb-2 px-3 font-terminal text-[9px] tracking-wider text-white/20">NAVIGATION</p>
+        {navItems.map((item) => (
+          <Link
+            key={item.id}
+            to={item.href}
+            className={`flex items-center gap-3 px-3 py-2.5 font-terminal text-sm tracking-wider transition-colors ${
+              active === item.id
+                ? "border-l-2 border-[#ff003c] bg-white/5 text-[#00f0ff]"
+                : "text-[#e1f5fe]/40 hover:bg-white/[0.02] hover:text-white"
+            }`}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+      <div className="border-t border-[#222] p-3">
+        <button
+          onClick={logout}
+          className="flex w-full items-center gap-3 px-3 py-2.5 font-terminal text-sm tracking-wider text-[#ff003c]/60 transition-colors hover:text-[#ff003c]"
+        >
+          <Zap className="h-4 w-4" />
+          LOGOUT
+        </button>
+        <Link
+          to="/"
+          className="flex items-center gap-3 px-3 py-2.5 font-terminal text-sm tracking-wider text-[#e1f5fe]/20 transition-colors hover:text-[#e1f5fe]/40"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          BACK_TO_SITE
+        </Link>
+      </div>
+    </aside>
+  );
+}
+
+const roleOptions = ["user", "admin", "superadmin"] as const;
+
+export default function AdminUserEdit() {
+  const navigate = useNavigate();
+  const params = useParams();
+  const userId = Number(params.id);
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const utils = trpc.useUtils();
+
+  const [form, setForm] = useState({
+    username: "",
+    name: "",
+    email: "",
+    avatar: "",
+    role: "user" as "user" | "admin" | "superadmin",
+    balance: 0,
+    isActive: true,
+  });
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const { data: targetUser, isLoading } = trpc.admin.userById.useQuery(
+    { id: userId },
+    { enabled: isAdmin && Number.isFinite(userId) },
+  );
+  const updateUser = trpc.admin.updateUser.useMutation({
+    onSuccess: async () => {
+      setError("");
+      setMessage("Data user berhasil diperbarui");
+      await Promise.all([
+        utils.admin.userById.invalidate({ id: userId }),
+        utils.admin.users.invalidate(),
+      ]);
+    },
+    onError: (err) => {
+      setMessage("");
+      setError(err.message);
+    },
+  });
+
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || !isAdmin)) navigate("/");
+  }, [authLoading, isAuthenticated, isAdmin, navigate]);
+
+  useEffect(() => {
+    if (!targetUser) return;
+    setForm({
+      username: targetUser.username || "",
+      name: targetUser.name || "",
+      email: targetUser.email || "",
+      avatar: targetUser.avatar || "",
+      role: targetUser.role,
+      balance: Number(targetUser.balance || 0),
+      isActive: targetUser.isActive,
+    });
+  }, [targetUser]);
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setMessage("");
+    setError("");
+    updateUser.mutate({
+      id: userId,
+      username: form.username,
+      name: form.name,
+      email: form.email,
+      avatar: form.avatar,
+      role: form.role,
+      balance: Number(form.balance) || 0,
+      isActive: form.isActive,
+    });
+  };
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#030305]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#ff003c]" />
+      </div>
+    );
+  }
+  if (!isAdmin) return null;
+
+  return (
+    <div className="flex min-h-[100dvh] bg-[#030305] font-terminal">
+      <AdminSidebar active="users" />
+      <AdminMobileNav active="users" />
+      <main className="min-w-0 flex-1">
+        <header className="border-b border-[#222] bg-[#11131a]/50 px-6 py-4">
+          <p className="text-[10px] tracking-wider text-[#00f0ff]">INTEL // EDIT_USER</p>
+        </header>
+
+        <div className="p-6 pb-24 lg:pb-6">
+          <Link
+            to="/admin/users"
+            className="mb-5 inline-flex items-center gap-2 text-xs tracking-wider text-white/45 transition-colors hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            BACK_TO_USERS
+          </Link>
+
+          {isLoading ? (
+            <div className="flex min-h-64 items-center justify-center border border-[#222] bg-[#11131a]">
+              <Loader2 className="h-8 w-8 animate-spin text-[#ff003c]" />
+            </div>
+          ) : (
+            <form onSubmit={submit} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+              <section className="border border-[#222] bg-[#11131a] p-6">
+                <div className="mb-6 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center bg-[#00f0ff]/10">
+                    <UserRound className="h-5 w-5 text-[#00f0ff]" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold tracking-wider text-white">USER_PROFILE</h1>
+                    <p className="text-[10px] tracking-wider text-white/35">
+                      Ubah identitas, role, status, dan saldo user
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                      USERNAME
+                    </label>
+                    <input
+                      value={form.username}
+                      onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
+                      minLength={3}
+                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                      NAME
+                    </label>
+                    <input
+                      value={form.name}
+                      onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                      EMAIL
+                    </label>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                      AVATAR_URL
+                    </label>
+                    <input
+                      value={form.avatar}
+                      onChange={(event) => setForm((current) => ({ ...current, avatar: event.target.value }))}
+                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                      ROLE
+                    </label>
+                    <select
+                      value={form.role}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          role: event.target.value as "user" | "admin" | "superadmin",
+                        }))
+                      }
+                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                    >
+                      {roleOptions.map((role) => (
+                        <option key={role} value={role}>
+                          {role.toUpperCase()}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                      BALANCE
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={form.balance}
+                      onChange={(event) => setForm((current) => ({ ...current, balance: Number(event.target.value) }))}
+                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                    />
+                  </div>
+                </div>
+
+                <label className="mt-5 flex items-center gap-3 border border-[#222] bg-[#0b0d14] px-4 py-3 text-xs text-white/55">
+                  <input
+                    type="checkbox"
+                    checked={form.isActive}
+                    onChange={(event) => setForm((current) => ({ ...current, isActive: event.target.checked }))}
+                    className="accent-[#00f0ff]"
+                  />
+                  USER_ACTIVE
+                </label>
+              </section>
+
+              <aside className="space-y-6">
+                <section className="border border-[#222] bg-[#11131a] p-5">
+                  <p className="mb-4 text-[10px] tracking-wider text-white/30">USER_PREVIEW</p>
+                  <div className="flex items-center gap-4 border border-[#222] bg-[#0b0d14] p-4">
+                    {form.avatar ? (
+                      <img
+                        src={form.avatar}
+                        alt={form.name || form.username}
+                        className="h-16 w-16 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#ff003c]/10">
+                        <UserRound className="h-7 w-7 text-[#ff003c]" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-white">{form.name || form.username}</p>
+                      <p className="truncate text-[10px] text-white/35">{form.email || "-"}</p>
+                      <p className="mt-2 inline-flex items-center gap-1 text-[10px] text-[#ffb800]">
+                        <Shield className="h-3 w-3" />
+                        {form.role.toUpperCase()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {message && (
+                    <div className="mt-4 flex items-center gap-2 border border-[#0aff00]/20 bg-[#0aff00]/10 px-4 py-3 text-xs text-[#0aff00]">
+                      <CheckCircle2 className="h-4 w-4" />
+                      {message}
+                    </div>
+                  )}
+                  {error && (
+                    <div className="mt-4 border border-[#ff003c]/20 bg-[#ff003c]/10 px-4 py-3 text-xs text-[#ffb8c7]">
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={updateUser.isPending}
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2 bg-[#ff003c] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#b30029] disabled:opacity-50"
+                  >
+                    {updateUser.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    SAVE_USER
+                  </button>
+                </section>
+              </aside>
+            </form>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}

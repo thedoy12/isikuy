@@ -32,7 +32,7 @@ const DEFAULT_SITE_FORM = {
   metaDescription:
     "ISIKUY TOPUP melayani top up game, pulsa, e-wallet, dan voucher digital dengan proses cepat, pembayaran praktis, serta bantuan melalui WhatsApp 0895393061538 dan email putradadoy@gmail.com.",
   metaKeywords:
-    "top up game, topup mobile legends, top up free fire, top up pubg mobile, voucher game, qris",
+    "top up ml murah instant, diamond ml murah legal, top up ff via dana, top up valorant points murah, top up pubg qris, top up hok murah terpercaya, top up game pakai dana, top up qris, top up pakai gopay, top up tanpa login, top up hok, top up zzz, top up wuthering waves, top up hsr murah",
   canonicalUrl: "",
   ogImage: "",
   contactEmail: "putradadoy@gmail.com",
@@ -44,6 +44,7 @@ const DEFAULT_SITE_FORM = {
   popupEnabled: false,
   popupTitle: "Promo ISIKUY",
   popupMessage: "Top up game favorit kamu lebih cepat dengan pembayaran praktis.",
+  popupImage: "",
   popupButtonText: "Lihat Game",
   popupButtonUrl: "/games",
   popupDismissHours: 24,
@@ -584,6 +585,17 @@ export default function AdminSettings() {
                       className="w-full resize-none border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#ff003c]/50"
                     />
                   </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                      POPUP_IMAGE_URL
+                    </label>
+                    <input
+                      value={siteForm.popupImage}
+                      onChange={(event) => updateSiteField("popupImage", event.target.value)}
+                      placeholder="https://domain.com/promo.jpg"
+                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#ff003c]/50"
+                    />
+                  </div>
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                     <div>
                       <label className="mb-2 block text-[10px] tracking-wider text-white/40">
@@ -629,6 +641,13 @@ export default function AdminSettings() {
                   LIVE_PREVIEW
                 </p>
                 <div className="rounded-xl border border-[#ff4967]/25 bg-[#0b0509] p-5">
+                  {siteForm.popupImage ? (
+                    <img
+                      src={siteForm.popupImage}
+                      alt={siteForm.popupTitle || "Preview popup"}
+                      className="mb-4 h-36 w-full rounded-lg border border-white/10 object-cover"
+                    />
+                  ) : null}
                   <p className="text-xs uppercase tracking-[0.2em] text-[#ff6a82]">
                     {siteForm.siteName}
                   </p>

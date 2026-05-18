@@ -17,6 +17,7 @@ import {
   UserCheck,
   UserX,
   Crown,
+  Pencil,
   Settings,
 } from "lucide-react";
 
@@ -181,6 +182,13 @@ export default function AdminUsers() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
+                        <Link
+                          to={`/admin/users/${u.id}`}
+                          className="inline-flex items-center gap-1 rounded bg-[#00f0ff]/10 px-2 py-1 text-[9px] text-[#00f0ff] transition-colors hover:bg-[#00f0ff]/20"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          EDIT
+                        </Link>
                         {u.role === "user" && (
                           <button onClick={() => updateUser.mutate({ id: u.id, role: "admin" })}
                             className="text-[9px] px-2 py-1 bg-[#ffb800]/10 text-[#ffb800] rounded hover:bg-[#ffb800]/20 transition-colors">

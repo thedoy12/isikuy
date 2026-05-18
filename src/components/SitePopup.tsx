@@ -56,6 +56,17 @@ export default function SitePopup() {
 
         <div className="relative">
           <BrandLogo compact className="mb-5" imageClassName="h-14" />
+          {settings.popupImage ? (
+            <div className="mb-5 overflow-hidden rounded-lg border border-white/10 bg-black/30">
+              <img
+                src={settings.popupImage}
+                alt={settings.popupTitle || "Promo ISIKUY"}
+                loading="eager"
+                decoding="async"
+                className="h-48 w-full object-cover"
+              />
+            </div>
+          ) : null}
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ff6a82]">
             ISIKUY ALERT
           </p>

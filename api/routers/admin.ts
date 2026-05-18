@@ -95,6 +95,7 @@ export const adminRouter = createRouter({
         popupEnabled: z.boolean(),
         popupTitle: z.string().max(80),
         popupMessage: z.string().max(240),
+        popupImage: z.string().max(500),
         popupButtonText: z.string().max(40),
         popupButtonUrl: z.string().max(500),
         popupDismissHours: z.number().min(1).max(720),
@@ -355,6 +356,10 @@ export const adminRouter = createRouter({
     .input(
       z.object({
         id: z.number(),
+        username: z.string().min(3).max(255).optional(),
+        name: z.string().max(255).nullable().optional(),
+        email: z.string().email().or(z.literal("")).nullable().optional(),
+        avatar: z.string().max(500).nullable().optional(),
         role: z.enum(["user", "admin", "superadmin"]).optional(),
         balance: z.number().optional(),
         isActive: z.boolean().optional(),
@@ -363,12 +368,42 @@ export const adminRouter = createRouter({
     .mutation(async ({ input }) => {
       const db = getDb();
       const updateData: any = {};
+      if (input.username !== undefined) updateData.username = input.username.trim();
+      if (input.name !== undefined) updateData.name = input.name?.trim() || null;
+      if (input.email !== undefined) updateData.email = input.email?.trim() || null;
+      if (input.avatar !== undefined) updateData.avatar = input.avatar?.trim() || null;
       if (input.role) updateData.role = input.role;
       if (input.balance !== undefined) updateData.balance = input.balance.toString();
       if (input.isActive !== undefined) updateData.isActive = input.isActive;
 
       await db.update(users).set(updateData).where(eq(users.id, input.id));
       return { success: true };
+    }),
+
+  userById: adminQuery
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const [user] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          email: users.email,
+          avatar: users.avatar,
+          role: users.role,
+          balance: users.balance,
+          isActive: users.isActive,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+          lastSignInAt: users.lastSignInAt,
+        })
+        .from(users)
+        .where(eq(users.id, input.id))
+        .limit(1);
+
+      if (!user) throw new Error("User tidak ditemukan");
+      return user;
     }),
 
   games: adminQuery
