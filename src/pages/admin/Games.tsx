@@ -145,8 +145,8 @@ export default function AdminGames() {
       <AdminSidebar active="games" />
       <AdminMobileNav active="games" />
       <main className="flex-1 min-w-0">
-        <header className="border-b border-[#222] bg-[#11131a]/50 px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
+        <header className="border-b border-[#222] bg-[#11131a]/50 px-4 py-4 sm:px-6">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <p className="text-[10px] text-[#00f0ff] tracking-wider">ARSENAL // CATALOG_MANAGEMENT</p>
               {syncFlowix.data && (
@@ -169,7 +169,7 @@ export default function AdminGames() {
             </button>
           </div>
         </header>
-        <div className="p-6 pb-24 lg:pb-6">
+        <div className="p-4 pb-24 sm:p-6 lg:pb-6">
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[10px] text-white/50 tracking-wider">
@@ -183,7 +183,120 @@ export default function AdminGames() {
               className="w-full lg:w-72 bg-[#0b0d14] border border-[#222] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
             />
           </div>
-          <div className="border border-[#222] bg-[#11131a] overflow-x-auto">
+          <div className="border border-[#222] bg-[#11131a]">
+            <div className="grid gap-3 p-3 xl:hidden">
+              {gamesList?.items.map((g: any) => (
+                <article key={g.id} className="border border-[#222] bg-[#0b0d14] p-4">
+                  <div className="flex items-start gap-3">
+                    {g.coverImage ? (
+                      <img
+                        src={optimizedImagePath(g.coverImage)}
+                        alt={g.name}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-12 w-12 shrink-0 rounded object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-white/5">
+                        <ImageIcon className="h-5 w-5 text-white/20" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-white">{g.name}</p>
+                      <p className="mt-1 text-[10px] uppercase text-white/35">
+                        {g.categoryName || "-"} / {g.platform}
+                      </p>
+                      <div className="mt-3 grid grid-cols-4 gap-2">
+                        <button onClick={() => updateGame.mutate({ id: g.id, isTrending: !g.isTrending })}
+                          className={`flex items-center justify-center border border-white/10 py-2 ${g.isTrending ? "text-[#ff003c]" : "text-white/20"}`}>
+                          <TrendingUp className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => updateGame.mutate({ id: g.id, isPopular: !g.isPopular })}
+                          className={`flex items-center justify-center border border-white/10 py-2 ${g.isPopular ? "text-[#ffb800]" : "text-white/20"}`}>
+                          <Star className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => updateGame.mutate({ id: g.id, isNew: !g.isNew })}
+                          className={`flex items-center justify-center border border-white/10 py-2 ${g.isNew ? "text-[#00f0ff]" : "text-white/20"}`}>
+                          <Sparkles className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => updateGame.mutate({ id: g.id, isActive: !g.isActive })}
+                          className={`flex items-center justify-center border border-white/10 py-2 ${g.isActive ? "text-[#0aff00]" : "text-[#ff003c]"}`}>
+                          {g.isActive ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => editingGameId === g.id ? setEditingGameId(null) : startEditingImages(g)}
+                      className="rounded bg-[#ffb800]/10 px-3 py-2 text-[10px] text-[#ffb800]"
+                    >
+                      IMAGES
+                    </button>
+                    <Link to={`/games/${g.slug}`} target="_blank"
+                      className="rounded bg-[#00f0ff]/10 px-3 py-2 text-[10px] text-[#00f0ff]">VIEW</Link>
+                  </div>
+                  {editingGameId === g.id && (
+                    <div className="mt-4 border-t border-[#222] pt-4">
+                      <div className="mb-3 h-32 w-full overflow-hidden border border-white/10 bg-white/5">
+                        {imageDraft.coverImage ? (
+                          <img
+                            src={optimizedImagePath(imageDraft.coverImage)}
+                            alt={g.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center">
+                            <ImageIcon className="h-8 w-8 text-white/20" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="grid gap-3">
+                        {[
+                          ["coverImage", "COVER URL"],
+                          ["cardImage", "CARD URL"],
+                          ["bannerImage", "BANNER URL"],
+                        ].map(([field, label]) => (
+                          <label key={field} className="block">
+                            <span className="mb-1 block text-[9px] tracking-wider text-white/30">{label}</span>
+                            <input
+                              value={imageDraft[field as keyof typeof imageDraft]}
+                              onChange={(event) =>
+                                setImageDraft((current) => ({
+                                  ...current,
+                                  [field]: event.target.value,
+                                }))
+                              }
+                              placeholder="https://... atau /games/nama.jpg"
+                              className="w-full border border-[#222] bg-[#050609] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                            />
+                          </label>
+                        ))}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={saveImages}
+                            disabled={updateGame.isPending}
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-[#00f0ff]/10 border border-[#00f0ff]/30 text-[#00f0ff] text-[10px] tracking-wider disabled:opacity-50"
+                          >
+                            <Save className="w-3 h-3" />
+                            SAVE_IMAGES
+                          </button>
+                          <button
+                            onClick={() => setEditingGameId(null)}
+                            className="px-3 py-2 border border-white/10 text-white/40 text-[10px] tracking-wider"
+                          >
+                            CANCEL
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto xl:block">
             <table className="w-full">
               <thead>
                 <tr className="border-b-2 border-[#ff003c]">
@@ -321,6 +434,7 @@ export default function AdminGames() {
                 ))}
               </tbody>
             </table>
+            </div>
             <TablePagination
               page={page}
               pageSize={pageSize}

@@ -172,7 +172,7 @@ export default function AdminDashboard() {
 
       <main className="flex-1 min-w-0">
         {/* Header */}
-        <header className="border-b border-[#222] bg-[#11131a]/50 px-6 py-4">
+        <header className="border-b border-[#222] bg-[#11131a]/50 px-4 py-4 sm:px-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] text-[#00f0ff] tracking-wider">
@@ -191,7 +191,7 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        <div className="p-6 pb-24 lg:pb-6 space-y-6">
+        <div className="p-4 pb-24 sm:p-6 lg:pb-6 space-y-6">
           {/* Stats Grid */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             <StatCard
@@ -320,7 +320,7 @@ export default function AdminDashboard() {
 
           {/* Recent Transactions */}
           <div className="border border-[#222] bg-[#11131a]">
-            <div className="flex items-center justify-between p-5 border-b border-[#222]">
+            <div className="flex items-center justify-between gap-3 p-4 sm:p-5 border-b border-[#222]">
               <h3 className="font-terminal text-sm text-white tracking-wider">
                 RECENT_TRANSACTIONS
               </h3>
@@ -331,7 +331,44 @@ export default function AdminDashboard() {
                 VIEW_ALL &rarr;
               </Link>
             </div>
-            <div className="overflow-x-auto">
+            <div className="grid gap-3 p-3 xl:hidden">
+              {recentTx?.items.slice(0, 8).map((tx: any) => (
+                <article key={tx.id} className="border border-[#222] bg-[#0b0d14] p-4">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="break-all text-[11px] text-[#00f0ff]">{tx.invoiceNumber}</p>
+                      <p className="mt-1 text-sm font-bold text-white">{tx.gameName || "-"}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 text-[10px] font-terminal tracking-wider ${
+                        tx.status === "success"
+                          ? "text-[#0aff00]"
+                          : tx.status === "pending"
+                          ? "text-[#ffb800]"
+                          : tx.status === "processing"
+                          ? "text-[#00f0ff]"
+                          : "text-[#ff003c]"
+                      }`}
+                    >
+                      {tx.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <p className="text-[9px] text-white/30">AMOUNT</p>
+                      <p className="mt-1 text-[#ff003c]">Rp{parseFloat(tx.totalAmount).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-white/30">DATE</p>
+                      <p className="mt-1 text-white/45">
+                        {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString("id-ID") : "-"}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto xl:block">
               <table className="w-full">
                 <thead>
                   <tr className="border-b-2 border-[#ff003c]">

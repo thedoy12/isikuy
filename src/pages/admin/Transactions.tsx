@@ -112,10 +112,10 @@ export default function AdminTransactions() {
       <AdminSidebar active="transactions" />
       <AdminMobileNav active="transactions" />
       <main className="flex-1 min-w-0">
-        <header className="border-b border-[#222] bg-[#11131a]/50 px-6 py-4">
-          <div className="flex items-center justify-between">
+        <header className="border-b border-[#222] bg-[#11131a]/50 px-4 py-4 sm:px-6">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <p className="text-[10px] text-[#00f0ff] tracking-wider">FINANCIALS // TRANSACTION_LOG</p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {["", "pending", "processing", "success", "failed"].map((s) => (
                 <button key={s} onClick={() => setStatusFilter(s)}
                   className={`text-[9px] px-2 py-1 rounded tracking-wider transition-colors ${
@@ -127,8 +127,65 @@ export default function AdminTransactions() {
             </div>
           </div>
         </header>
-        <div className="p-6 pb-24 lg:pb-6">
-          <div className="border border-[#222] bg-[#11131a] overflow-x-auto">
+        <div className="p-4 pb-24 sm:p-6 lg:pb-6">
+          <div className="border border-[#222] bg-[#11131a]">
+            <div className="grid gap-3 p-3 xl:hidden">
+              {txList?.items.map((tx: any) => {
+                const sc = statusConfig[tx.status] || { icon: AlertCircle, color: "text-white/30", label: tx.status };
+                const StatusIcon = sc.icon;
+                return (
+                  <article key={tx.id} className="border border-[#222] bg-[#0b0d14] p-4">
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="break-all text-[11px] text-[#00f0ff]">{tx.invoiceNumber}</p>
+                        <p className="mt-1 text-sm font-bold text-white">{tx.gameName || "-"}</p>
+                      </div>
+                      <span className={`flex shrink-0 items-center gap-1 text-[10px] ${sc.color}`}>
+                        <StatusIcon className="h-3 w-3" />
+                        {sc.label}
+                      </span>
+                    </div>
+                    <div className="grid gap-2 text-xs sm:grid-cols-2">
+                      <div>
+                        <p className="text-[9px] text-white/30">PRODUCT</p>
+                        <p className="mt-1 text-white/65">{tx.productName || "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-white/30">PLAYER</p>
+                        <p className="mt-1 break-all text-white/65">{tx.playerId || "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-white/30">AMOUNT</p>
+                        <p className="mt-1 text-[#ff003c]">Rp{parseFloat(tx.totalAmount).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    {(tx.status === "pending" || tx.status === "processing") && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {tx.status === "pending" && (
+                          <>
+                            <button onClick={() => updateTx.mutate({ id: tx.id, status: "processing" })}
+                              className="px-3 py-2 text-[10px] bg-[#00f0ff]/10 text-[#00f0ff] rounded hover:bg-[#00f0ff]/20 transition-colors">
+                              PROCESS
+                            </button>
+                            <button onClick={() => updateTx.mutate({ id: tx.id, status: "failed" })}
+                              className="px-3 py-2 text-[10px] bg-[#ff003c]/10 text-[#ff003c] rounded hover:bg-[#ff003c]/20 transition-colors">
+                              FAIL
+                            </button>
+                          </>
+                        )}
+                        {tx.status === "processing" && (
+                          <button onClick={() => updateTx.mutate({ id: tx.id, status: "success" })}
+                            className="px-3 py-2 text-[10px] bg-[#0aff00]/10 text-[#0aff00] rounded hover:bg-[#0aff00]/20 transition-colors">
+                            COMPLETE
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+            <div className="hidden overflow-x-auto xl:block">
             <table className="w-full">
               <thead>
                 <tr className="border-b-2 border-[#ff003c]">
@@ -183,6 +240,7 @@ export default function AdminTransactions() {
                 })}
               </tbody>
             </table>
+            </div>
             <TablePagination
               page={page}
               pageSize={pageSize}

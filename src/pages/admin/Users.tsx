@@ -95,12 +95,12 @@ export default function AdminUsers() {
       <AdminSidebar active="users" />
       <AdminMobileNav active="users" />
       <main className="flex-1 min-w-0">
-        <header className="border-b border-[#222] bg-[#11131a]/50 px-6 py-4">
+        <header className="border-b border-[#222] bg-[#11131a]/50 px-4 py-4 sm:px-6">
           <p className="text-[10px] text-[#00f0ff] tracking-wider">INTEL // USER_MANAGEMENT</p>
         </header>
-        <div className="p-6 pb-24 lg:pb-6">
+        <div className="p-4 pb-24 sm:p-6 lg:pb-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 gap-3 mb-6 sm:grid-cols-3 sm:gap-4">
             <div className="border border-[#222] bg-[#11131a] p-4">
               <p className="text-[10px] text-white/30 tracking-wider mb-1">TOTAL_USERS</p>
               <p className="text-2xl text-white font-bold">{userList?.total || 0}</p>
@@ -120,7 +120,75 @@ export default function AdminUsers() {
           </div>
 
           {/* Users Table */}
-          <div className="border border-[#222] bg-[#11131a] overflow-x-auto">
+          <div className="border border-[#222] bg-[#11131a]">
+            <div className="grid gap-3 p-3 xl:hidden">
+              {userList?.items.map((u: any) => (
+                <article key={u.id} className="border border-[#222] bg-[#0b0d14] p-4">
+                  <div className="flex items-start gap-3">
+                    {u.avatar ? (
+                      <img
+                        src={u.avatar}
+                        alt={u.name}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-10 w-10 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ff003c]/10">
+                        <span className="text-xs font-bold text-[#ff003c]">
+                          {(u.name || "U")[0].toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-white">{u.name || "Unknown"}</p>
+                      <p className="truncate text-[11px] text-white/45">{u.email || "-"}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px]">
+                        <span className={`flex items-center gap-1 ${
+                          u.role === "superadmin" ? "text-[#ff003c]" :
+                          u.role === "admin" ? "text-[#ffb800]" : "text-white/40"
+                        }`}>
+                          {u.role === "superadmin" ? <Crown className="h-3 w-3" /> :
+                           u.role === "admin" ? <Shield className="h-3 w-3" /> :
+                           <Users className="h-3 w-3" />}
+                          {u.role.toUpperCase()}
+                        </span>
+                        <span className="text-[#00f0ff]">Rp{parseFloat(u.balance || "0").toLocaleString()}</span>
+                        <span className={u.isActive ? "text-[#0aff00]" : "text-[#ff003c]"}>
+                          {u.isActive ? "ACTIVE" : "INACTIVE"}
+                        </span>
+                      </div>
+                    </div>
+                    <button onClick={() => updateUser.mutate({ id: u.id, isActive: !u.isActive })}
+                      className={`shrink-0 text-xs ${u.isActive ? "text-[#0aff00]" : "text-[#ff003c]"}`}>
+                      {u.isActive ? <UserCheck className="h-4 w-4" /> : <UserX className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      to={`/admin/users/${u.id}`}
+                      className="inline-flex items-center gap-1 rounded bg-[#00f0ff]/10 px-3 py-2 text-[10px] text-[#00f0ff] transition-colors hover:bg-[#00f0ff]/20"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      EDIT
+                    </Link>
+                    {u.role === "user" && (
+                      <button onClick={() => updateUser.mutate({ id: u.id, role: "admin" })}
+                        className="rounded bg-[#ffb800]/10 px-3 py-2 text-[10px] text-[#ffb800] hover:bg-[#ffb800]/20 transition-colors">
+                        PROMOTE
+                      </button>
+                    )}
+                    {(u.role === "admin" || u.role === "superadmin") && u.id !== user?.id && (
+                      <button onClick={() => updateUser.mutate({ id: u.id, role: "user" })}
+                        className="rounded bg-white/5 px-3 py-2 text-[10px] text-white/40 hover:bg-white/10 transition-colors">
+                        DEMOTE
+                      </button>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto xl:block">
             <table className="w-full">
               <thead>
                 <tr className="border-b-2 border-[#ff003c]">
@@ -207,6 +275,7 @@ export default function AdminUsers() {
                 ))}
               </tbody>
             </table>
+            </div>
             <TablePagination
               page={page}
               pageSize={pageSize}
