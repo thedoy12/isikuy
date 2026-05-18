@@ -21,6 +21,10 @@ export function serveStaticFiles(app: App) {
       onFound: (filePath, c) => {
         if (/\.(avif|webp|png|jpe?g|svg|ico|css|js)$/i.test(filePath)) {
           c.header("Cache-Control", "public, max-age=31536000, immutable");
+        } else if (/\.html$/i.test(filePath)) {
+          c.header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+          c.header("Pragma", "no-cache");
+          c.header("Expires", "0");
         }
       },
     }),
@@ -33,6 +37,9 @@ export function serveStaticFiles(app: App) {
     }
     const indexPath = path.resolve(distPath, "index.html");
     const content = fs.readFileSync(indexPath, "utf-8");
+    c.header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    c.header("Pragma", "no-cache");
+    c.header("Expires", "0");
     return c.html(content);
   });
 }
