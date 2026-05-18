@@ -450,21 +450,29 @@ export async function syncFlowixCatalog() {
       existingGames.find((game) => matchKey(game.name) === nameKey);
     const assetPath = gameAssetPath(group.slug, group.name);
 
+    const defaultSortOrder =
+      favoriteRank(group.slug) ?? syncedGames.length + favoriteGameOrder.length + 1;
+    const inputMetadata = targetInputMetadata(group.slug, group.categorySlug);
     const gameData = {
       categoryId: category.id,
-      name: group.name,
+      name: existing?.name ?? group.name,
       slug: group.slug,
-      description: `${productCategoryName(group.categorySlug)} ${group.name} tersedia instan.`,
-      coverImage: assetPath ?? existing?.coverImage ?? null,
-      cardImage: assetPath ?? existing?.cardImage ?? null,
-      bannerImage: assetPath ?? existing?.bannerImage ?? null,
+      description:
+        existing?.description ?? `${productCategoryName(group.categorySlug)} ${group.name} tersedia instan.`,
+      coverImage: existing?.coverImage ?? assetPath ?? null,
+      cardImage: existing?.cardImage ?? assetPath ?? null,
+      bannerImage: existing?.bannerImage ?? assetPath ?? null,
       publisher: FLOWIX_PUBLISHER,
       platform: productPlatform(group.categorySlug),
       isActive: existing ? !existing.isManuallyHidden : true,
-      isTrending: syncedGames.length < 8 || favoriteRank(group.slug) !== null,
-      isPopular: syncedGames.length < 12 || favoriteRank(group.slug) !== null,
-      ...targetInputMetadata(group.slug, group.categorySlug),
-      sortOrder: favoriteRank(group.slug) ?? syncedGames.length + favoriteGameOrder.length + 1,
+      isTrending:
+        existing?.isTrending ?? (syncedGames.length < 8 || favoriteRank(group.slug) !== null),
+      isPopular:
+        existing?.isPopular ?? (syncedGames.length < 12 || favoriteRank(group.slug) !== null),
+      hasServerId: existing?.hasServerId ?? inputMetadata.hasServerId,
+      serverIdLabel: existing?.serverIdLabel ?? inputMetadata.serverIdLabel,
+      serverIdPlaceholder: existing?.serverIdPlaceholder ?? inputMetadata.serverIdPlaceholder,
+      sortOrder: existing?.sortOrder ?? defaultSortOrder,
     };
 
     const syncedRows: GameRow[] = existing
@@ -501,23 +509,25 @@ export async function syncFlowixCatalog() {
       .orderBy(asc(products.id));
     const [existing] = existingProducts;
 
+    const providerName = cleanProductDisplayName(product.name, product.brand, product.code);
+    const providerSalePrice = String(withMarkup(product.price));
     const productData = {
       gameId: game.id,
-      name: cleanProductDisplayName(product.name, product.brand, product.code),
+      name: existing?.name ?? providerName,
       description: `${cleanFlowixName(product.brand)} - ${product.code}`,
       nominalAmount: product.code,
       basePrice: String(product.price),
-      salePrice: String(withMarkup(product.price)),
-      discountPercent: 0,
-      isPromo: false,
-      stock: 999,
+      salePrice: existing?.salePrice ?? providerSalePrice,
+      discountPercent: existing?.discountPercent ?? 0,
+      isPromo: existing?.isPromo ?? false,
+      stock: existing?.stock ?? 999,
       isActive: existing ? !existing.isManuallyHidden : true,
-      sortOrder: index + 1,
+      sortOrder: existing?.sortOrder ?? index + 1,
     };
 
     if (existing) {
       await db.update(products).set(productData).where(eq(products.id, existing.id));
-      const duplicateIds = existingProducts.slice(1).map((item) => item.id);
+      const duplicateIds = existingProducts.slice(1).filter((item) => !item.isManuallyHidden).map((item) => item.id);
       for (const duplicateId of duplicateIds) {
         await db.update(products).set({ isActive: false }).where(eq(products.id, duplicateId));
       }
@@ -556,6 +566,7 @@ export async function syncFlowixCatalog() {
       keptGameKeys.add(key);
       continue;
     }
+    if (game.isManuallyHidden) continue;
     await db.update(games).set({ isActive: false }).where(eq(games.id, game.id));
     await db.update(products).set({ isActive: false }).where(eq(products.gameId, game.id));
   }
@@ -651,11 +662,7 @@ export const gameRouter = createRouter({
           .limit((input?.limit || 50) * 3)
           .offset(input?.offset || 0);
 
-      let rows = await loadRows();
-      if (rows.length === 0 && isFlowixConfigured()) {
-        await syncFlowixCatalog();
-        rows = await loadRows();
-      }
+      const rows = await loadRows();
 
       return uniqueGamesByName(rows).slice(0, input?.limit || 50).map((game) => ({
         ...game,
@@ -675,11 +682,7 @@ export const gameRouter = createRouter({
           .where(and(eq(games.slug, input.slug), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
           .limit(1);
 
-      let [game] = await loadGame();
-      if (!game && isFlowixConfigured()) {
-        await syncFlowixCatalog();
-        [game] = await loadGame();
-      }
+      const [game] = await loadGame();
 
       if (!game) return null;
 
@@ -800,11 +803,7 @@ export const gameRouter = createRouter({
         .where(and(eq(categories.isActive, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
         .orderBy(asc(categories.sortOrder));
 
-    let rows = await loadCategories();
-    if (rows.length === 0 && isFlowixConfigured()) {
-      await syncFlowixCatalog();
-      rows = await loadCategories();
-    }
+    const rows = await loadCategories();
 
     return rows;
   }),
