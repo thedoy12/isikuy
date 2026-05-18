@@ -503,7 +503,7 @@ export default function GameDetail() {
           <div className="absolute inset-0 bg-gradient-to-t from-[#030305] via-[#030305]/70 to-transparent" />
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
           <div className="flex items-center gap-2 text-sm text-white/40 mb-4">
             <Link to="/" className="hover:text-white transition-colors">
               Home
@@ -546,10 +546,10 @@ export default function GameDetail() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
           {/* Left Column - Form */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6">
             {/* Step 1: Select Product */}
             <div className="glass rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-5">
@@ -561,7 +561,7 @@ export default function GameDetail() {
                 </h3>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                 {game.products?.map((product) => {
                   const price = parseFloat(
                     product.salePrice || product.basePrice
@@ -748,7 +748,7 @@ export default function GameDetail() {
           </div>
 
           {/* Right Column - Summary */}
-          <div className="lg:col-span-1">
+          <div>
             <div className="sticky top-28">
               <div className="glass rounded-2xl p-6">
                 <h3 className="font-display text-lg font-semibold text-white mb-5">
