@@ -64,6 +64,7 @@ export default function GameDetail() {
     onSuccess: (data) => {
       setInvoiceNumber(data.invoiceNumber);
       setPaymentDetails(data.payment);
+      setShowQris(false);
       setStep("payment");
     },
     onError: (err) => setCheckoutError(err.message),
@@ -84,6 +85,7 @@ export default function GameDetail() {
   const [voucherCode, setVoucherCode] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [showQris, setShowQris] = useState(false);
   const [timeLeft, setTimeLeft] = useState(3600);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const selectedProductData = game?.products.find((p) => p.id === selectedProduct);
@@ -125,6 +127,8 @@ export default function GameDetail() {
     { invoiceNumber },
     { enabled: !!invoiceNumber && step === "payment", refetchInterval: 3000 }
   );
+  const payableAmount =
+    paymentDetails?.amountTotal ?? (txStatus?.totalAmount ? parseFloat(txStatus.totalAmount) : 0);
   const orderIsProcessing =
     txStatus?.paymentStatus === "paid" && txStatus.status === "processing";
 
@@ -306,11 +310,7 @@ export default function GameDetail() {
                 <div className="flex justify-between text-sm">
                   <span className="text-white/50">Total Bayar QRIS</span>
                   <span className="text-[#ff003c] font-semibold">
-                    Rp{txStatus?.totalAmount
-                      ? parseFloat(txStatus.totalAmount).toLocaleString()
-                      : paymentDetails?.amountTotal
-                        ? paymentDetails.amountTotal.toLocaleString()
-                        : "-"}
+                    Rp{payableAmount ? payableAmount.toLocaleString() : "-"}
                   </span>
                 </div>
               </div>
@@ -318,41 +318,69 @@ export default function GameDetail() {
 
             {/* QRIS Placeholder */}
             <div className="glass rounded-2xl p-6 mb-6 text-center">
-              <p className="text-xs text-white/40 mb-4">
-                Scan QRIS dengan aplikasi e-wallet atau mobile banking
+              <p className="text-xs text-white/40 mb-2">Total yang harus dibayar</p>
+              <p className="font-display text-4xl font-bold text-white mb-5">
+                Rp{payableAmount ? payableAmount.toLocaleString() : "-"}
               </p>
-              {paymentDetails?.qrImage ? (
-                <img
-                  src={paymentDetails.qrImage}
-                  alt="QRIS pembayaran"
-                  loading="eager"
-                  decoding="async"
-                  className="w-48 h-48 mx-auto bg-white rounded-xl object-contain p-2"
-                />
-              ) : import.meta.env.DEV ? (
-                <div className="w-48 h-48 mx-auto bg-white rounded-xl flex items-center justify-center">
-                  <div className="text-center">
-                    <QrCode className="w-12 h-12 text-black/20 mx-auto mb-2" />
-                    <p className="text-xs text-black/40 font-medium">
-                      QRIS Code
+
+              {!showQris && (
+                <button
+                  type="button"
+                  onClick={() => setShowQris(true)}
+                  className="mx-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00f0ff] to-[#00b8c4] px-6 py-3 text-sm font-semibold text-black transition-all hover:shadow-lg hover:shadow-[#00f0ff]/25"
+                >
+                  <QrCode className="h-4 w-4" />
+                  Munculkan QRIS
+                </button>
+              )}
+
+              <div
+                className={`overflow-hidden transition-all duration-700 ease-out ${
+                  showQris ? "mt-5 max-h-[440px] opacity-100" : "max-h-0 opacity-0"
+                }`}
+              >
+                <div
+                  className={`origin-top transition-transform duration-700 ease-out ${
+                    showQris ? "translate-y-0 scale-y-100" : "-translate-y-4 scale-y-0"
+                  }`}
+                >
+                  <p className="text-xs text-white/40 mb-4">
+                    Scan QRIS dengan aplikasi e-wallet atau mobile banking
+                  </p>
+                  {paymentDetails?.qrImage ? (
+                    <img
+                      src={paymentDetails.qrImage}
+                      alt="QRIS pembayaran"
+                      loading="eager"
+                      decoding="async"
+                      className="w-48 h-48 mx-auto bg-white rounded-xl object-contain p-2"
+                    />
+                  ) : import.meta.env.DEV ? (
+                    <div className="w-48 h-48 mx-auto bg-white rounded-xl flex items-center justify-center">
+                      <div className="text-center">
+                        <QrCode className="w-12 h-12 text-black/20 mx-auto mb-2" />
+                        <p className="text-xs text-black/40 font-medium">
+                          QRIS Code
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-[#ff003c]/20 bg-[#ff003c]/10 px-4 py-3 text-sm text-[#ffb8c7]">
+                      Detail pembayaran belum tersedia. Silakan hubungi admin dengan nomor invoice ini.
+                    </div>
+                  )}
+                  {paymentDetails?.payCode && (
+                    <p className="font-terminal text-xs text-white/60 mt-4 break-all">
+                      {paymentDetails.payCode}
                     </p>
-                  </div>
+                  )}
+                  {paymentDetails?.reference && (
+                    <p className="font-terminal text-[10px] text-white/30 mt-3">
+                      REF: {paymentDetails.reference}
+                    </p>
+                  )}
                 </div>
-              ) : (
-                <div className="rounded-xl border border-[#ff003c]/20 bg-[#ff003c]/10 px-4 py-3 text-sm text-[#ffb8c7]">
-                  Detail pembayaran belum tersedia. Silakan hubungi admin dengan nomor invoice ini.
-                </div>
-              )}
-              {paymentDetails?.payCode && (
-                <p className="font-terminal text-xs text-white/60 mt-4 break-all">
-                  {paymentDetails.payCode}
-                </p>
-              )}
-              {paymentDetails?.reference && (
-                <p className="font-terminal text-[10px] text-white/30 mt-3">
-                  REF: {paymentDetails.reference}
-                </p>
-              )}
+              </div>
             </div>
 
             {/* Status / dev simulation button */}
@@ -378,6 +406,7 @@ export default function GameDetail() {
                 setStep("form");
                 setInvoiceNumber("");
                 setPaymentDetails(null);
+                setShowQris(false);
               }}
               className="w-full py-3 mt-3 text-sm text-white/40 hover:text-white transition-colors"
             >
@@ -442,6 +471,7 @@ export default function GameDetail() {
                   setSelectedPayment(null);
                   setInvoiceNumber("");
                   setPaymentDetails(null);
+                  setShowQris(false);
                 }}
                 className="flex-1 py-3 glass text-white font-semibold rounded-xl hover:bg-white/10 transition-colors"
               >
