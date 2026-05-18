@@ -800,9 +800,6 @@ export default function GameDetail() {
                       : "0"}
                   </span>
                 </div>
-                <p className="text-xs text-[#0aff00] mb-6">
-                  Tanpa biaya tambahan. Margin sudah masuk di harga produk.
-                </p>
 
                 <button
                   onClick={handleCheckout}
