@@ -38,6 +38,7 @@ type ProviderState = {
   productOrder?: FlowixTransaction;
   productCallback?: unknown;
   orderSubmitError?: string;
+  paymentHoldReason?: string;
   lastCallback?: unknown;
 };
 
@@ -64,6 +65,14 @@ function getCandidate(
     if (value) return value;
   }
   return "";
+}
+
+function getNumberCandidate(payload: Record<string, unknown>, keys: string[]) {
+  const value = getCandidate(payload, keys);
+  if (!value) return 0;
+  const normalized = value.replace(/[^\d.-]/g, "");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function getInvoiceNumber(payload: Record<string, unknown>): string {
@@ -112,9 +121,9 @@ function mapStatus(status: string): FlowixStatusUpdate {
 
   if (["processing", "process"].includes(status)) {
     return {
-      status: "processing",
-      paymentStatus: "paid",
-      paid: true,
+      status: "pending",
+      paymentStatus: "unpaid",
+      paid: false,
       completed: false,
     };
   }
@@ -335,6 +344,7 @@ export async function handleFlowixCallback(c: Context) {
         providerReference: string | null;
         providerPaymentId: string | null;
         providerResponse: string | null;
+        totalAmount: string;
       }
     | undefined;
   try {
@@ -350,6 +360,7 @@ export async function handleFlowixCallback(c: Context) {
         providerReference: transactions.providerReference,
         providerPaymentId: transactions.providerPaymentId,
         providerResponse: transactions.providerResponse,
+        totalAmount: transactions.totalAmount,
       })
       .from(transactions)
       .where(
@@ -388,6 +399,19 @@ export async function handleFlowixCallback(c: Context) {
 
   let nextStatus = status.status;
   let nextPaymentStatus = status.paymentStatus;
+  const isProductCallback = event === "transaction.status" || providerReference.startsWith("TRX-");
+  const amountReceived = getNumberCandidate(payload, [
+    "amount_received",
+    "amountReceived",
+    "paid_amount",
+    "paidAmount",
+    "amount_paid",
+    "amountPaid",
+  ]);
+  const expectedAmount = Math.round(Number(matched.totalAmount || 0));
+  const receivedAmountIsEnough = amountReceived > 0 && amountReceived >= expectedAmount;
+  const paymentAlreadyPaid = matched.paymentStatus === "paid";
+  const canProceedWithPaidCallback = paymentAlreadyPaid || receivedAmountIsEnough;
   const previousProviderState = parseProviderState(matched.providerResponse);
   let providerResponse = stringifyProviderState(matched.providerResponse, {
     lastCallback: payload,
@@ -395,39 +419,62 @@ export async function handleFlowixCallback(c: Context) {
   let nextProviderReference = matched.providerReference;
   let completedAt: Date | null | undefined = status.completed ? now : undefined;
 
-  if (event === "transaction.status" || providerReference.startsWith("TRX-")) {
-    nextStatus = productTransactionStatus(getFlowixStatus(payload));
-    nextPaymentStatus = "paid";
-    providerResponse = stringifyProviderState(matched.providerResponse, {
-      productCallback: payload,
-      lastCallback: payload,
-    });
-    completedAt = nextStatus === "success" ? now : undefined;
+  if (isProductCallback) {
+    if (matched.paymentStatus !== "paid") {
+      providerResponse = stringifyProviderState(matched.providerResponse, {
+        productCallback: payload,
+        lastCallback: payload,
+        paymentHoldReason: "Product callback ignored because deposit payment is not paid yet.",
+      });
+      nextStatus = matched.status;
+      nextPaymentStatus = matched.paymentStatus;
+      completedAt = undefined;
+    } else {
+      nextStatus = productTransactionStatus(getFlowixStatus(payload));
+      nextPaymentStatus = "paid";
+      providerResponse = stringifyProviderState(matched.providerResponse, {
+        productCallback: payload,
+        lastCallback: payload,
+      });
+      completedAt = nextStatus === "success" ? now : undefined;
+    }
   } else if (status.paid) {
-    nextPaymentStatus = "paid";
-    nextStatus = "processing";
-    completedAt = undefined;
-    try {
-      const productOrder = await submitFlowixProductOrder(matched);
-      const orderStatus = productTransactionStatus(productOrder?.status || "processing");
-      nextStatus = orderStatus;
-      nextProviderReference = productOrder?.reff_id || matched.providerReference;
-      completedAt = orderStatus === "success" ? now : undefined;
+    if (!canProceedWithPaidCallback) {
+      nextPaymentStatus = "unpaid";
+      nextStatus = "pending";
+      completedAt = undefined;
       providerResponse = stringifyProviderState(matched.providerResponse, {
         depositCallback: payload,
-        productOrder,
         lastCallback: payload,
-        orderSubmitError: undefined,
+        paymentHoldReason: `Payment callback held: received Rp${amountReceived.toLocaleString("id-ID")} of expected Rp${expectedAmount.toLocaleString("id-ID")}.`,
       });
-    } catch (error) {
-      nextStatus = "failed";
-      providerResponse = stringifyProviderState(matched.providerResponse, {
-        depositCallback: payload,
-        orderSubmitError:
-          error instanceof Error ? error.message : "Gagal mengirim order produk Flowix.",
-        lastCallback: payload,
-      });
-      console.error("[flowix] Failed to submit product order", error);
+    } else {
+      nextPaymentStatus = "paid";
+      nextStatus = "processing";
+      completedAt = undefined;
+      try {
+        const productOrder = await submitFlowixProductOrder(matched);
+        const orderStatus = productTransactionStatus(productOrder?.status || "processing");
+        nextStatus = orderStatus;
+        nextProviderReference = productOrder?.reff_id || matched.providerReference;
+        completedAt = orderStatus === "success" ? now : undefined;
+        providerResponse = stringifyProviderState(matched.providerResponse, {
+          depositCallback: payload,
+          productOrder,
+          lastCallback: payload,
+          orderSubmitError: undefined,
+          paymentHoldReason: undefined,
+        });
+      } catch (error) {
+        nextStatus = "failed";
+        providerResponse = stringifyProviderState(matched.providerResponse, {
+          depositCallback: payload,
+          orderSubmitError:
+            error instanceof Error ? error.message : "Gagal mengirim order produk Flowix.",
+          lastCallback: payload,
+        });
+        console.error("[flowix] Failed to submit product order", error);
+      }
     }
   } else {
     providerResponse = stringifyProviderState(matched.providerResponse, {
@@ -437,7 +484,7 @@ export async function handleFlowixCallback(c: Context) {
   }
 
   try {
-    if (status.paid && matched.paymentStatus !== "paid") {
+    if (!isProductCallback && status.paid && receivedAmountIsEnough && !paymentAlreadyPaid) {
       const countedProviderState = await countVoucherUsageOnce({
         ...parseProviderState(providerResponse),
         voucher: previousProviderState.voucher,
@@ -452,7 +499,9 @@ export async function handleFlowixCallback(c: Context) {
         paymentStatus: nextPaymentStatus,
         providerReference: nextProviderReference,
         providerResponse,
-        ...(status.paid ? { paidAt: now } : {}),
+        ...(!isProductCallback && status.paid && receivedAmountIsEnough && !paymentAlreadyPaid
+          ? { paidAt: now }
+          : {}),
         ...(completedAt ? { completedAt } : {}),
       })
       .where(eq(transactions.id, matched.id));
