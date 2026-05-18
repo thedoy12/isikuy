@@ -31,6 +31,13 @@ const DEFAULT_SITE_SETTINGS = {
   popupButtonText: "Lihat Game",
   popupButtonUrl: "/games",
   popupDismissHours: "24",
+  toolsPopupEnabled: "true",
+  toolsPopupTitle: "Mini Tools ISIKUY",
+  toolsPopupMessage: "Spin challenge, cek aura, hitung winrate, dan generate nickname gaming buat konten mabar kamu.",
+  toolsPopupImage: "",
+  toolsPopupButtonText: "Buka Tools",
+  toolsPopupButtonUrl: "/tools",
+  toolsPopupDismissHours: "12",
 };
 
 export type PublicSiteSettings = ReturnType<typeof normalizeSiteSettings>;
@@ -88,6 +95,13 @@ function normalizeSiteSettings(values: Record<string, string>) {
     popupButtonText: merged.popupButtonText,
     popupButtonUrl: merged.popupButtonUrl,
     popupDismissHours: toNumber(merged.popupDismissHours, 24),
+    toolsPopupEnabled: toBoolean(merged.toolsPopupEnabled, true),
+    toolsPopupTitle: merged.toolsPopupTitle,
+    toolsPopupMessage: merged.toolsPopupMessage,
+    toolsPopupImage: merged.toolsPopupImage,
+    toolsPopupButtonText: merged.toolsPopupButtonText,
+    toolsPopupButtonUrl: merged.toolsPopupButtonUrl,
+    toolsPopupDismissHours: toNumber(merged.toolsPopupDismissHours, 12),
   };
 }
 
@@ -116,8 +130,9 @@ export async function ensureDefaultSiteSettings() {
       value,
       type:
         key === "popupDismissHours"
+          || key === "toolsPopupDismissHours"
           ? ("number" as const)
-          : key === "popupEnabled" || key.startsWith("robots")
+          : key === "popupEnabled" || key === "toolsPopupEnabled" || key.startsWith("robots")
             ? ("boolean" as const)
             : ("string" as const),
     })),

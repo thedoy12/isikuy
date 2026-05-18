@@ -31,7 +31,7 @@ export default function Navbar() {
     setProfileOpen(false);
   }, [location.pathname]);
 
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isAdmin = user?.role === "admin";
 
   return (
     <nav

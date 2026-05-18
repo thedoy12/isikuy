@@ -336,7 +336,7 @@ export const transactionRouter = createRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Transaksi tidak ditemukan" });
       }
 
-      const isAdmin = ctx.user.role === "admin" || ctx.user.role === "superadmin";
+      const isAdmin = ctx.user.role === "admin";
       if (!isAdmin && transaction.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Tidak boleh membatalkan transaksi ini" });
       }

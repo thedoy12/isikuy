@@ -53,7 +53,7 @@ function AdminSidebar({ active }: { active: string }) {
 export default function AdminTools() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
   const { data: tools } = trpc.tools.list.useQuery(undefined, { enabled: isAdmin });
   const { data: stats } = trpc.tools.adminStats.useQuery(undefined, { enabled: isAdmin });

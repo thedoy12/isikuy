@@ -16,7 +16,6 @@ import {
   Zap,
   UserCheck,
   UserX,
-  Crown,
   Pencil,
   Settings,
 } from "lucide-react";
@@ -68,7 +67,7 @@ function AdminSidebar({ active }: { active: string }) {
 export default function AdminUsers() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
   const [page, setPage] = useState(0);
   const pageSize = 25;
@@ -144,13 +143,8 @@ export default function AdminUsers() {
                       <p className="truncate text-sm font-bold text-white">{u.name || "Unknown"}</p>
                       <p className="truncate text-[11px] text-white/45">{u.email || "-"}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px]">
-                        <span className={`flex items-center gap-1 ${
-                          u.role === "superadmin" ? "text-[#ff003c]" :
-                          u.role === "admin" ? "text-[#ffb800]" : "text-white/40"
-                        }`}>
-                          {u.role === "superadmin" ? <Crown className="h-3 w-3" /> :
-                           u.role === "admin" ? <Shield className="h-3 w-3" /> :
-                           <Users className="h-3 w-3" />}
+                        <span className={`flex items-center gap-1 ${u.role === "admin" ? "text-[#ffb800]" : "text-white/40"}`}>
+                          {u.role === "admin" ? <Shield className="h-3 w-3" /> : <Users className="h-3 w-3" />}
                           {u.role.toUpperCase()}
                         </span>
                         <span className="text-[#00f0ff]">Rp{parseFloat(u.balance || "0").toLocaleString()}</span>
@@ -178,7 +172,7 @@ export default function AdminUsers() {
                         PROMOTE
                       </button>
                     )}
-                    {(u.role === "admin" || u.role === "superadmin") && u.id !== user?.id && (
+                    {u.role === "admin" && u.id !== user?.id && (
                       <button onClick={() => updateUser.mutate({ id: u.id, role: "user" })}
                         className="rounded bg-white/5 px-3 py-2 text-[10px] text-white/40 hover:bg-white/10 transition-colors">
                         DEMOTE
@@ -226,13 +220,8 @@ export default function AdminUsers() {
                     </td>
                     <td className="px-4 py-3 text-[10px] text-white/50">{u.email || "-"}</td>
                     <td className="px-4 py-3">
-                      <span className={`flex items-center gap-1 text-[10px] ${
-                        u.role === "superadmin" ? "text-[#ff003c]" :
-                        u.role === "admin" ? "text-[#ffb800]" : "text-white/40"
-                      }`}>
-                        {u.role === "superadmin" ? <Crown className="w-3 h-3" /> :
-                         u.role === "admin" ? <Shield className="w-3 h-3" /> :
-                         <Users className="w-3 h-3" />}
+                      <span className={`flex items-center gap-1 text-[10px] ${u.role === "admin" ? "text-[#ffb800]" : "text-white/40"}`}>
+                        {u.role === "admin" ? <Shield className="w-3 h-3" /> : <Users className="w-3 h-3" />}
                         {u.role.toUpperCase()}
                       </span>
                     </td>
@@ -263,7 +252,7 @@ export default function AdminUsers() {
                             PROMOTE
                           </button>
                         )}
-                        {(u.role === "admin" || u.role === "superadmin") && u.id !== user?.id && (
+                        {u.role === "admin" && u.id !== user?.id && (
                           <button onClick={() => updateUser.mutate({ id: u.id, role: "user" })}
                             className="text-[9px] px-2 py-1 bg-white/5 text-white/40 rounded hover:bg-white/10 transition-colors">
                             DEMOTE

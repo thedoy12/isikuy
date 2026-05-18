@@ -17,6 +17,7 @@ import {
 import { syncFlowixCatalog } from "./game";
 import {
   getAdminCredentials,
+  hashPassword,
   setAdminPassword,
   verifyAdminPassword,
 } from "../lib/adminCredentials";
@@ -99,6 +100,13 @@ export const adminRouter = createRouter({
         popupButtonText: z.string().max(40),
         popupButtonUrl: z.string().max(500),
         popupDismissHours: z.number().min(1).max(720),
+        toolsPopupEnabled: z.boolean(),
+        toolsPopupTitle: z.string().max(80),
+        toolsPopupMessage: z.string().max(240),
+        toolsPopupImage: z.string().max(500),
+        toolsPopupButtonText: z.string().max(40),
+        toolsPopupButtonUrl: z.string().max(500),
+        toolsPopupDismissHours: z.number().min(1).max(720),
       }),
     )
     .mutation(async ({ input }) => {
@@ -299,7 +307,7 @@ export const adminRouter = createRouter({
       const filters = [];
 
       if (input?.role) {
-        filters.push(eq(users.role, input.role as "user" | "admin" | "superadmin"));
+        filters.push(eq(users.role, input.role as "user" | "admin"));
       }
       if (input?.search) {
         filters.push(
@@ -317,7 +325,7 @@ export const adminRouter = createRouter({
       const [adminCount] = await db
         .select({ count: count() })
         .from(users)
-        .where(or(eq(users.role, "admin"), eq(users.role, "superadmin")));
+        .where(eq(users.role, "admin"));
       const [activeCount] = await db
         .select({ count: count() })
         .from(users)
@@ -360,9 +368,10 @@ export const adminRouter = createRouter({
         name: z.string().max(255).nullable().optional(),
         email: z.string().email().or(z.literal("")).nullable().optional(),
         avatar: z.string().max(500).nullable().optional(),
-        role: z.enum(["user", "admin", "superadmin"]).optional(),
+        role: z.enum(["user", "admin"]).optional(),
         balance: z.number().optional(),
         isActive: z.boolean().optional(),
+        newPassword: z.string().min(8).max(128).optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -375,6 +384,7 @@ export const adminRouter = createRouter({
       if (input.role) updateData.role = input.role;
       if (input.balance !== undefined) updateData.balance = input.balance.toString();
       if (input.isActive !== undefined) updateData.isActive = input.isActive;
+      if (input.newPassword) updateData.passwordHash = hashPassword(input.newPassword);
 
       await db.update(users).set(updateData).where(eq(users.id, input.id));
       return { success: true };

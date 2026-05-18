@@ -1,55 +1,125 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { Sparkles, Wand2, X } from "lucide-react";
+import { trpc } from "@/providers/trpc";
+import BrandLogo from "@/components/BrandLogo";
 
 const DISMISS_KEY = "isikuy_tools_popup_dismissed_until";
+const MAIN_POPUP_DISMISS_KEY = "isikuy_popup_dismissed_until";
+const MAIN_POPUP_ACTIVE_KEY = "isikuy_popup_active";
+const MAIN_POPUP_CLOSED_EVENT = "isikuy:main-popup-closed";
 
 export default function ToolsPromoPopup() {
   const location = useLocation();
+  const { data: settings } = trpc.site.publicSettings.useQuery(undefined, {
+    staleTime: 60_000,
+  });
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (location.pathname.startsWith("/admin") || location.pathname.startsWith("/tools")) {
+    if (!settings?.toolsPopupEnabled || location.pathname.startsWith("/admin") || location.pathname.startsWith("/tools")) {
       setVisible(false);
       return;
     }
-    const dismissedUntil = Number(localStorage.getItem(DISMISS_KEY) || "0");
-    const timer = window.setTimeout(() => setVisible(Date.now() > dismissedUntil), 1200);
-    return () => window.clearTimeout(timer);
-  }, [location.pathname]);
 
-  if (!visible) return null;
+    const showIfAllowed = () => {
+      const dismissedUntil = Number(localStorage.getItem(DISMISS_KEY) || "0");
+      const mainDismissedUntil = Number(localStorage.getItem(MAIN_POPUP_DISMISS_KEY) || "0");
+      const mainPopupActive = localStorage.getItem(MAIN_POPUP_ACTIVE_KEY) === "true";
+      const mainPopupCanAppear = !!settings.popupEnabled && Date.now() > mainDismissedUntil;
+
+      if (mainPopupActive || mainPopupCanAppear) {
+        setVisible(false);
+        return;
+      }
+
+      setVisible(Date.now() > dismissedUntil);
+    };
+
+    const timer = window.setTimeout(showIfAllowed, 900);
+    window.addEventListener(MAIN_POPUP_CLOSED_EVENT, showIfAllowed);
+    window.addEventListener("storage", showIfAllowed);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener(MAIN_POPUP_CLOSED_EVENT, showIfAllowed);
+      window.removeEventListener("storage", showIfAllowed);
+    };
+  }, [settings, location.pathname]);
+
+  if (!settings?.toolsPopupEnabled || location.pathname.startsWith("/admin") || location.pathname.startsWith("/tools") || !visible) {
+    return null;
+  }
 
   const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY, String(Date.now() + 12 * 60 * 60 * 1000));
+    const hours = Math.max(1, settings.toolsPopupDismissHours || 12);
+    localStorage.setItem(DISMISS_KEY, String(Date.now() + hours * 60 * 60 * 1000));
     setVisible(false);
   };
+  const isExternalButton = /^https?:\/\//i.test(settings.toolsPopupButtonUrl);
+  const buttonClassName =
+    "inline-flex items-center justify-center gap-2 rounded-lg bg-[#ff003c] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#b30029]";
 
   return (
-    <div className="fixed inset-x-4 bottom-5 z-[75] mx-auto max-w-md">
-      <div className="relative overflow-hidden rounded-2xl border border-[#ff4967]/30 bg-[#0b0509]/95 p-5 shadow-[0_20px_70px_rgba(0,0,0,0.55),0_0_45px_rgba(255,0,60,0.18)] backdrop-blur-xl">
-        <div className="absolute inset-0 opacity-[0.12]" style={{ backgroundImage: "linear-gradient(rgba(255,45,77,0.42) 1px, transparent 1px), linear-gradient(90deg, rgba(255,45,77,0.32) 1px, transparent 1px)", backgroundSize: "34px 34px" }} />
-        <button onClick={dismiss} className="absolute right-3 top-3 rounded-lg border border-white/10 bg-black/30 p-2 text-white/50 hover:text-white" aria-label="Tutup tools popup">
+    <div className="fixed inset-0 z-[78] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+      <div className="relative w-full max-w-md overflow-hidden rounded-xl border border-[#00f0ff]/25 bg-[#05090d] p-6 shadow-[0_30px_100px_rgba(0,0,0,0.65),0_0_70px_rgba(0,240,255,0.14)]">
+        <div
+          className="absolute inset-0 opacity-[0.12]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(0,240,255,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(255,45,77,0.28) 1px, transparent 1px)",
+            backgroundSize: "42px 42px",
+          }}
+        />
+        <button
+          type="button"
+          onClick={dismiss}
+          className="absolute right-4 top-4 z-10 rounded-lg border border-white/10 bg-black/30 p-2 text-white/60 transition-colors hover:text-white"
+          aria-label="Tutup tools popup"
+        >
           <X className="h-4 w-4" />
         </button>
-        <div className="relative pr-8">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#00f0ff]/20 bg-[#00f0ff]/10 px-3 py-1 text-[10px] uppercase tracking-wider text-[#00f0ff]">
-            <Sparkles className="h-3 w-3" />
-            New Fun Tools
-          </div>
-          <h2 className="font-display text-2xl font-bold text-white">
-            Spin challenge, cek aura, dan bikin nickname gaming.
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-white/55">
-            Mini tools ringan buat mabar, konten, dan kalkulasi winrate.
+
+        <div className="relative">
+          <BrandLogo compact className="mb-5" imageClassName="h-14" />
+          {settings.toolsPopupImage ? (
+            <div className="mb-5 overflow-hidden rounded-lg border border-white/10 bg-black/30">
+              <img
+                src={settings.toolsPopupImage}
+                alt={settings.toolsPopupTitle || "Tools ISIKUY"}
+                loading="eager"
+                decoding="async"
+                className="h-48 w-full object-cover"
+              />
+            </div>
+          ) : null}
+          <p className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#00f0ff]">
+            <Sparkles className="h-4 w-4" />
+            ISIKUY TOOLS
           </p>
-          <div className="mt-4 flex gap-2">
-            <Link onClick={dismiss} to="/tools" className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#ff003c] px-4 py-3 text-sm font-bold text-white">
-              <Wand2 className="h-4 w-4" />
-              Buka Tools
-            </Link>
-            <button onClick={dismiss} className="rounded-xl border border-white/10 px-4 py-3 text-sm text-white/55">
-              Nanti
+          <h2 className="font-display text-3xl font-bold leading-tight text-white">
+            {settings.toolsPopupTitle}
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-white/60">
+            {settings.toolsPopupMessage}
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            {settings.toolsPopupButtonUrl && isExternalButton ? (
+              <a href={settings.toolsPopupButtonUrl} onClick={dismiss} className={buttonClassName}>
+                <Wand2 className="h-4 w-4" />
+                {settings.toolsPopupButtonText || "Buka Tools"}
+              </a>
+            ) : settings.toolsPopupButtonUrl ? (
+              <Link to={settings.toolsPopupButtonUrl} onClick={dismiss} className={buttonClassName}>
+                <Wand2 className="h-4 w-4" />
+                {settings.toolsPopupButtonText || "Buka Tools"}
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              onClick={dismiss}
+              className="rounded-lg border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white/70 transition-colors hover:bg-white/[0.07]"
+            >
+              Nanti saja
             </button>
           </div>
         </div>

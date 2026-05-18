@@ -51,7 +51,7 @@ Perbaikan yang sudah diterapkan:
 - Validasi server ID diperketat untuk produk yang membutuhkan server/zone ID.
 - Voucher checkout diaktifkan: kode voucher kini ikut dihitung pada estimasi pembayaran, ditampilkan sebagai diskon, divalidasi di backend saat transaksi dibuat, dan usage count dinaikkan setelah transaksi dibuat.
 - Pembayaran production dibuat lebih aman: QRIS production akan menolak checkout jika Flowix belum dikonfigurasi, sehingga user tidak diarahkan ke QR placeholder palsu.
-- Role admin diselaraskan: `superadmin` sekarang bisa memakai endpoint admin seperti yang sudah ditampilkan oleh UI.
+- Role aplikasi disederhanakan menjadi `admin` dan `user`.
 - Kredensial admin default diamankan: production sekarang wajib mengisi `ADMIN_USERNAME` dan `ADMIN_PASSWORD`, sedangkan default dev tetap tersedia untuk lokal.
 - Login admin tidak lagi mengisi username default di form.
 - Dashboard admin memakai data transaksi 7 hari terakhir dari backend, bukan chart dummy hardcoded.

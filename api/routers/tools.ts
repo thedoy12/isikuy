@@ -71,11 +71,15 @@ async function generateWithGemini(input: {
   if (!tool?.aiEnabled || !env.geminiApiKey) return null;
 
   const prompt = [
-    `Buat hasil untuk ${tool.title}.`,
+    `Kamu adalah generator mini tools gaming untuk ISIKUY.`,
+    `Tool: ${tool.title}.`,
+    `Deskripsi tool: ${tool.description}.`,
     `Mode: ${input.mode || "Random"}.`,
     `Input user: ${input.prompt || input.nickname || "-"}.`,
-    "Jawab singkat, fun, gaming, aman untuk publik, tanpa hinaan SARA, tanpa kata kasar ekstrem.",
-    "Berikan 3 opsi maksimal jika cocok.",
+    "Jawab dalam Bahasa Indonesia yang natural, fun, gaming, dan siap dipakai untuk konten.",
+    "Format output: 3 baris maksimal. Setiap baris harus satu opsi atau satu informasi penting.",
+    "Jangan pakai numbering panjang, markdown, penjelasan proses, hinaan SARA, seksual eksplisit, atau kata kasar ekstrem.",
+    "Kalau tool meminta nickname/squad/caption, hasil harus langsung berupa pilihan yang bisa disalin.",
   ].join("\n");
 
   const response = await fetch(

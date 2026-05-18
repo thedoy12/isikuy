@@ -73,7 +73,7 @@ function AdminSidebar({ active }: { active: string }) {
 export default function AdminGames() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");

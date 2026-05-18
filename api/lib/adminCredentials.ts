@@ -7,6 +7,15 @@ import { env } from "./env";
 const USERNAME_KEY = "adminUsername";
 const PASSWORD_HASH_KEY = "adminPasswordHash";
 
+function isMissingSiteSettingsError(error: unknown) {
+  const candidate = error as { code?: string; cause?: { code?: string }; message?: string };
+  return (
+    candidate.code === "42P01" ||
+    candidate.cause?.code === "42P01" ||
+    /siteSettings|relation .* does not exist|Failed query/i.test(candidate.message || "")
+  );
+}
+
 export function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(password, salt, 64).toString("hex");
@@ -23,12 +32,17 @@ export function verifyPassword(password: string, encodedHash: string) {
 }
 
 async function getSetting(key: string) {
-  const [setting] = await getDb()
-    .select({ value: siteSettings.value })
-    .from(siteSettings)
-    .where(eq(siteSettings.key, key))
-    .limit(1);
-  return setting?.value || "";
+  try {
+    const [setting] = await getDb()
+      .select({ value: siteSettings.value })
+      .from(siteSettings)
+      .where(eq(siteSettings.key, key))
+      .limit(1);
+    return setting?.value || "";
+  } catch (error) {
+    if (isMissingSiteSettingsError(error)) return "";
+    throw error;
+  }
 }
 
 async function setSetting(key: string, value: string) {

@@ -21,6 +21,7 @@ import {
   Loader2,
   Shield,
   Zap,
+  ListChecks,
 } from "lucide-react";
 
 const paymentIcons: Record<string, React.ReactNode> = {
@@ -50,6 +51,55 @@ type CheckoutPayment = {
   }>;
   expiredAt: string;
 } | null;
+
+function getTargetGuide(slug: string, targetLabel: string, serverLabel?: string | null) {
+  const serverText = serverLabel || "Server ID";
+  const guides: Record<string, string[]> = {
+    "mobile-legends": [
+      "Buka profil Mobile Legends, lalu salin User ID dan Zone ID yang ada di bawah nama akun.",
+      "Masukkan User ID di kolom tujuan dan Zone ID di kolom server.",
+      "Pilih nominal diamond, bayar QRIS, lalu tunggu item masuk ke akun.",
+    ],
+    "mobile-legends-gift": [
+      "Buka profil Mobile Legends dan pastikan User ID serta Zone ID penerima sudah benar.",
+      "Masukkan data penerima sesuai kolom yang tersedia.",
+      "Pilih item gift, bayar QRIS, lalu cek akun penerima setelah transaksi diproses.",
+    ],
+    "genshin-impact": [
+      "Buka menu profil Genshin Impact, salin UID, lalu pastikan server akun sudah sesuai.",
+      "Masukkan UID pada kolom tujuan dan pilih/ketik server akun.",
+      "Pilih nominal Genesis Crystal, bayar QRIS, lalu cek saldo di dalam game.",
+    ],
+    valorant: [
+      "Pastikan Riot ID atau data akun tujuan sudah benar sebelum membuat pesanan.",
+      "Masukkan ID tujuan, pilih nominal VP, lalu lanjutkan ke pembayaran QRIS.",
+      "Tunggu transaksi selesai dan cek saldo di akun Valorant.",
+    ],
+    roblox: [
+      "Masukkan username atau ID akun Roblox tujuan dengan teliti.",
+      "Pilih nominal Robux yang ingin dibeli, lalu buat QRIS.",
+      "Setelah pembayaran berhasil, tunggu saldo masuk sesuai proses provider.",
+    ],
+    "pubg-mobile": [
+      "Buka profil PUBG Mobile dan salin Character ID akun tujuan.",
+      "Masukkan Character ID, pilih nominal UC, lalu lanjutkan pembayaran.",
+      "Cek UC di akun setelah status pesanan berhasil.",
+    ],
+    "free-fire": [
+      "Buka profil Free Fire dan salin Player ID akun tujuan.",
+      "Masukkan Player ID, pilih nominal diamond, lalu bayar menggunakan QRIS.",
+      "Tunggu pesanan diproses dan cek diamond di akun.",
+    ],
+  };
+
+  return (
+    guides[slug] || [
+      `Siapkan ${targetLabel}${serverLabel ? ` dan ${serverText}` : ""} yang benar dari akun tujuan.`,
+      "Pilih nominal produk yang ingin dibeli, lalu cek ringkasan pesanan.",
+      "Bayar menggunakan QRIS dan tunggu pesanan masuk otomatis setelah pembayaran berhasil.",
+    ]
+  );
+}
 
 export default function GameDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -112,6 +162,19 @@ export default function GameDetail() {
       : categorySlug === "game"
         ? "Contoh: 123456789"
         : "Masukkan ID tujuan";
+  const usageGuide = isPhoneTarget
+    ? [
+        "Masukkan nomor HP tujuan dengan format yang benar.",
+        "Pilih nominal yang ingin dibeli, lalu cek kembali ringkasan pesanan.",
+        "Bayar menggunakan QRIS dan tunggu produk masuk ke nomor tujuan.",
+      ]
+    : isPlnTarget
+      ? [
+          "Masukkan ID Pelanggan atau nomor meter PLN dengan benar.",
+          "Pilih nominal token, lalu cek kembali total pembayaran.",
+          "Bayar menggunakan QRIS dan simpan token yang muncul di riwayat pesanan.",
+        ]
+      : getTargetGuide(slug || "", targetLabel, game?.serverIdLabel);
 
   const { data: paymentCalc } = trpc.payment.calculate.useQuery(
     {
@@ -550,6 +613,37 @@ export default function GameDetail() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
           {/* Left Column - Form */}
           <div className="space-y-6">
+            <div className="glass rounded-2xl p-6">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#00f0ff]/25 bg-[#00f0ff]/10 text-[#00f0ff]">
+                  <ListChecks className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#00f0ff]">
+                    Tata Cara
+                  </p>
+                  <h3 className="font-display text-lg font-semibold text-white">
+                    Cara Top Up {game.name}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                {usageGuide.map((item, index) => (
+                  <div key={item} className="rounded-xl border border-white/10 bg-black/25 p-4">
+                    <div className="mb-3 flex h-7 w-7 items-center justify-center rounded-lg bg-[#ff003c] text-xs font-bold text-white">
+                      {index + 1}
+                    </div>
+                    <p className="text-sm leading-relaxed text-white/65">{item}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-xl border border-[#ffb800]/20 bg-[#ffb800]/10 px-4 py-3 text-xs leading-relaxed text-[#ffe4a3]">
+                Pastikan data tujuan sudah benar sebelum membuat QRIS. Pesanan yang sudah diproses tidak bisa dibatalkan otomatis.
+              </div>
+            </div>
+
             {/* Step 1: Select Product */}
             <div className="glass rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-5">

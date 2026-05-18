@@ -14,7 +14,7 @@ export default function Login() {
   const login = trpc.auth.login.useMutation({
     onSuccess: async (user) => {
       await utils.auth.me.invalidate();
-      const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+      const isAdmin = user?.role === "admin";
       navigate(isAdmin ? "/admin" : "/");
     },
     onError: (err) => setError(err.message),

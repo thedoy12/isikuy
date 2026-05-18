@@ -5,6 +5,8 @@ import { trpc } from "@/providers/trpc";
 import BrandLogo from "@/components/BrandLogo";
 
 const DISMISS_KEY = "isikuy_popup_dismissed_until";
+const ACTIVE_KEY = "isikuy_popup_active";
+const CLOSED_EVENT = "isikuy:main-popup-closed";
 
 export default function SitePopup() {
   const location = useLocation();
@@ -16,6 +18,7 @@ export default function SitePopup() {
   useEffect(() => {
     if (!settings?.popupEnabled || location.pathname.startsWith("/admin")) {
       setVisible(false);
+      localStorage.removeItem(ACTIVE_KEY);
       return;
     }
 
@@ -23,12 +26,22 @@ export default function SitePopup() {
     setVisible(Date.now() > dismissedUntil);
   }, [settings, location.pathname]);
 
+  useEffect(() => {
+    if (visible) {
+      localStorage.setItem(ACTIVE_KEY, "true");
+      return;
+    }
+    localStorage.removeItem(ACTIVE_KEY);
+  }, [visible]);
+
   if (!settings?.popupEnabled || location.pathname.startsWith("/admin") || !visible) return null;
 
   const dismiss = () => {
     const hours = Math.max(1, settings.popupDismissHours || 24);
     localStorage.setItem(DISMISS_KEY, String(Date.now() + hours * 60 * 60 * 1000));
+    localStorage.removeItem(ACTIVE_KEY);
     setVisible(false);
+    window.dispatchEvent(new Event(CLOSED_EVENT));
   };
   const isExternalButton = /^https?:\/\//i.test(settings.popupButtonUrl);
   const buttonClassName =

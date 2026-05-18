@@ -48,6 +48,13 @@ const DEFAULT_SITE_FORM = {
   popupButtonText: "Lihat Game",
   popupButtonUrl: "/games",
   popupDismissHours: 24,
+  toolsPopupEnabled: true,
+  toolsPopupTitle: "Mini Tools ISIKUY",
+  toolsPopupMessage: "Spin challenge, cek aura, hitung winrate, dan generate nickname gaming buat konten mabar kamu.",
+  toolsPopupImage: "",
+  toolsPopupButtonText: "Buka Tools",
+  toolsPopupButtonUrl: "/tools",
+  toolsPopupDismissHours: 12,
 };
 
 function AdminSidebar({ active }: { active: string }) {
@@ -105,7 +112,7 @@ function AdminSidebar({ active }: { active: string }) {
 export default function AdminSettings() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -141,7 +148,7 @@ export default function AdminSettings() {
   const updateSiteSettings = trpc.admin.updateSiteSettings.useMutation({
     onSuccess: async () => {
       setSiteError("");
-      setSiteMessage("Pengaturan SEO, kontak, dan popup berhasil disimpan");
+      setSiteMessage("Pengaturan SEO, kontak, popup utama, dan popup tools berhasil disimpan");
       await Promise.all([
         utils.admin.siteSettings.invalidate(),
         utils.site.publicSettings.invalidate(),
@@ -190,6 +197,7 @@ export default function AdminSettings() {
     updateSiteSettings.mutate({
       ...siteForm,
       popupDismissHours: Number(siteForm.popupDismissHours) || 24,
+      toolsPopupDismissHours: Number(siteForm.toolsPopupDismissHours) || 12,
     });
   };
 
@@ -631,6 +639,103 @@ export default function AdminSettings() {
                         updateSiteField("popupDismissHours", Number(event.target.value))
                       }
                       className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#ff003c]/50"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section className="border border-[#222] bg-[#11131a] p-5">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center bg-[#00f0ff]/10">
+                    <Megaphone className="h-5 w-5 text-[#00f0ff]" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold tracking-wider text-white">
+                      TOOLS_POPUP
+                    </h2>
+                    <p className="text-[10px] tracking-wider text-white/35">
+                      Modal promosi halaman tools
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="flex items-center justify-between border border-[#222] bg-[#0b0d14] px-4 py-3 text-xs text-white/55">
+                    ENABLE_TOOLS_POPUP
+                    <input
+                      type="checkbox"
+                      checked={siteForm.toolsPopupEnabled}
+                      onChange={(event) => updateSiteField("toolsPopupEnabled", event.target.checked)}
+                      className="accent-[#00f0ff]"
+                    />
+                  </label>
+                  <div>
+                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                      TOOLS_POPUP_TITLE
+                    </label>
+                    <input
+                      value={siteForm.toolsPopupTitle}
+                      onChange={(event) => updateSiteField("toolsPopupTitle", event.target.value)}
+                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                      TOOLS_POPUP_MESSAGE
+                    </label>
+                    <textarea
+                      value={siteForm.toolsPopupMessage}
+                      onChange={(event) => updateSiteField("toolsPopupMessage", event.target.value)}
+                      rows={4}
+                      className="w-full resize-none border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                      TOOLS_POPUP_IMAGE_URL
+                    </label>
+                    <input
+                      value={siteForm.toolsPopupImage}
+                      onChange={(event) => updateSiteField("toolsPopupImage", event.target.value)}
+                      placeholder="https://domain.com/tools-promo.jpg"
+                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                    />
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <div>
+                      <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                        TOOLS_BUTTON_TEXT
+                      </label>
+                      <input
+                        value={siteForm.toolsPopupButtonText}
+                        onChange={(event) => updateSiteField("toolsPopupButtonText", event.target.value)}
+                        className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                        TOOLS_BUTTON_URL
+                      </label>
+                      <input
+                        value={siteForm.toolsPopupButtonUrl}
+                        onChange={(event) => updateSiteField("toolsPopupButtonUrl", event.target.value)}
+                        className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                      TOOLS_DISMISS_HOURS
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={720}
+                      value={siteForm.toolsPopupDismissHours}
+                      onChange={(event) =>
+                        updateSiteField("toolsPopupDismissHours", Number(event.target.value))
+                      }
+                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
                     />
                   </div>
                 </div>

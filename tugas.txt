@@ -1,0 +1,293 @@
+Tambahkan fitur “Mini Gaming Fun Tools” ke dalam website topup game Laravel yang sudah ada tanpa mengubah sistem topup utama. Buat fitur ini ringan, cepat, mobile-friendly, fun, viral, modern, dan SEO-friendly dengan desain futuristic gaming menggunakan TailwindCSS, dark mode, glassmorphism ringan, neon accent, smooth animation, clean card layout, dan performa ringan agar tidak membebani server.
+
+Tambahkan menu baru:
+- /tools
+
+Gunakan Google Gemini API hanya untuk fitur AI text generator ringan. Simpan API key di file .env backend Laravel dan jangan expose API key ke frontend.
+
+Tambahkan konfigurasi:
+GEMINI_API_KEY=AIzaSyD-3oNnLoCCGYbLS2jx0LSkOScxymP1JCY
+
+Gunakan hybrid system:
+- random/template/database generator untuk performa cepat
+- AI hanya untuk enhancement text
+- fallback ke template jika AI gagal
+
+Gunakan Gemini API hanya untuk:
+- nickname generator
+- caption generator
+- squad name generator
+- trash talk generator
+
+TOOLS YANG HARUS DIBUAT:
+
+====================================
+AI & TEXT TOOLS
+====================================
+
+1. AI Nickname Generator
+Route:
+- /tools/nickname-generator
+
+Fitur:
+- generate nickname gaming keren
+- style pro player
+- style aesthetic
+- style Jepang
+- style Korea
+- style cyber
+- support simbol unik
+- support unicode
+- tombol copy
+- tombol generate ulang
+- share result
+
+2. AI Squad Name Generator
+Route:
+- /tools/squad-name
+
+Fitur:
+- generate nama squad/guild
+- kategori esport
+- savage
+- anime
+- cyber
+- generate tagline squad
+- copy result
+- share result
+
+3. AI Trash Talk Generator
+Route:
+- /tools/trash-talk
+
+Fitur:
+- savage mode
+- absurd mode
+- friendly mode
+- random roast gaming
+- tombol random generate
+- copy to clipboard
+
+4. AI Gaming Caption Generator
+Route:
+- /tools/caption-generator
+
+Fitur:
+- caption kemenangan
+- caption kekalahan
+- caption savage
+- caption lucu
+- hashtag otomatis
+- copy result
+
+====================================
+SPIN & RANDOM TOOLS
+====================================
+
+5. Random Challenge Wheel
+Route:
+- /tools/challenge-wheel
+
+Fitur:
+- spin wheel animation
+- random challenge gamer
+- no heal
+- sniper only
+- no recall
+- rush mid
+- random hero challenge
+- popup hasil
+- spin ulang
+
+6. Spin Hukuman Mabar
+Route:
+- /tools/punishment-wheel
+
+Fitur:
+- wheel hukuman lucu
+- push-up
+- open mic
+- no skin
+- pistol only
+- no armor
+- hasil popup animation
+
+7. Random Hero Picker
+Route:
+- /tools/hero-picker
+
+Fitur:
+- random hero Mobile Legends
+- random role
+- random lane
+- random difficulty
+- random agent Valorant
+- hero card aesthetic
+
+====================================
+FUN VIRAL TOOLS
+====================================
+
+8. Aura Calculator
+Route:
+- /tools/aura-calculator
+
+Fitur:
+- input nickname
+- generate aura percentage
+- hoki percentage
+- toxic percentage
+- MVP percentage
+- hasil random lucu
+- progress bar gaming
+
+9. Toxic Meter
+Route:
+- /tools/toxic-meter
+
+Fitur:
+- input nickname
+- toxic score random
+- savage level
+- noob percentage
+- fun result animation
+
+10. Gamer Compatibility Checker
+Route:
+- /tools/compatibility
+
+Fitur:
+- input 2 nickname
+- hitung chemistry squad
+- friendship percentage
+- duo cocok atau tidak
+- hasil lucu dan random
+
+====================================
+CALCULATOR TOOLS
+====================================
+
+11. Winrate Calculator
+Route:
+- /tools/winrate-calculator
+
+Fitur:
+- input total match
+- input current WR
+- target WR
+- hitung jumlah win yang dibutuhkan
+- hasil realtime
+
+12. Diamond Calculator
+Route:
+- /tools/diamond-calculator
+
+Fitur:
+- convert diamond ke rupiah
+- simulasi topup
+- estimasi harga
+
+13. Magic Wheel Calculator
+Route:
+- /tools/magic-wheel
+
+Fitur:
+- estimasi diamond spin
+- simulasi keberuntungan
+- random luck animation
+
+====================================
+FAKE & FUN TOOLS
+====================================
+
+14. Fake Rank Generator
+Route:
+- /tools/fake-rank
+
+Fitur:
+- fake Mythic
+- fake Radiant
+- fake Immortal
+- input nickname
+- upload avatar optional
+- hasil berupa gaming rank card
+- tombol download image
+
+15. Fake MVP Generator
+Route:
+- /tools/fake-mvp
+
+Fitur:
+- generate fake MVP result
+- random statistik
+- random KDA
+- gaming result card
+
+====================================
+FITUR GLOBAL
+====================================
+
+- responsive mobile-first
+- dark/light mode
+- loading animation ringan
+- copy to clipboard
+- share ke WhatsApp/TikTok/Instagram
+- recent tools
+- trending tools
+- favorite tools
+- hover animation
+- smooth transition
+- lazy load
+- cache optimization
+
+====================================
+SEO
+====================================
+
+- meta title otomatis
+- meta description otomatis
+- Open Graph otomatis
+- sitemap tools otomatis
+- schema JSON-LD
+
+Buat halaman SEO:
+- /tools/nickname-ml
+- /tools/winrate-ml
+- /tools/challenge-wheel
+- /tools/fake-rank
+- /tools/caption-gaming
+
+====================================
+DATABASE
+====================================
+
+Tambahkan tabel:
+- tools
+- tool_results
+- recent_tools
+- user_favorites
+- trending_tools
+
+====================================
+ADMIN PANEL
+====================================
+
+- statistik tools paling dipakai
+- enable/disable tools
+- edit template generator
+- analytics sederhana
+
+====================================
+PERFORMA
+====================================
+
+- jangan gunakan websocket berat
+- jangan gunakan realtime API game
+- jangan gunakan AI terus menerus
+- gunakan random/template generator
+- optimasi mobile
+- optimasi Lighthouse
+- cache hasil ringan
+- minimalkan query database
+
+Pastikan semua tools menyatu dengan website topup existing agar user dapat bermain tools sambil tetap diarahkan ke fitur topup game.

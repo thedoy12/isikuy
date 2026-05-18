@@ -14,6 +14,7 @@ import {
   Save,
   Settings,
   Shield,
+  KeyRound,
   UserRound,
   Users,
   Zap,
@@ -71,14 +72,14 @@ function AdminSidebar({ active }: { active: string }) {
   );
 }
 
-const roleOptions = ["user", "admin", "superadmin"] as const;
+const roleOptions = ["user", "admin"] as const;
 
 export default function AdminUserEdit() {
   const navigate = useNavigate();
   const params = useParams();
   const userId = Number(params.id);
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
 
   const [form, setForm] = useState({
@@ -86,9 +87,11 @@ export default function AdminUserEdit() {
     name: "",
     email: "",
     avatar: "",
-    role: "user" as "user" | "admin" | "superadmin",
+    role: "user" as "user" | "admin",
     balance: 0,
     isActive: true,
+    newPassword: "",
+    confirmPassword: "",
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -101,6 +104,7 @@ export default function AdminUserEdit() {
     onSuccess: async () => {
       setError("");
       setMessage("Data user berhasil diperbarui");
+      setForm((current) => ({ ...current, newPassword: "", confirmPassword: "" }));
       await Promise.all([
         utils.admin.userById.invalidate({ id: userId }),
         utils.admin.users.invalidate(),
@@ -126,6 +130,8 @@ export default function AdminUserEdit() {
       role: targetUser.role,
       balance: Number(targetUser.balance || 0),
       isActive: targetUser.isActive,
+      newPassword: "",
+      confirmPassword: "",
     });
   }, [targetUser]);
 
@@ -133,6 +139,15 @@ export default function AdminUserEdit() {
     event.preventDefault();
     setMessage("");
     setError("");
+    const newPassword = form.newPassword.trim();
+    if (newPassword && newPassword.length < 8) {
+      setError("Password baru minimal 8 karakter");
+      return;
+    }
+    if (newPassword && newPassword !== form.confirmPassword) {
+      setError("Konfirmasi password tidak sama");
+      return;
+    }
     updateUser.mutate({
       id: userId,
       username: form.username,
@@ -142,6 +157,7 @@ export default function AdminUserEdit() {
       role: form.role,
       balance: Number(form.balance) || 0,
       isActive: form.isActive,
+      newPassword: newPassword || undefined,
     });
   };
 
@@ -244,7 +260,7 @@ export default function AdminUserEdit() {
                       onChange={(event) =>
                         setForm((current) => ({
                           ...current,
-                          role: event.target.value as "user" | "admin" | "superadmin",
+                          role: event.target.value as "user" | "admin",
                         }))
                       }
                       className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
@@ -279,6 +295,7 @@ export default function AdminUserEdit() {
                   />
                   USER_ACTIVE
                 </label>
+
               </section>
 
               <aside className="space-y-6">
@@ -303,6 +320,49 @@ export default function AdminUserEdit() {
                         <Shield className="h-3 w-3" />
                         {form.role.toUpperCase()}
                       </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 border border-[#222] bg-[#0b0d14] p-4">
+                    <div className="mb-4 flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center bg-[#ffb800]/10">
+                        <KeyRound className="h-5 w-5 text-[#ffb800]" />
+                      </div>
+                      <div>
+                        <h2 className="text-sm font-bold tracking-wider text-white">CHANGE_PASSWORD</h2>
+                        <p className="text-[10px] tracking-wider text-white/35">
+                          Kosongkan jika tidak diganti
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                          NEW_PASSWORD
+                        </label>
+                        <input
+                          type="password"
+                          value={form.newPassword}
+                          onChange={(event) => setForm((current) => ({ ...current, newPassword: event.target.value }))}
+                          minLength={8}
+                          placeholder="Minimal 8 karakter"
+                          className="w-full border border-[#222] bg-[#07080d] px-4 py-3 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#ffb800]/50"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                          CONFIRM_PASSWORD
+                        </label>
+                        <input
+                          type="password"
+                          value={form.confirmPassword}
+                          onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+                          minLength={8}
+                          placeholder="Ulangi password"
+                          className="w-full border border-[#222] bg-[#07080d] px-4 py-3 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#ffb800]/50"
+                        />
+                      </div>
                     </div>
                   </div>
 

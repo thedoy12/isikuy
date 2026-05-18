@@ -76,7 +76,7 @@ const statusConfig: Record<string, { icon: any; color: string; label: string }> 
 export default function AdminTransactions() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [page, setPage] = useState(0);

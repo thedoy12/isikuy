@@ -12,7 +12,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
-export const userRoleEnum = pgEnum("user_role", ["user", "admin", "superadmin"]);
+export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 export const platformEnum = pgEnum("platform", ["mobile", "pc", "console", "voucher"]);
 export const paymentMethodTypeEnum = pgEnum("payment_method_type", ["qris", "ewallet", "va", "saldo"]);
 export const transactionStatusEnum = pgEnum("transaction_status", ["pending", "processing", "success", "failed", "cancelled", "refunded"]);
