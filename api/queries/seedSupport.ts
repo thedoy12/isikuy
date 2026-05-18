@@ -7,7 +7,7 @@ export async function seedSupportContent() {
   const existingPaymentMethods = await db.select().from(paymentMethods).limit(1);
   if (existingPaymentMethods.length === 0) {
     await db.insert(paymentMethods).values([
-      { name: "QRIS", code: "qris", type: "qris", icon: "QrCode", feePercent: "1.00", feeFixed: "0", sortOrder: 1 },
+      { name: "QRIS", code: "qris", type: "qris", icon: "QrCode", feePercent: "0", feeFixed: "0", sortOrder: 1 },
     ]);
   }
 

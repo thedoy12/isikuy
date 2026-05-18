@@ -517,7 +517,6 @@ function WhyChooseSection() {
 function PaymentSection() {
   const { data: methods } = trpc.payment.methods.useQuery();
   const qrisMethod = methods?.find((m) => m.code === "qris") ?? methods?.[0];
-  const fee = qrisMethod ? parseFloat(qrisMethod.feePercent ?? "0") : 0;
 
   return (
     <section className="relative py-20 sm:py-24">
@@ -561,7 +560,7 @@ function PaymentSection() {
                 </div>
                 <div className="rounded-xl bg-white/[0.03] px-4 py-3">
                   <span className="block text-white/80">Biaya</span>
-                  {fee > 0 ? `${fee}%` : "Tanpa biaya"}
+                  Tanpa biaya tambahan
                 </div>
                 <div className="rounded-xl bg-white/[0.03] px-4 py-3">
                   <span className="block text-white/80">Status</span>

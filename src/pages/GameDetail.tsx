@@ -90,9 +90,6 @@ export default function GameDetail() {
   const selectedProductPrice = selectedProductData
     ? parseFloat(selectedProductData.salePrice || selectedProductData.basePrice)
     : 0;
-  const qrisAdjustment = paymentDetails?.providerAdjustment
-    ? Math.round(paymentDetails.providerAdjustment)
-    : 0;
   const fallbackCover = game
     ? `https://placehold.co/1200x600/09090b/ffffff?text=${encodeURIComponent(game.name)}`
     : "";
@@ -305,23 +302,6 @@ export default function GameDetail() {
                     <span className="text-white/50">{game.serverIdLabel || "Server"}</span>
                     <span className="text-white">{serverId}</span>
                   </div>
-                )}
-                {paymentDetails?.amountRequested && qrisAdjustment !== 0 && (
-                  <>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-white/50">Estimasi Checkout</span>
-                      <span className="text-white">
-                        Rp{paymentDetails.amountRequested.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-white/50">Penyesuaian QRIS</span>
-                      <span className={qrisAdjustment > 0 ? "text-white" : "text-[#0aff00]"}>
-                        {qrisAdjustment > 0 ? "+" : "-"}Rp
-                        {Math.abs(qrisAdjustment).toLocaleString()}
-                      </span>
-                    </div>
-                  </>
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-white/50">Total Bayar QRIS</span>
@@ -660,7 +640,6 @@ export default function GameDetail() {
               <div className="space-y-3">
                 {paymentMethods?.map((method) => {
                   const isSelected = selectedPayment === method.id;
-                  const fee = parseFloat(method.feePercent ?? "0");
                   return (
                     <div
                       key={method.id}
@@ -686,10 +665,7 @@ export default function GameDetail() {
                           {method.name}
                         </p>
                         <p className="text-xs text-white/40">
-                          {fee > 0
-                            ? `Biaya ${fee}%`
-                            : "Tanpa biaya"}{" "}
-                          - scan dengan e-wallet atau mobile banking
+                          Tanpa biaya tambahan - scan dengan e-wallet atau mobile banking
                         </p>
                       </div>
                       {isSelected && (
@@ -771,15 +747,6 @@ export default function GameDetail() {
                         : "0"}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/50">Biaya Admin</span>
-                    <span className="text-white">
-                      Rp
-                      {paymentCalc?.feeAmount
-                        ? Math.round(paymentCalc.feeAmount).toLocaleString()
-                        : "0"}
-                    </span>
-                  </div>
                   {paymentCalc?.discountAmount ? (
                     <div className="flex justify-between text-sm">
                       <span className="text-white/50">Diskon Voucher</span>
@@ -794,7 +761,7 @@ export default function GameDetail() {
 
                 <div className="flex justify-between mb-3">
                   <span className="text-base font-semibold text-white">
-                    Estimasi Checkout
+                    Total Bayar
                   </span>
                   <span className="font-display text-xl font-bold text-white">
                     Rp
@@ -803,8 +770,8 @@ export default function GameDetail() {
                       : "0"}
                   </span>
                 </div>
-                <p className="text-xs text-[#ffb800] mb-6">
-                  Total bayar final akan muncul setelah QRIS dibuat.
+                <p className="text-xs text-[#0aff00] mb-6">
+                  Tanpa biaya tambahan. Margin sudah masuk di harga produk.
                 </p>
 
                 <button

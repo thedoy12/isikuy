@@ -328,7 +328,7 @@ export const seedRouter = createRouter({
 
       // Seed payment methods
       await db.insert(paymentMethods).values([
-        { name: "QRIS", code: "qris", type: "qris", icon: "QrCode", feePercent: "1.00", feeFixed: "0", sortOrder: 1 },
+        { name: "QRIS", code: "qris", type: "qris", icon: "QrCode", feePercent: "0", feeFixed: "0", sortOrder: 1 },
       ]);
 
       // Seed banners

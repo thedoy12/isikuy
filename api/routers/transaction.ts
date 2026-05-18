@@ -144,19 +144,14 @@ export const transactionRouter = createRouter({
       }
 
       const baseAmount = parseFloat(product.salePrice || product.basePrice);
-      const serviceAmount = Math.round(baseAmount * (env.checkoutTaxPercent / 100));
-      const paymentFeeAmount = Math.round(
-        baseAmount * (parseFloat(method.feePercent || "0") / 100) +
-          parseFloat(method.feeFixed || "0"),
-      );
       const voucher = await validateVoucher({
         code: input.voucherCode,
         amount: baseAmount,
       });
-      const feeAmount = serviceAmount + paymentFeeAmount;
-      const totalAmount = Math.max(1, baseAmount - (voucher?.discountAmount || 0) + feeAmount);
-      let finalFeeAmount = feeAmount;
-      let finalTotalAmount = totalAmount;
+      const feeAmount = 0;
+      const totalAmount = Math.max(1, baseAmount - (voucher?.discountAmount || 0));
+      const finalFeeAmount = feeAmount;
+      const finalTotalAmount = totalAmount;
       let providerReference: string | null = null;
       let providerPaymentId: string | null = null;
       let providerResponse: string | null = voucher ? JSON.stringify({ voucher }) : null;
@@ -168,8 +163,6 @@ export const transactionRouter = createRouter({
           methodCode: "QRIS",
           feeByCustomer: false,
         });
-        finalTotalAmount = Number(flowixDeposit.amount_total || totalAmount);
-        finalFeeAmount = Math.max(0, finalTotalAmount - baseAmount + (voucher?.discountAmount || 0));
         providerReference = flowixDeposit.reff_id;
         providerPaymentId = flowixDeposit.pay_id;
         providerResponse = JSON.stringify({
@@ -180,10 +173,10 @@ export const transactionRouter = createRouter({
           provider: "flowix",
           reference: flowixDeposit.reff_id,
           paymentId: flowixDeposit.pay_id,
-          amountTotal: finalTotalAmount,
+          amountTotal: Number(flowixDeposit.amount_total || finalTotalAmount),
           amountReceived: flowixDeposit.amount_received,
           amountRequested: Math.round(totalAmount),
-          providerAdjustment: finalTotalAmount - Math.round(totalAmount),
+          providerAdjustment: Number(flowixDeposit.amount_total || finalTotalAmount) - Math.round(totalAmount),
           payUrl: flowixDeposit.pay_url,
           payCode: flowixDeposit.pay_code,
           qrString: flowixDeposit.qr_string,

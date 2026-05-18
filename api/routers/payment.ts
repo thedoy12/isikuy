@@ -3,7 +3,6 @@ import { and, eq, gte, lte } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { paymentMethods, products, vouchers } from "@db/schema";
-import { env } from "../lib/env";
 
 async function calculateVoucherDiscount(input: {
   code?: string;
@@ -111,18 +110,18 @@ export const paymentRouter = createRouter({
       const basePrice = product
         ? parseFloat(product.salePrice || product.basePrice)
         : input.basePrice!;
-      const feePercent = parseFloat(method.feePercent || "0");
-      const feeFixed = parseFloat(method.feeFixed || "0");
-      const servicePercent = env.checkoutTaxPercent;
-      const serviceAmount = Math.round(basePrice * (servicePercent / 100));
-      const paymentFeeAmount = Math.round(basePrice * (feePercent / 100) + feeFixed);
       const { discountAmount, voucher, message: voucherMessage } =
         await calculateVoucherDiscount({
           code: input.voucherCode,
           amount: basePrice,
         });
-      const feeAmount = serviceAmount + paymentFeeAmount;
-      const totalAmount = Math.max(0, basePrice - discountAmount + feeAmount);
+      const feePercent = 0;
+      const feeFixed = 0;
+      const servicePercent = 0;
+      const serviceAmount = 0;
+      const paymentFeeAmount = 0;
+      const feeAmount = 0;
+      const totalAmount = Math.max(0, basePrice - discountAmount);
 
       return {
         basePrice,

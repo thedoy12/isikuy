@@ -49,5 +49,5 @@ export const env = {
     "pln",
   ]),
   productMarkupPercent: numberEnv("PRODUCT_MARKUP_PERCENT", 3),
-  checkoutTaxPercent: numberEnv("CHECKOUT_TAX_PERCENT", 0.5),
+  checkoutTaxPercent: numberEnv("CHECKOUT_TAX_PERCENT", 0),
 };
