@@ -66,6 +66,12 @@ export default function Navbar() {
             >
               Trending
             </Link>
+            <Link
+              to="/tools"
+              className="text-sm font-medium text-white/70 hover:text-white transition-colors"
+            >
+              Tools
+            </Link>
           </div>
 
           {/* Right Side */}
@@ -191,6 +197,12 @@ export default function Navbar() {
                 className="px-4 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors"
               >
                 Trending
+              </Link>
+              <Link
+                to="/tools"
+                className="px-4 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                Tools
               </Link>
               {!isAuthenticated && (
                 <>

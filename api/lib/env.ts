@@ -40,6 +40,7 @@ export const env = {
   flowixApiKey: process.env.FLOWIX_API_KEY ?? "",
   flowixMerchantId: process.env.FLOWIX_MERCHANT_ID ?? "",
   flowixWebhookSecret: process.env.FLOWIX_WEBHOOK_SECRET ?? "",
+  geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   flowixProductCategories: listEnv("FLOWIX_PRODUCT_CATEGORIES", [
     "game",
     "pulsa",

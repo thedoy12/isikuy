@@ -194,6 +194,58 @@ export const siteSettings = pgTable("siteSettings", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
 });
 
+export const tools = pgTable("tools", {
+  id: serial("id").primaryKey(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  template: text("template"),
+  isActive: boolean("isActive").default(true).notNull(),
+  sortOrder: integer("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
+export const toolResults = pgTable("toolResults", {
+  id: serial("id").primaryKey(),
+  toolSlug: varchar("toolSlug", { length: 100 }).notNull(),
+  input: jsonb("input"),
+  result: text("result").notNull(),
+  source: varchar("source", { length: 50 }).default("template").notNull(),
+  userId: integer("userId").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_tool_results_slug").on(table.toolSlug),
+  index("idx_tool_results_created_at").on(table.createdAt),
+]);
+
+export const recentTools = pgTable("recentTools", {
+  id: serial("id").primaryKey(),
+  toolSlug: varchar("toolSlug", { length: 100 }).notNull(),
+  userId: integer("userId").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_recent_tools_slug").on(table.toolSlug),
+  index("idx_recent_tools_user").on(table.userId),
+]);
+
+export const userFavorites = pgTable("userFavorites", {
+  id: serial("id").primaryKey(),
+  toolSlug: varchar("toolSlug", { length: 100 }).notNull(),
+  userId: integer("userId").references(() => users.id).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_user_favorites_user").on(table.userId),
+  index("idx_user_favorites_slug").on(table.toolSlug),
+]);
+
+export const trendingTools = pgTable("trendingTools", {
+  id: serial("id").primaryKey(),
+  toolSlug: varchar("toolSlug", { length: 100 }).notNull().unique(),
+  usageCount: integer("usageCount").default(0).notNull(),
+  lastUsedAt: timestamp("lastUsedAt").defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Category = typeof categories.$inferSelect;
@@ -206,3 +258,8 @@ export type Banner = typeof banners.$inferSelect;
 export type FAQ = typeof faqs.$inferSelect;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type SiteSetting = typeof siteSettings.$inferSelect;
+export type Tool = typeof tools.$inferSelect;
+export type ToolResult = typeof toolResults.$inferSelect;
+export type RecentTool = typeof recentTools.$inferSelect;
+export type UserFavorite = typeof userFavorites.$inferSelect;
+export type TrendingTool = typeof trendingTools.$inferSelect;

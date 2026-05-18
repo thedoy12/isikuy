@@ -6,15 +6,19 @@ import Games from './pages/Games'
 import GameDetail from './pages/GameDetail'
 import History from './pages/History'
 import InfoPage from './pages/InfoPage'
+import Tools from './pages/Tools'
+import ToolDetail from './pages/ToolDetail'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminGames from './pages/admin/Games'
 import AdminTransactions from './pages/admin/Transactions'
 import AdminUsers from './pages/admin/Users'
 import AdminUserEdit from './pages/admin/UserEdit'
 import AdminSettings from './pages/admin/Settings'
+import AdminTools from './pages/admin/ToolsAdmin'
 import NotFound from './pages/NotFound'
 import SiteMeta from './components/SiteMeta'
 import SitePopup from './components/SitePopup'
+import ToolsPromoPopup from './components/ToolsPromoPopup'
 
 export default function App() {
   return (
@@ -26,6 +30,8 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/games" element={<Games />} />
         <Route path="/games/:slug" element={<GameDetail />} />
+        <Route path="/tools" element={<Tools />} />
+        <Route path="/tools/:slug" element={<ToolDetail />} />
         <Route path="/history" element={<History />} />
         <Route path="/tentang" element={<InfoPage />} />
         <Route path="/kontak" element={<InfoPage />} />
@@ -38,10 +44,12 @@ export default function App() {
         <Route path="/admin/transactions" element={<AdminTransactions />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/users/:id" element={<AdminUserEdit />} />
+        <Route path="/admin/tools" element={<AdminTools />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <SitePopup />
+      <ToolsPromoPopup />
     </>
   )
 }
