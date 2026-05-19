@@ -320,7 +320,7 @@ export default function ToolDetail() {
   const params = useParams<{ slug: string }>();
   const slug = resolveToolSlug(params.slug || "");
   const tool = getToolDefinition(slug);
-  const trackTool = trpc.tools.track.useMutation();
+  const { mutate: trackTool } = trpc.tools.track.useMutation();
   const generateText = trpc.tools.generateText.useMutation();
   const { data: status } = trpc.tools.status.useQuery(undefined, {
     staleTime: 30_000,
@@ -355,7 +355,7 @@ export default function ToolDetail() {
     description.setAttribute("name", "description");
     description.setAttribute("content", tool.seoDescription);
     document.head.appendChild(description);
-    trackTool.mutate({ slug: tool.slug });
+    trackTool({ slug: tool.slug });
   }, [tool, trackTool]);
 
   useEffect(() => {
