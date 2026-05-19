@@ -202,7 +202,7 @@ export default function AdminDashboard() {
 
         <div className="p-4 pb-24 sm:p-6 lg:pb-6 space-y-6">
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               icon={Receipt}
               label="TOTAL REVENUE"

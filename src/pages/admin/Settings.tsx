@@ -247,7 +247,7 @@ export default function AdminSettings() {
         </header>
 
         <div className="p-6 pb-24 lg:pb-6">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
             <section className="border border-[#222] bg-[#11131a] p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-[#ff003c]/10 flex items-center justify-center">
@@ -839,7 +839,7 @@ export default function AdminSettings() {
                   <p className="mt-3 text-sm leading-relaxed text-white/55">
                     {siteForm.popupMessage || siteForm.metaDescription}
                   </p>
-                  <div className="mt-5 grid grid-cols-3 gap-2">
+                  <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
                     {[
                       { icon: Globe2, label: "SEO" },
                       { icon: Smartphone, label: "WA" },

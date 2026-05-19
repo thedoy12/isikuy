@@ -247,7 +247,7 @@ export default function AdminVouchers() {
           </p>
         </header>
 
-        <div className="grid gap-6 p-4 pb-24 sm:p-6 lg:grid-cols-[420px_minmax(0,1fr)] lg:pb-6">
+        <div className="grid gap-6 p-4 pb-24 sm:p-6 lg:pb-6 xl:grid-cols-[420px_minmax(0,1fr)]">
           <section className="border border-[#222] bg-[#11131a] p-5">
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>

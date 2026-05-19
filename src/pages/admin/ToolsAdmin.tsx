@@ -87,15 +87,15 @@ export default function AdminTools() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {tools?.map((tool) => (
               <article key={tool.slug} className="border border-[#222] bg-[#11131a] p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-[#00f0ff]">{tool.category}</p>
                     <h2 className="mt-2 font-display text-xl font-bold text-white">{tool.title}</h2>
                     <p className="mt-2 text-xs leading-relaxed text-white/45">{tool.description}</p>
                   </div>
                   <button
                     onClick={() => toggleTool.mutate({ slug: tool.slug, isActive: !tool.isActive })}
-                    className={`shrink-0 rounded px-3 py-2 text-[10px] ${tool.isActive ? "bg-[#0aff00]/10 text-[#0aff00]" : "bg-[#ff003c]/10 text-[#ff003c]"}`}
+                    className={`w-full shrink-0 rounded px-3 py-2 text-[10px] sm:w-auto ${tool.isActive ? "bg-[#0aff00]/10 text-[#0aff00]" : "bg-[#ff003c]/10 text-[#ff003c]"}`}
                   >
                     {tool.isActive ? "ON" : "OFF"}
                   </button>

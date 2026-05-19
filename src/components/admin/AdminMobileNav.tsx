@@ -28,13 +28,13 @@ export function AdminMobileNav({ active }: { active: string }) {
   const { logout } = useAuth();
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-[#222] bg-[#0b0d14]/95 backdrop-blur-xl px-2 py-2">
-      <div className="grid grid-cols-10 gap-1">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#222] bg-[#0b0d14]/95 px-2 py-2 backdrop-blur-xl lg:hidden">
+      <div className="flex gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {navItems.map((item) => (
           <Link
             key={item.id}
             to={item.href}
-            className={`flex flex-col items-center justify-center gap-1 rounded px-1 py-2 text-[9px] tracking-wider ${
+            className={`flex min-w-16 shrink-0 flex-col items-center justify-center gap-1 rounded px-2 py-2 text-[9px] tracking-wider ${
               active === item.id
                 ? "text-[#00f0ff] bg-white/5"
                 : "text-[#e1f5fe]/40"
@@ -47,14 +47,14 @@ export function AdminMobileNav({ active }: { active: string }) {
         <button
           type="button"
           onClick={logout}
-          className="flex flex-col items-center justify-center gap-1 rounded px-1 py-2 text-[9px] tracking-wider text-[#ff003c]/70"
+          className="flex min-w-16 shrink-0 flex-col items-center justify-center gap-1 rounded px-2 py-2 text-[9px] tracking-wider text-[#ff003c]/70"
         >
           <Zap className="h-4 w-4" />
           <span>Out</span>
         </button>
         <Link
           to="/"
-          className="flex flex-col items-center justify-center gap-1 rounded px-1 py-2 text-[9px] tracking-wider text-[#e1f5fe]/40"
+          className="flex min-w-16 shrink-0 flex-col items-center justify-center gap-1 rounded px-2 py-2 text-[9px] tracking-wider text-[#e1f5fe]/40"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Site</span>

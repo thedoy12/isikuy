@@ -188,11 +188,11 @@ export default function AdminUserEdit() {
       <AdminSidebar active="users" />
       <AdminMobileNav active="users" />
       <main className="min-w-0 flex-1">
-        <header className="border-b border-[#222] bg-[#11131a]/50 px-6 py-4">
+        <header className="border-b border-[#222] bg-[#11131a]/50 px-4 py-4 sm:px-6">
           <p className="text-[10px] tracking-wider text-[#00f0ff]">INTEL // EDIT_USER</p>
         </header>
 
-        <div className="p-6 pb-24 lg:pb-6">
+        <div className="p-4 pb-24 sm:p-6 lg:pb-6">
           <Link
             to="/admin/users"
             className="mb-5 inline-flex items-center gap-2 text-xs tracking-wider text-white/45 transition-colors hover:text-white"
@@ -324,7 +324,7 @@ export default function AdminUserEdit() {
               <aside className="space-y-6">
                 <section className="border border-[#222] bg-[#11131a] p-5">
                   <p className="mb-4 text-[10px] tracking-wider text-white/30">USER_PREVIEW</p>
-                  <div className="flex items-center gap-4 border border-[#222] bg-[#0b0d14] p-4">
+                  <div className="flex min-w-0 items-center gap-4 border border-[#222] bg-[#0b0d14] p-4">
                     {form.avatar ? (
                       <img
                         src={form.avatar}

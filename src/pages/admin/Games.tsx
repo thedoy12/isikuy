@@ -526,7 +526,7 @@ export default function AdminGames() {
                         {product.isPriceManual ? "MANUAL" : "AUTO"}
                       </span>
                     </div>
-                    <div className="mt-4 grid grid-cols-3 gap-2 text-[10px]">
+                    <div className="mt-4 grid grid-cols-1 gap-2 text-[10px] sm:grid-cols-3">
                       <div className="border border-white/10 p-2">
                         <p className="text-white/35">BASE</p>
                         <p className="mt-1 text-white">Rp{cost.toLocaleString()}</p>

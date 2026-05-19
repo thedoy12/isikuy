@@ -227,3 +227,10 @@ Update 19 Mei 2026 - Login gate Tools:
 - Menambahkan label LOGIN di kartu tools yang terkunci untuk pengunjung.
 - Backend generateText sekarang ikut menolak user belum login untuk tools terkunci, jadi tidak bisa dibypass dari UI.
 - Verifikasi lokal: lint OK, TypeScript OK, test OK, build OK.
+
+Update 19 Mei 2026 - Responsive admin:
+- Memperbaiki AdminMobileNav agar horizontal-scroll dan tidak memaksa 10 kolom di layar kecil.
+- Mengubah beberapa layout dua kolom agar aktif di breakpoint yang lebih aman saat sidebar desktop tampil.
+- Merapikan Dashboard stat cards agar tidak terlalu sempit di mobile.
+- Merapikan Product Pricing mobile cards, Tools Admin cards, User Edit padding, dan Settings preview grid agar tidak pecah di layar kecil/tablet.
+- Verifikasi lokal: lint OK, TypeScript OK, test OK, build OK.
