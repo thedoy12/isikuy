@@ -23,6 +23,7 @@ type GenerateToolInput = {
 const TOOLS_MAINTENANCE_KEY = "toolsMaintenanceEnabled";
 const TOOLS_MAINTENANCE_MESSAGE_KEY = "toolsMaintenanceMessage";
 const DEFAULT_TOOLS_MAINTENANCE_MESSAGE = "Tools sedang maintenance. Coba lagi nanti.";
+const geminiModelCooldowns = new Map<string, number>();
 
 const numericInput = z.preprocess((value) => {
   if (value === "" || value === null || value === undefined) return undefined;
@@ -300,6 +301,9 @@ async function callGemini(input: GenerateToolInput, baselineResult: string) {
   ].filter(Boolean).join("\n");
 
   for (const model of models) {
+    const cooldownUntil = geminiModelCooldowns.get(model) ?? 0;
+    if (cooldownUntil > Date.now()) continue;
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.geminiApiKey}`,
       {
@@ -315,7 +319,12 @@ async function callGemini(input: GenerateToolInput, baselineResult: string) {
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
       const message = detail.slice(0, 600).replace(/\s+/g, " ");
-      console.warn(`[tools] Gemini ${model} failed: ${response.status} ${message}`);
+      if (response.status === 429) {
+        const retryMatch = detail.match(/retry in ([\d.]+)s/i);
+        const retrySeconds = retryMatch ? Number(retryMatch[1]) : 60;
+        geminiModelCooldowns.set(model, Date.now() + Math.max(30, retrySeconds) * 1000);
+      }
+      console.warn(`[tools] Gemini ${model} failed: ${response.status}`);
       await recordToolAlert({
         toolSlug: input.slug,
         model,

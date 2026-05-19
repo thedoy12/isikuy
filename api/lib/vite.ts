@@ -36,7 +36,16 @@ export function serveStaticFiles(app: App) {
       return c.json({ error: "Not Found" }, 404);
     }
     const indexPath = path.resolve(distPath, "index.html");
-    const content = fs.readFileSync(indexPath, "utf-8");
+    if (!fs.existsSync(indexPath)) {
+      return c.text("Aplikasi sedang disiapkan. Coba refresh sebentar lagi.", 503);
+    }
+
+    let content: string;
+    try {
+      content = fs.readFileSync(indexPath, "utf-8");
+    } catch {
+      return c.text("Aplikasi sedang disiapkan. Coba refresh sebentar lagi.", 503);
+    }
     c.header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     c.header("Pragma", "no-cache");
     c.header("Expires", "0");

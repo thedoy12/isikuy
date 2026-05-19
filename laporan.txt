@@ -1,0 +1,111 @@
+LAPORAN AUDIT DAN PEKERJAAN PROJECT ISIKUY
+Tanggal: 19 Mei 2026
+
+Ringkasan:
+- Project sudah dicek lewat lint, TypeScript, test, audit dependency, dan build production.
+- Ditemukan 2 masalah runtime yang perlu diperbaiki.
+- Keduanya sudah diperbaiki di kode lokal.
+
+Checklist pemeriksaan:
+- npm run lint: LULUS
+- npm run check: LULUS
+- npm run test: LULUS
+- npm audit --audit-level=high: LULUS, 0 vulnerability
+- npm run build: LULUS
+- Cek log PM2 VPS: ditemukan error lama terkait Gemini quota dan satu error fallback index.html saat deploy.
+
+Bug / error / kejanggalan yang ditemukan:
+1. Error Gemini quota memenuhi log VPS.
+   Detail:
+   - Log PM2 berisi banyak error 429 RESOURCE_EXHAUSTED dari Gemini.
+   - Saat quota Gemini habis, backend mencoba beberapa model dan menulis log panjang berulang.
+   Dampak:
+   - Log server cepat penuh.
+   - Fitur AI tetap fallback ke template, tetapi server terlalu sering mencoba model yang sedang kena limit.
+   Perbaikan:
+   - Ditambahkan cooldown per model Gemini saat menerima status 429.
+   - Log Gemini dibuat lebih ringkas supaya tidak memenuhi PM2 log.
+   File:
+   - api/routers/tools.ts
+
+2. Fallback React app bisa melempar error ENOENT ketika index.html belum tersedia.
+   Detail:
+   - PM2 pernah mencatat error:
+     ENOENT: no such file or directory, open '/var/www/isikuy/dist/public/index.html'
+   - Ini bisa terjadi saat request masuk di momen deploy ketika file build belum siap/terbaca.
+   Dampak:
+   - User bisa melihat error server sementara.
+   - Log server jadi berisi stack trace.
+   Perbaikan:
+   - Fallback SPA sekarang mengecek keberadaan index.html.
+   - Jika file belum siap, server mengembalikan status 503 dengan pesan singkat, bukan stack trace.
+   File:
+   - api/lib/vite.ts
+
+Temuan yang tidak langsung diubah:
+1. Bundle frontend masih besar.
+   Detail:
+   - Build memberi warning chunk lebih dari 500 kB.
+   - Ini bukan error fatal, aplikasi tetap berhasil build.
+   Rekomendasi:
+   - Nanti bisa dipisah dengan dynamic import / code splitting untuk halaman admin dan halaman besar lain.
+
+2. Gemini quota masih bergantung pada limit akun/API key.
+   Detail:
+   - Cooldown sudah mengurangi spam request dan spam log.
+   - Jika quota API memang habis, hasil AI akan tetap fallback ke template.
+   Rekomendasi:
+   - Upgrade quota/API billing atau ganti API key jika fitur AI harus selalu aktif.
+
+Pekerjaan yang sudah dikerjakan hari ini:
+1. Perbaikan halaman Tools:
+   - Memperbaiki tampilan wheel yang sebelumnya berantakan.
+   - Membuat menu/mode wheel bisa custom sesuai input pengguna.
+   - Menghapus bagian Fake Fun.
+   - Mengatur AI hanya dipakai di kategori AI Text dan Fun Viral.
+   - Memperbaiki bug calculator yang angka depannya sulit dihapus/diketik.
+   - Menghentikan request tracking tools yang sebelumnya berulang ke /api/trpc/tools.track.
+
+2. Perbaikan auth dan akun user:
+   - Menambahkan halaman Pengaturan Akun di /account.
+   - Menambahkan menu Pengaturan Akun di navbar user.
+   - Login sekarang bisa pakai username, email, atau nomor telepon.
+   - Register sekarang wajib input nomor telepon.
+   - User bisa update nama, email, nomor telepon, avatar, dan password.
+   - Admin edit user sekarang bisa edit nomor telepon.
+   - Database ditambah kolom phone untuk users dan sudah diterapkan di VPS.
+
+3. Fitur voucher:
+   - Mengecek penyebab code voucher tidak berfungsi.
+   - Menemukan tabel vouchers di produksi masih kosong.
+   - Membuat halaman admin voucher di /admin/vouchers.
+   - Admin bisa membuat, mengedit, menghapus, mengaktifkan/nonaktifkan voucher.
+   - Voucher mendukung diskon persen atau nominal, minimal order, max diskon, limit penggunaan, dan masa berlaku.
+   - Kode voucher disimpan uppercase.
+   - Checkout langsung menampilkan potongan di UI saat kode voucher valid.
+
+4. Deploy dan validasi:
+   - Perubahan sebelumnya sudah dipush ke GitHub.
+   - Perubahan sebelumnya sudah dideploy ke VPS http://202.10.37.162/.
+   - PM2 service isikuy sudah direstart dan online.
+   - Halaman /account dan /admin/vouchers sudah diverifikasi return HTTP 200.
+
+Perbaikan terbaru setelah audit ini:
+1. api/routers/tools.ts
+   - Menambahkan cooldown per model Gemini ketika terkena 429 quota.
+   - Mengurangi log error Gemini yang terlalu panjang.
+
+2. api/lib/vite.ts
+   - Menambahkan guard untuk fallback index.html.
+   - Mengembalikan 503 sementara bila index.html belum siap, bukan crash/stack trace.
+
+Status akhir lokal:
+- Lint: OK
+- TypeScript: OK
+- Test: OK
+- Audit dependency: OK, 0 vulnerability
+- Build production: OK
+
+Catatan:
+- File laporan ini dibuat sesuai permintaan user.
+- Perbaikan terbaru dilanjutkan untuk dipush dan dideploy ke VPS.
