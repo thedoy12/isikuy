@@ -3,9 +3,9 @@ import { eq, and, like, asc, not, notInArray, inArray, sql } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { games, categories, products } from "@db/schema";
-import { env } from "../lib/env";
 import { publicProviderLabel, sanitizePublicText } from "../lib/publicText";
 import { gameAssetPath } from "../lib/gameAssets";
+import { priceWithMarkup } from "../lib/pricing";
 import {
   isFlowixConfigured,
   listFlowixCatalog,
@@ -349,10 +349,6 @@ function productBrandFromDescription(description: string | null) {
   return description.split(" - ")[0] || null;
 }
 
-function withMarkup(price: number) {
-  return Math.ceil((price * (1 + env.productMarkupPercent / 100)) / 100) * 100;
-}
-
 function gameDedupeKey(game: Pick<GameRow, "slug" | "name" | "categoryId">) {
   return `${game.categoryId}:${matchKey(game.slug) || matchKey(game.name)}`;
 }
@@ -543,14 +539,15 @@ export async function syncFlowixCatalog() {
     const [existing] = existingProducts;
 
     const providerName = cleanProductDisplayName(product.name, product.brand, product.code);
-    const providerSalePrice = String(withMarkup(product.price));
+    const providerSalePrice = String(priceWithMarkup(product.price));
     const productData = {
       gameId: game.id,
       name: existing?.name ?? providerName,
       description: `${cleanFlowixName(product.brand)} - ${product.code}`,
       nominalAmount: product.code,
       basePrice: String(product.price),
-      salePrice: existing?.salePrice ?? providerSalePrice,
+      salePrice: existing?.isPriceManual ? existing.salePrice ?? providerSalePrice : providerSalePrice,
+      isPriceManual: existing?.isPriceManual ?? false,
       discountPercent: existing?.discountPercent ?? 0,
       isPromo: existing?.isPromo ?? false,
       stock: existing?.stock ?? 999,

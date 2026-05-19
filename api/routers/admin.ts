@@ -16,6 +16,7 @@ import {
   vouchers,
 } from "@db/schema";
 import { syncFlowixCatalog } from "./game";
+import { parseMoney, priceWithMarkup } from "../lib/pricing";
 import {
   getAdminCredentials,
   hashPassword,
@@ -50,6 +51,41 @@ function adminProductKey(input: {
     .trim();
 
   return adminMatchKey(displayName) || adminMatchKey(input.nominalAmount) || adminMatchKey(input.name);
+}
+
+function transactionNetRevenue(row: {
+  baseAmount: string;
+  providerResponse: string | null;
+}) {
+  const baseAmount = parseMoney(row.baseAmount);
+  if (!row.providerResponse) return baseAmount;
+
+  try {
+    const state = JSON.parse(row.providerResponse) as {
+      voucher?: { discountAmount?: number };
+      deposit?: {
+        amount_received?: number;
+        amountRequested?: number;
+      };
+      payment?: {
+        amountReceived?: number;
+        amountRequested?: number;
+      };
+    };
+    const providerAmount =
+      state.deposit?.amount_received ??
+      state.deposit?.amountRequested ??
+      state.payment?.amountReceived ??
+      state.payment?.amountRequested;
+
+    if (typeof providerAmount === "number" && Number.isFinite(providerAmount)) {
+      return providerAmount;
+    }
+
+    return Math.max(0, baseAmount - Number(state.voucher?.discountAmount || 0));
+  } catch {
+    return baseAmount;
+  }
 }
 
 export const adminRouter = createRouter({
@@ -291,11 +327,14 @@ export const adminRouter = createRouter({
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     const recentRevenueRows = await db
       .select({
+        baseAmount: transactions.baseAmount,
         totalAmount: transactions.totalAmount,
-        feeAmount: transactions.feeAmount,
+        providerResponse: transactions.providerResponse,
+        productCost: products.basePrice,
         createdAt: transactions.createdAt,
       })
       .from(transactions)
+      .leftJoin(products, eq(transactions.productId, products.id))
       .where(and(gte(transactions.createdAt, sevenDaysAgo), eq(transactions.paymentStatus, "paid")));
 
     const dailyRevenue = Array.from({ length: 7 }, (_, index) => {
@@ -308,7 +347,10 @@ export const adminRouter = createRouter({
       return {
         name: date.toLocaleDateString("id-ID", { weekday: "short" }),
         sales: rows.reduce((sum, row) => sum + parseFloat(row.totalAmount), 0),
-        profit: rows.reduce((sum, row) => sum + parseFloat(row.feeAmount || "0"), 0),
+        profit: rows.reduce(
+          (sum, row) => sum + (transactionNetRevenue(row) - parseMoney(row.productCost)),
+          0,
+        ),
       };
     });
 
@@ -642,6 +684,7 @@ export const adminRouter = createRouter({
           nominalAmount: products.nominalAmount,
           basePrice: products.basePrice,
           salePrice: products.salePrice,
+          isPriceManual: products.isPriceManual,
           discountPercent: products.discountPercent,
           isPromo: products.isPromo,
           stock: products.stock,
@@ -674,6 +717,7 @@ export const adminRouter = createRouter({
         name: z.string().optional(),
         basePrice: z.number().optional(),
         salePrice: z.number().optional(),
+        resetAutoPrice: z.boolean().optional(),
         discountPercent: z.number().optional(),
         isPromo: z.boolean().optional(),
         stock: z.number().optional(),
@@ -684,9 +728,19 @@ export const adminRouter = createRouter({
       const db = getDb();
       const { id, ...data } = input;
       const updateData: any = {};
+      const [current] = await db.select().from(products).where(eq(products.id, id)).limit(1);
+      if (!current) throw new Error("Produk tidak ditemukan");
+
       if (data.name) updateData.name = data.name;
       if (data.basePrice !== undefined) updateData.basePrice = data.basePrice.toString();
-      if (data.salePrice !== undefined) updateData.salePrice = data.salePrice.toString();
+      if (data.resetAutoPrice) {
+        const providerPrice = data.basePrice !== undefined ? data.basePrice : parseMoney(current.basePrice);
+        updateData.salePrice = priceWithMarkup(providerPrice).toString();
+        updateData.isPriceManual = false;
+      } else if (data.salePrice !== undefined) {
+        updateData.salePrice = data.salePrice.toString();
+        updateData.isPriceManual = true;
+      }
       if (data.discountPercent !== undefined) updateData.discountPercent = data.discountPercent;
       if (data.isPromo !== undefined) updateData.isPromo = data.isPromo;
       if (data.stock !== undefined) updateData.stock = data.stock;

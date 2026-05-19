@@ -4,10 +4,12 @@ import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { paymentMethods, products, vouchers } from "@db/schema";
 import { getPaymentMaintenance } from "../lib/paymentMaintenance";
+import { safeDiscountAmount } from "../lib/pricing";
 
 async function calculateVoucherDiscount(input: {
   code?: string;
   amount: number;
+  costFloor?: number;
 }) {
   const code = input.code?.trim().toUpperCase();
   if (!code) return { discountAmount: 0, voucher: null, message: null };
@@ -51,7 +53,12 @@ async function calculateVoucherDiscount(input: {
   const cappedDiscount = voucher.maxDiscount
     ? Math.min(rawDiscount, parseFloat(voucher.maxDiscount))
     : rawDiscount;
-  const discountAmount = Math.min(Math.round(cappedDiscount), input.amount);
+  const discountAmount = safeDiscountAmount({
+    amount: input.amount,
+    rawDiscount: cappedDiscount,
+    costFloor: input.costFloor,
+  });
+  const wasCappedByMargin = Math.round(cappedDiscount) > discountAmount;
 
   return {
     discountAmount,
@@ -61,7 +68,9 @@ async function calculateVoucherDiscount(input: {
       type: voucher.type,
       value: voucher.value,
     },
-    message: "Voucher diterapkan",
+    message: wasCappedByMargin
+      ? "Voucher diterapkan sebagian agar harga tidak di bawah modal"
+      : "Voucher diterapkan",
   };
 }
 
@@ -113,10 +122,12 @@ export const paymentRouter = createRouter({
       const basePrice = product
         ? parseFloat(product.salePrice || product.basePrice)
         : input.basePrice!;
+      const costFloor = product ? parseFloat(product.basePrice) : undefined;
       const { discountAmount, voucher, message: voucherMessage } =
         await calculateVoucherDiscount({
           code: input.voucherCode,
           amount: basePrice,
+          costFloor,
         });
       const feePercent = 0;
       const feeFixed = 0;
@@ -128,6 +139,7 @@ export const paymentRouter = createRouter({
 
       return {
         basePrice,
+        costFloor,
         feePercent,
         feeFixed,
         servicePercent,

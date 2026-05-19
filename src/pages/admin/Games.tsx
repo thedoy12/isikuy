@@ -89,6 +89,8 @@ export default function AdminGames() {
     cardImage: "",
     bannerImage: "",
   });
+  const [productGameId, setProductGameId] = useState<number | undefined>();
+  const [productDrafts, setProductDrafts] = useState<Record<number, string>>({});
   const pageSize = 10;
 
   const { data: gamesList } = trpc.admin.games.useQuery(
@@ -106,10 +108,21 @@ export default function AdminGames() {
   const syncFlowix = trpc.admin.syncFlowixCatalog.useMutation({
     onSuccess: () => {
       utils.admin.games.invalidate();
+      utils.admin.products.invalidate();
       utils.game.list.invalidate();
       utils.game.trending.invalidate();
       utils.game.popular.invalidate();
       setPage(0);
+    },
+  });
+  const { data: productsList } = trpc.admin.products.useQuery(
+    { gameId: productGameId, limit: 80, offset: 0 },
+    { enabled: isAdmin },
+  );
+  const updateProduct = trpc.admin.updateProduct.useMutation({
+    onSuccess: () => {
+      utils.admin.products.invalidate();
+      utils.game.list.invalidate();
     },
   });
 
@@ -120,6 +133,14 @@ export default function AdminGames() {
   useEffect(() => {
     setPage(0);
   }, [search]);
+
+  useEffect(() => {
+    const next: Record<number, string> = {};
+    productsList?.items.forEach((product: any) => {
+      next[product.id] = String(Math.round(Number(product.salePrice || product.basePrice || 0)));
+    });
+    setProductDrafts(next);
+  }, [productsList?.items]);
 
   if (authLoading) {
     return <div className="min-h-[100dvh] bg-[#030305] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#ff003c] animate-spin" /></div>;
@@ -144,6 +165,16 @@ export default function AdminGames() {
       bannerImage: imageDraft.bannerImage.trim() || null,
     });
     setEditingGameId(null);
+  };
+
+  const saveProductPrice = (productId: number) => {
+    const salePrice = Number(productDrafts[productId]);
+    if (!Number.isFinite(salePrice) || salePrice <= 0) return;
+    updateProduct.mutate({ id: productId, salePrice });
+  };
+
+  const resetProductPrice = (productId: number) => {
+    updateProduct.mutate({ id: productId, resetAutoPrice: true });
   };
 
   return (
@@ -448,6 +479,170 @@ export default function AdminGames() {
               onPageChange={setPage}
             />
           </div>
+
+          <section className="mt-6 border border-[#222] bg-[#11131a]">
+            <div className="flex flex-col gap-3 border-b border-[#222] p-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-[10px] tracking-wider text-[#00f0ff]">PRODUCT_PRICING</p>
+                <p className="mt-1 text-[10px] tracking-wider text-white/35">
+                  BASE = MODAL FLOWIX, SALE = HARGA JUAL USER
+                </p>
+              </div>
+              <select
+                value={productGameId ?? ""}
+                onChange={(event) => setProductGameId(event.target.value ? Number(event.target.value) : undefined)}
+                className="w-full border border-[#222] bg-[#0b0d14] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50 lg:w-72"
+              >
+                <option value="">ALL_ACTIVE_PRODUCTS</option>
+                {gamesList?.items.map((game: any) => (
+                  <option key={game.id} value={game.id}>
+                    {game.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid gap-3 p-3 xl:hidden">
+              {productsList?.items.map((product: any) => {
+                const cost = Number(product.basePrice || 0);
+                const sale = Number(productDrafts[product.id] || product.salePrice || product.basePrice || 0);
+                const margin = sale - cost;
+                return (
+                  <article key={product.id} className="border border-[#222] bg-[#0b0d14] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-white">{product.name}</p>
+                        <p className="mt-1 text-[10px] uppercase text-white/35">
+                          {product.gameName} / {product.nominalAmount}
+                        </p>
+                      </div>
+                      <span className={product.isPriceManual ? "text-[10px] text-[#ffb800]" : "text-[10px] text-[#0aff00]"}>
+                        {product.isPriceManual ? "MANUAL" : "AUTO"}
+                      </span>
+                    </div>
+                    <div className="mt-4 grid grid-cols-3 gap-2 text-[10px]">
+                      <div className="border border-white/10 p-2">
+                        <p className="text-white/35">BASE</p>
+                        <p className="mt-1 text-white">Rp{cost.toLocaleString()}</p>
+                      </div>
+                      <div className="border border-white/10 p-2">
+                        <p className="text-white/35">MARGIN</p>
+                        <p className={margin >= 0 ? "mt-1 text-[#0aff00]" : "mt-1 text-[#ff003c]"}>
+                          Rp{margin.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="border border-white/10 p-2">
+                        <p className="text-white/35">STATUS</p>
+                        <p className={product.isActive ? "mt-1 text-[#0aff00]" : "mt-1 text-[#ff003c]"}>
+                          {product.isActive ? "ON" : "OFF"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        inputMode="numeric"
+                        value={productDrafts[product.id] ?? ""}
+                        onChange={(event) =>
+                          setProductDrafts((current) => ({ ...current, [product.id]: event.target.value.replace(/\D/g, "") }))
+                        }
+                        className="min-w-0 flex-1 border border-[#222] bg-[#050609] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                      />
+                      <button
+                        onClick={() => saveProductPrice(product.id)}
+                        disabled={updateProduct.isPending}
+                        className="border border-[#00f0ff]/30 px-3 py-2 text-[10px] text-[#00f0ff] disabled:opacity-50"
+                      >
+                        SAVE
+                      </button>
+                      <button
+                        onClick={() => resetProductPrice(product.id)}
+                        disabled={updateProduct.isPending}
+                        className="border border-[#ffb800]/30 px-3 py-2 text-[10px] text-[#ffb800] disabled:opacity-50"
+                      >
+                        AUTO
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="hidden overflow-x-auto xl:block">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-[#ff003c]">
+                    <th className="px-4 py-3 text-left text-[10px] font-normal tracking-wider text-[#e1f5fe]/40">PRODUCT</th>
+                    <th className="px-4 py-3 text-left text-[10px] font-normal tracking-wider text-[#e1f5fe]/40">GAME</th>
+                    <th className="px-4 py-3 text-right text-[10px] font-normal tracking-wider text-[#e1f5fe]/40">BASE</th>
+                    <th className="px-4 py-3 text-right text-[10px] font-normal tracking-wider text-[#e1f5fe]/40">SALE</th>
+                    <th className="px-4 py-3 text-right text-[10px] font-normal tracking-wider text-[#e1f5fe]/40">MARGIN</th>
+                    <th className="px-4 py-3 text-center text-[10px] font-normal tracking-wider text-[#e1f5fe]/40">MODE</th>
+                    <th className="px-4 py-3 text-left text-[10px] font-normal tracking-wider text-[#e1f5fe]/40">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {productsList?.items.map((product: any) => {
+                    const cost = Number(product.basePrice || 0);
+                    const sale = Number(productDrafts[product.id] || product.salePrice || product.basePrice || 0);
+                    const margin = sale - cost;
+                    return (
+                      <tr key={product.id} className="border-b border-[#222] hover:bg-white/[0.02]">
+                        <td className="px-4 py-3">
+                          <p className="text-xs font-bold text-white">{product.name}</p>
+                          <p className="mt-1 text-[10px] text-white/30">{product.nominalAmount}</p>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-white/45">{product.gameName}</td>
+                        <td className="px-4 py-3 text-right text-xs text-white/60">Rp{cost.toLocaleString()}</td>
+                        <td className="px-4 py-3">
+                          <input
+                            inputMode="numeric"
+                            value={productDrafts[product.id] ?? ""}
+                            onChange={(event) =>
+                              setProductDrafts((current) => ({ ...current, [product.id]: event.target.value.replace(/\D/g, "") }))
+                            }
+                            className="ml-auto block w-32 border border-[#222] bg-[#050609] px-3 py-2 text-right text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                          />
+                        </td>
+                        <td className={margin >= 0 ? "px-4 py-3 text-right text-xs text-[#0aff00]" : "px-4 py-3 text-right text-xs text-[#ff003c]"}>
+                          Rp{margin.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={product.isPriceManual ? "text-[10px] text-[#ffb800]" : "text-[10px] text-[#0aff00]"}>
+                            {product.isPriceManual ? "MANUAL" : "AUTO"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => saveProductPrice(product.id)}
+                              disabled={updateProduct.isPending}
+                              className="border border-[#00f0ff]/25 px-3 py-2 text-[10px] text-[#00f0ff] disabled:opacity-50"
+                            >
+                              SAVE
+                            </button>
+                            <button
+                              onClick={() => resetProductPrice(product.id)}
+                              disabled={updateProduct.isPending}
+                              className="border border-[#ffb800]/25 px-3 py-2 text-[10px] text-[#ffb800] disabled:opacity-50"
+                            >
+                              AUTO
+                            </button>
+                            <button
+                              onClick={() => updateProduct.mutate({ id: product.id, isActive: !product.isActive })}
+                              disabled={updateProduct.isPending}
+                              className={product.isActive ? "border border-[#ff003c]/25 px-3 py-2 text-[10px] text-[#ff003c]" : "border border-[#0aff00]/25 px-3 py-2 text-[10px] text-[#0aff00]"}
+                            >
+                              {product.isActive ? "OFF" : "ON"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </div>
       </main>
     </div>

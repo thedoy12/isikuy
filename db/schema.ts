@@ -79,6 +79,7 @@ export const products = pgTable("products", {
   nominalAmount: varchar("nominalAmount", { length: 100 }),
   basePrice: numeric("basePrice", { precision: 12, scale: 2 }).notNull(),
   salePrice: numeric("salePrice", { precision: 12, scale: 2 }),
+  isPriceManual: boolean("isPriceManual").default(false).notNull(),
   discountPercent: integer("discountPercent").default(0),
   isPromo: boolean("isPromo").default(false).notNull(),
   stock: integer("stock").default(999),

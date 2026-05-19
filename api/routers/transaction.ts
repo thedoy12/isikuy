@@ -16,6 +16,7 @@ import {
 import { env } from "../lib/env";
 import { failExpiredUnpaidTransactions, qrisExpiryDate } from "../lib/transactionExpiry";
 import { getPaymentMaintenance } from "../lib/paymentMaintenance";
+import { safeDiscountAmount } from "../lib/pricing";
 
 function generateInvoice(): string {
   const date = new Date();
@@ -42,7 +43,7 @@ async function ensureFlowixBalanceCanFulfill(input: {
   }
 }
 
-async function validateVoucher(input: { code?: string; amount: number }) {
+async function validateVoucher(input: { code?: string; amount: number; costFloor?: number }) {
   const code = input.code?.trim().toUpperCase();
   if (!code) return null;
 
@@ -78,10 +79,16 @@ async function validateVoucher(input: { code?: string; amount: number }) {
   const cappedDiscount = voucher.maxDiscount
     ? Math.min(rawDiscount, parseFloat(voucher.maxDiscount))
     : rawDiscount;
+  const discountAmount = safeDiscountAmount({
+    amount: input.amount,
+    rawDiscount: cappedDiscount,
+    costFloor: input.costFloor,
+  });
 
   return {
     id: voucher.id,
-    discountAmount: Math.min(Math.round(cappedDiscount), input.amount),
+    discountAmount,
+    marginCapped: Math.round(cappedDiscount) > discountAmount,
   };
 }
 
@@ -393,9 +400,11 @@ export const transactionRouter = createRouter({
       }
 
       const baseAmount = parseFloat(product.salePrice || product.basePrice);
+      const productCost = Number(product.basePrice || product.salePrice || baseAmount);
       const voucher = await validateVoucher({
         code: input.voucherCode,
         amount: baseAmount,
+        costFloor: productCost,
       });
       const feeAmount = 0;
       const totalAmount = Math.max(1, baseAmount - (voucher?.discountAmount || 0));
@@ -409,7 +418,7 @@ export const transactionRouter = createRouter({
 
       if (method.code === "qris" && isFlowixConfigured()) {
         await ensureFlowixBalanceCanFulfill({
-          productCost: Number(product.basePrice || product.salePrice || baseAmount),
+          productCost,
           paymentReceivedEstimate: Math.round(totalAmount),
         });
         const flowixDeposit = await createFlowixDeposit({

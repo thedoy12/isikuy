@@ -109,3 +109,100 @@ Status akhir lokal:
 Catatan:
 - File laporan ini dibuat sesuai permintaan user.
 - Perbaikan terbaru dilanjutkan untuk dipush dan dideploy ke VPS.
+
+Update 19 Mei 2026 - Perbaikan sistem markup dan harga:
+
+Temuan awal:
+1. Sistem harga belum punya status manual/otomatis.
+   Detail:
+   - Harga modal Flowix disimpan di products.basePrice.
+   - Harga jual user disimpan di products.salePrice.
+   - Produk baru diberi markup otomatis dari PRODUCT_MARKUP_PERCENT, default 3%.
+   - Setelah produk pernah tersync, salePrice lama bisa tertahan sehingga tidak selalu ikut harga Flowix terbaru.
+
+2. Voucher bisa membuat transaksi rugi.
+   Detail:
+   - Diskon voucher sebelumnya dibatasi hanya sampai nilai harga jual.
+   - Belum ada batas bawah berdasarkan modal Flowix.
+   - Contoh kasus 3 Diamonds: modal Flowix Rp1.051, harga jual Rp1.100, voucher Rp55 membuat nilai bersih Rp1.045.
+
+3. Admin belum punya UI jelas untuk kontrol harga produk.
+   Detail:
+   - Backend sudah punya endpoint update produk.
+   - Halaman admin Games belum menampilkan tabel modal, harga jual, margin, dan mode harga.
+
+4. Grafik profit admin belum memakai margin produk.
+   Detail:
+   - Profit sebelumnya dihitung dari feeAmount.
+   - Karena feeAmount QRIS disimpan 0, grafik profit tidak mencerminkan margin produk.
+
+Perbaikan yang dikerjakan:
+1. Menambahkan helper pricing.
+   File:
+   - api/lib/pricing.ts
+   Isi:
+   - priceWithMarkup() untuk hitung harga jual dari modal + markup.
+   - parseMoney() untuk parsing numeric database.
+   - safeDiscountAmount() untuk membatasi diskon agar tidak melewati batas aman.
+
+2. Menambahkan status harga manual/otomatis.
+   File:
+   - db/schema.ts
+   Perubahan:
+   - Menambahkan kolom products.isPriceManual default false.
+   Dampak:
+   - Produk auto akan ikut harga Flowix saat sync katalog.
+   - Produk manual akan mempertahankan harga jual yang diatur admin.
+
+3. Memperbaiki sync katalog Flowix.
+   File:
+   - api/routers/game.ts
+   Perubahan:
+   - Harga jual produk auto dihitung ulang setiap sync dari harga Flowix terbaru.
+   - Harga jual produk manual tidak ditimpa oleh sync.
+   - Produk baru tetap memakai markup otomatis default.
+
+4. Memperbaiki update produk admin.
+   File:
+   - api/routers/admin.ts
+   Perubahan:
+   - updateProduct sekarang bisa menyimpan harga jual manual.
+   - updateProduct sekarang bisa reset harga ke mode auto.
+   - Query produk admin mengembalikan isPriceManual.
+
+5. Memperbaiki batas diskon voucher di checkout.
+   File:
+   - api/routers/payment.ts
+   - api/routers/transaction.ts
+   Perubahan:
+   - Diskon voucher sekarang dibatasi agar harga setelah diskon tidak turun di bawah modal Flowix.
+   - UI kalkulasi checkout akan menampilkan pesan bila voucher hanya diterapkan sebagian demi menjaga harga tidak di bawah modal.
+   - Transaksi final memakai aturan yang sama, jadi validasi frontend dan backend konsisten.
+
+6. Menambahkan kontrol harga produk di admin Games.
+   File:
+   - src/pages/admin/Games.tsx
+   Fitur:
+   - Admin bisa melihat modal Flowix/base price.
+   - Admin bisa melihat dan mengedit harga jual/sale price.
+   - Admin bisa melihat margin per produk.
+   - Admin bisa melihat mode AUTO/MANUAL.
+   - Admin bisa reset harga produk ke AUTO.
+   - Admin bisa ON/OFF produk dari tabel harga.
+
+7. Memperbaiki dasar profit dashboard.
+   File:
+   - api/routers/admin.ts
+   Perubahan:
+   - Profit chart 7 hari sekarang dihitung dari nilai bersih transaksi setelah voucher dan modal produk.
+   - Ini lebih mendekati margin produk dibanding feeAmount yang sebelumnya bernilai 0.
+
+Status verifikasi lokal:
+- Lint: OK
+- TypeScript: OK
+- Test: OK
+- Build production: OK
+
+Catatan lanjutan:
+- PRODUCT_MARKUP_PERCENT di VPS masih memakai default 3% jika env tidak diisi.
+- Jika nanti ingin markup berbeda per kategori/game, perlu ditambah setting markup global/per kategori di database.
