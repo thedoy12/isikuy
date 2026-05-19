@@ -19,6 +19,7 @@ import {
   XCircle,
   AlertCircle,
   Settings,
+  Tags,
   Wand2,
 } from "lucide-react";
 
@@ -29,6 +30,7 @@ function AdminSidebar({ active }: { active: string }) {
     { id: "games", label: "ARSENAL", icon: Gamepad2, href: "/admin/games" },
     { id: "transactions", label: "FINANCIALS", icon: Receipt, href: "/admin/transactions" },
     { id: "users", label: "INTEL", icon: Users, href: "/admin/users" },
+    { id: "vouchers", label: "VOUCHERS", icon: Tags, href: "/admin/vouchers" },
     { id: "tools", label: "TOOLS", icon: Wand2, href: "/admin/tools" },
     { id: "tools-monitor", label: "TOOLS_MONITOR", icon: Bell, href: "/admin/tools-monitor" },
     { id: "settings", label: "SETTINGS", icon: Settings, href: "/admin/settings" },
@@ -257,3 +259,5 @@ export default function AdminTransactions() {
     </div>
   );
 }
+
+

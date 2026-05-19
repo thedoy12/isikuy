@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router";
-import { BarChart3, Bell, Gamepad2, Receipt, Settings, Users, Wand2, ArrowLeft, Zap, Loader2 } from "lucide-react";
+import { BarChart3, Bell, Gamepad2, Receipt, Settings,
+  Tags, Users, Wand2, ArrowLeft, Zap, Loader2 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +14,7 @@ function AdminSidebar({ active }: { active: string }) {
     { id: "games", label: "ARSENAL", icon: Gamepad2, href: "/admin/games" },
     { id: "transactions", label: "FINANCIALS", icon: Receipt, href: "/admin/transactions" },
     { id: "users", label: "INTEL", icon: Users, href: "/admin/users" },
+    { id: "vouchers", label: "VOUCHERS", icon: Tags, href: "/admin/vouchers" },
     { id: "tools", label: "TOOLS", icon: Wand2, href: "/admin/tools" },
     { id: "tools-monitor", label: "TOOLS_MONITOR", icon: Bell, href: "/admin/tools-monitor" },
     { id: "settings", label: "SETTINGS", icon: Settings, href: "/admin/settings" },
@@ -110,3 +112,5 @@ export default function AdminTools() {
     </div>
   );
 }
+
+

@@ -13,6 +13,7 @@ import {
   categories,
   activityLogs,
   siteSettings,
+  vouchers,
 } from "@db/schema";
 import { syncFlowixCatalog } from "./game";
 import {
@@ -148,6 +149,106 @@ export const adminRouter = createRouter({
       products: result.productCodes.length,
     };
   }),
+
+  vouchers: adminQuery.query(async () => {
+    const db = getDb();
+    return db.select().from(vouchers).orderBy(desc(vouchers.createdAt));
+  }),
+
+  createVoucher: adminQuery
+    .input(
+      z.object({
+        code: z.string().min(3).max(50),
+        type: z.enum(["percent", "fixed"]),
+        value: z.number().positive(),
+        minOrder: z.number().min(0).default(0),
+        maxDiscount: z.number().min(0).nullable().optional(),
+        usageLimit: z.number().int().positive(),
+        validFrom: z.string().min(1),
+        validUntil: z.string().min(1),
+        isActive: z.boolean().default(true),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const code = input.code.trim().toUpperCase();
+      const validFrom = new Date(input.validFrom);
+      const validUntil = new Date(input.validUntil);
+      if (Number.isNaN(validFrom.getTime()) || Number.isNaN(validUntil.getTime())) {
+        throw new Error("Tanggal voucher tidak valid");
+      }
+      if (validUntil <= validFrom) {
+        throw new Error("Tanggal selesai harus lebih besar dari tanggal mulai");
+      }
+
+      await db.insert(vouchers).values({
+        code,
+        type: input.type,
+        value: input.value.toString(),
+        minOrder: input.minOrder.toString(),
+        maxDiscount: input.maxDiscount ? input.maxDiscount.toString() : null,
+        usageLimit: input.usageLimit,
+        validFrom,
+        validUntil,
+        isActive: input.isActive,
+      });
+
+      return { success: true };
+    }),
+
+  updateVoucher: adminQuery
+    .input(
+      z.object({
+        id: z.number(),
+        code: z.string().min(3).max(50),
+        type: z.enum(["percent", "fixed"]),
+        value: z.number().positive(),
+        minOrder: z.number().min(0),
+        maxDiscount: z.number().min(0).nullable().optional(),
+        usageLimit: z.number().int().positive(),
+        usageCount: z.number().int().min(0),
+        validFrom: z.string().min(1),
+        validUntil: z.string().min(1),
+        isActive: z.boolean(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const validFrom = new Date(input.validFrom);
+      const validUntil = new Date(input.validUntil);
+      if (Number.isNaN(validFrom.getTime()) || Number.isNaN(validUntil.getTime())) {
+        throw new Error("Tanggal voucher tidak valid");
+      }
+      if (validUntil <= validFrom) {
+        throw new Error("Tanggal selesai harus lebih besar dari tanggal mulai");
+      }
+
+      await db
+        .update(vouchers)
+        .set({
+          code: input.code.trim().toUpperCase(),
+          type: input.type,
+          value: input.value.toString(),
+          minOrder: input.minOrder.toString(),
+          maxDiscount: input.maxDiscount ? input.maxDiscount.toString() : null,
+          usageLimit: input.usageLimit,
+          usageCount: input.usageCount,
+          validFrom,
+          validUntil,
+          isActive: input.isActive,
+        })
+        .where(eq(vouchers.id, input.id));
+
+      return { success: true };
+    }),
+
+  deleteVoucher: adminQuery
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      await db.delete(vouchers).where(eq(vouchers.id, input.id));
+      return { success: true };
+    }),
 
   stats: adminQuery.query(async () => {
     const db = getDb();

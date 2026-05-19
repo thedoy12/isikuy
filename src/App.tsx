@@ -14,6 +14,7 @@ import AdminGames from './pages/admin/Games'
 import AdminTransactions from './pages/admin/Transactions'
 import AdminUsers from './pages/admin/Users'
 import AdminUserEdit from './pages/admin/UserEdit'
+import AdminVouchers from './pages/admin/Vouchers'
 import AdminSettings from './pages/admin/Settings'
 import AdminTools from './pages/admin/ToolsAdmin'
 import AdminToolsMonitor from './pages/admin/ToolsMonitor'
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/admin/transactions" element={<AdminTransactions />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/users/:id" element={<AdminUserEdit />} />
+        <Route path="/admin/vouchers" element={<AdminVouchers />} />
         <Route path="/admin/tools" element={<AdminTools />} />
         <Route path="/admin/tools-monitor" element={<AdminToolsMonitor />} />
         <Route path="/admin/settings" element={<AdminSettings />} />

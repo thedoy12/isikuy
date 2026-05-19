@@ -15,13 +15,14 @@ export const voucherRouter = createRouter({
     .query(async ({ input }) => {
       const db = getDb();
       const now = new Date();
+      const code = input.code.trim().toUpperCase();
 
       const [voucher] = await db
         .select()
         .from(vouchers)
         .where(
           and(
-            eq(vouchers.code, input.code),
+            eq(vouchers.code, code),
             eq(vouchers.isActive, true),
             lte(vouchers.validFrom, now),
             gte(vouchers.validUntil, now)
