@@ -43,7 +43,7 @@ async function ensureFlowixBalanceCanFulfill(input: {
   }
 }
 
-async function validateVoucher(input: { code?: string; amount: number; costFloor?: number }) {
+async function validateVoucher(input: { code?: string; amount: number }) {
   const code = input.code?.trim().toUpperCase();
   if (!code) return null;
 
@@ -82,13 +82,11 @@ async function validateVoucher(input: { code?: string; amount: number; costFloor
   const discountAmount = safeDiscountAmount({
     amount: input.amount,
     rawDiscount: cappedDiscount,
-    costFloor: input.costFloor,
   });
 
   return {
     id: voucher.id,
     discountAmount,
-    marginCapped: Math.round(cappedDiscount) > discountAmount,
   };
 }
 
@@ -404,7 +402,6 @@ export const transactionRouter = createRouter({
       const voucher = await validateVoucher({
         code: input.voucherCode,
         amount: baseAmount,
-        costFloor: productCost,
       });
       const feeAmount = 0;
       const totalAmount = Math.max(1, baseAmount - (voucher?.discountAmount || 0));

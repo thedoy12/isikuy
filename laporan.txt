@@ -143,7 +143,7 @@ Perbaikan yang dikerjakan:
    Isi:
    - priceWithMarkup() untuk hitung harga jual dari modal + markup.
    - parseMoney() untuk parsing numeric database.
-   - safeDiscountAmount() untuk membatasi diskon agar tidak melewati batas aman.
+   - safeDiscountAmount() untuk membatasi diskon agar tidak melebihi nilai pesanan.
 
 2. Menambahkan status harga manual/otomatis.
    File:
@@ -170,13 +170,13 @@ Perbaikan yang dikerjakan:
    - updateProduct sekarang bisa reset harga ke mode auto.
    - Query produk admin mengembalikan isPriceManual.
 
-5. Memperbaiki batas diskon voucher di checkout.
+5. Memperbaiki kalkulasi voucher di checkout.
    File:
    - api/routers/payment.ts
    - api/routers/transaction.ts
    Perubahan:
-   - Diskon voucher sekarang dibatasi agar harga setelah diskon tidak turun di bawah modal Flowix.
-   - UI kalkulasi checkout akan menampilkan pesan bila voucher hanya diterapkan sebagian demi menjaga harga tidak di bawah modal.
+   - Diskon voucher tetap mengikuti setting admin: nominal/persen, minimal order, max diskon, limit penggunaan, dan masa berlaku.
+   - Diskon voucher boleh membuat harga di bawah modal untuk kebutuhan promosi.
    - Transaksi final memakai aturan yang sama, jadi validasi frontend dan backend konsisten.
 
 6. Menambahkan kontrol harga produk di admin Games.
@@ -206,3 +206,8 @@ Status verifikasi lokal:
 Catatan lanjutan:
 - PRODUCT_MARKUP_PERCENT di VPS masih memakai default 3% jika env tidak diisi.
 - Jika nanti ingin markup berbeda per kategori/game, perlu ditambah setting markup global/per kategori di database.
+
+Update koreksi voucher:
+- Aturan batas bawah modal untuk voucher dibatalkan sesuai arahan user.
+- Voucher sekarang boleh dipakai untuk promosi di bawah modal karena admin bisa mengatur nilai, max diskon, min order, dan limit voucher sendiri.
+- Fitur markup AUTO/MANUAL dan kontrol harga produk admin tetap dipertahankan.

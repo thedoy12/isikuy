@@ -13,12 +13,7 @@ export function parseMoney(value: string | number | null | undefined) {
 export function safeDiscountAmount(input: {
   amount: number;
   rawDiscount: number;
-  costFloor?: number;
 }) {
   const maxByAmount = Math.max(0, Math.round(input.amount));
-  const maxByMargin =
-    input.costFloor === undefined
-      ? maxByAmount
-      : Math.max(0, Math.floor(input.amount - input.costFloor));
-  return Math.min(Math.round(input.rawDiscount), maxByAmount, maxByMargin);
+  return Math.min(Math.round(input.rawDiscount), maxByAmount);
 }
