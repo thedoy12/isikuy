@@ -4,7 +4,14 @@ import { and, eq, desc, gte, lte, sql } from "drizzle-orm";
 import { createRouter, publicQuery, authedQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { transactions, games, products, paymentMethods, vouchers } from "@db/schema";
-import { createFlowixDeposit, isFlowixConfigured } from "../flowix/client";
+import {
+  checkFlowixDeposit,
+  checkFlowixTransaction,
+  createFlowixDeposit,
+  createFlowixTransaction,
+  isFlowixConfigured,
+  type FlowixTransaction,
+} from "../flowix/client";
 import { env } from "../lib/env";
 import { failExpiredUnpaidTransactions, qrisExpiryDate } from "../lib/transactionExpiry";
 
@@ -71,6 +78,66 @@ function getVoucherState(raw: string | null) {
   }
 }
 
+function parseProviderState(raw: string | null) {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function stringifyProviderState(raw: string | null, patch: Record<string, unknown>) {
+  return JSON.stringify({
+    ...parseProviderState(raw),
+    ...patch,
+  });
+}
+
+function productTransactionStatus(status: string) {
+  const normalized = status.toLowerCase();
+  if (["paid", "success", "settlement", "settled", "completed", "capture"].includes(normalized)) {
+    return "success" as const;
+  }
+  if (["failed", "failure", "deny", "denied"].includes(normalized)) {
+    return "failed" as const;
+  }
+  if (["expired", "expire", "cancelled", "canceled"].includes(normalized)) {
+    return "cancelled" as const;
+  }
+  if (["refund", "refunded"].includes(normalized)) {
+    return "refunded" as const;
+  }
+  return "processing" as const;
+}
+
+async function submitFlowixProductOrder(transaction: {
+  providerProductCode: string | null;
+  playerId: string;
+  serverId: string | null;
+  providerReference: string | null;
+  providerResponse: string | null;
+}) {
+  const state = parseProviderState(transaction.providerResponse) as {
+    productOrder?: FlowixTransaction;
+  };
+  const existingOrderRef = state.productOrder?.reff_id;
+  if (existingOrderRef) {
+    return checkFlowixTransaction(existingOrderRef).catch(() => state.productOrder);
+  }
+
+  if (!transaction.providerProductCode) {
+    throw new Error("Kode produk Flowix kosong, order tidak bisa dikirim.");
+  }
+
+  return createFlowixTransaction({
+    serviceCode: transaction.providerProductCode,
+    target: transaction.playerId,
+    zone: transaction.serverId,
+  });
+}
+
 async function countVoucherUsageOnce(raw: string | null) {
   const voucher = getVoucherState(raw);
   if (!voucher || voucher.usageCounted) return raw;
@@ -89,6 +156,84 @@ async function countVoucherUsageOnce(raw: string | null) {
   } catch {
     return raw;
   }
+}
+
+async function syncFlowixDepositPayment(invoiceNumber: string) {
+  if (!isFlowixConfigured()) return;
+
+  const db = getDb();
+  const [transaction] = await db
+    .select({
+      id: transactions.id,
+      invoiceNumber: transactions.invoiceNumber,
+      playerId: transactions.playerId,
+      serverId: transactions.serverId,
+      status: transactions.status,
+      paymentStatus: transactions.paymentStatus,
+      providerProductCode: transactions.providerProductCode,
+      providerReference: transactions.providerReference,
+      providerResponse: transactions.providerResponse,
+    })
+    .from(transactions)
+    .where(eq(transactions.invoiceNumber, invoiceNumber))
+    .limit(1);
+
+  if (
+    !transaction?.providerReference ||
+    transaction.paymentStatus === "paid" ||
+    transaction.paymentStatus === "expired" ||
+    transaction.paymentStatus === "refunded" ||
+    !transaction.providerReference.startsWith("DEP-")
+  ) {
+    return;
+  }
+
+  const deposit = await checkFlowixDeposit(transaction.providerReference);
+  const depositStatus = deposit.status.toLowerCase();
+  if (!["paid", "success", "settlement", "settled", "completed", "capture"].includes(depositStatus)) {
+    return;
+  }
+
+  let providerResponse = stringifyProviderState(transaction.providerResponse, {
+    depositStatus: deposit,
+    depositSyncedAt: new Date().toISOString(),
+    paymentHoldReason: undefined,
+  });
+  providerResponse = await countVoucherUsageOnce(providerResponse) ?? providerResponse;
+
+  let nextStatus: "processing" | "success" | "failed" | "cancelled" | "refunded" = "processing";
+  let completedAt: Date | undefined;
+  try {
+    const productOrder = await submitFlowixProductOrder({
+      providerProductCode: transaction.providerProductCode,
+      playerId: transaction.playerId,
+      serverId: transaction.serverId,
+      providerReference: transaction.providerReference,
+      providerResponse,
+    });
+    nextStatus = productTransactionStatus(productOrder?.status || "processing");
+    completedAt = nextStatus === "success" ? new Date() : undefined;
+    providerResponse = stringifyProviderState(providerResponse, {
+      productOrder,
+      orderSubmitError: undefined,
+    });
+  } catch (error) {
+    nextStatus = "failed";
+    providerResponse = stringifyProviderState(providerResponse, {
+      orderSubmitError: error instanceof Error ? error.message : "Gagal mengirim order produk Flowix.",
+    });
+  }
+
+  await db
+    .update(transactions)
+    .set({
+      status: nextStatus,
+      paymentStatus: "paid",
+      paidAt: new Date(),
+      providerResponse,
+      ...(completedAt ? { completedAt } : {}),
+    })
+    .where(eq(transactions.id, transaction.id));
 }
 
 export const transactionRouter = createRouter({
@@ -216,6 +361,9 @@ export const transactionRouter = createRouter({
     .input(z.object({ invoiceNumber: z.string() }))
     .query(async ({ input }) => {
       const db = getDb();
+      await syncFlowixDepositPayment(input.invoiceNumber).catch((error) => {
+        console.error("[flowix] Failed to sync deposit payment", error);
+      });
       await failExpiredUnpaidTransactions();
       const [transaction] = await db
         .select({
@@ -301,6 +449,9 @@ export const transactionRouter = createRouter({
     .input(z.object({ invoiceNumber: z.string() }))
     .query(async ({ input }) => {
       const db = getDb();
+      await syncFlowixDepositPayment(input.invoiceNumber).catch((error) => {
+        console.error("[flowix] Failed to sync deposit payment", error);
+      });
       await failExpiredUnpaidTransactions();
       const [transaction] = await db
         .select({

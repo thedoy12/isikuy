@@ -25,6 +25,15 @@ export type FlowixDeposit = {
   expired_at: string;
 };
 
+export type FlowixDepositStatus = {
+  reff_id: string;
+  pay_id: string;
+  method: string;
+  amount: number;
+  status: string;
+  date?: string;
+};
+
 export type FlowixProduct = {
   code: string;
   name: string;
@@ -161,6 +170,14 @@ export async function createFlowixDeposit(input: {
       fee_by_customer: input.feeByCustomer ?? true,
     }),
   });
+
+  return response.data;
+}
+
+export async function checkFlowixDeposit(reffId: string) {
+  const response = await request<FlowixDepositStatus>(
+    `/deposit/${encodeURIComponent(reffId)}`,
+  );
 
   return response.data;
 }
