@@ -15,6 +15,7 @@ import {
 } from "../flowix/client";
 import { env } from "../lib/env";
 import { failExpiredUnpaidTransactions, qrisExpiryDate } from "../lib/transactionExpiry";
+import { getPaymentMaintenance } from "../lib/paymentMaintenance";
 
 function generateInvoice(): string {
   const date = new Date();
@@ -313,6 +314,11 @@ export const transactionRouter = createRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const paymentMaintenance = await getPaymentMaintenance();
+      if (paymentMaintenance.enabled) {
+        throw new Error(paymentMaintenance.message);
+      }
+
       const db = getDb();
       const invoiceNumber = generateInvoice();
 

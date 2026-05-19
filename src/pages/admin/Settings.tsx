@@ -6,6 +6,7 @@ import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import BrandLogo from "@/components/BrandLogo";
 import {
   ArrowLeft,
+  AlertTriangle,
   BarChart3,
   Bell,
   CheckCircle2,
@@ -130,11 +131,17 @@ export default function AdminSettings() {
   const [siteForm, setSiteForm] = useState(DEFAULT_SITE_FORM);
   const [siteMessage, setSiteMessage] = useState("");
   const [siteError, setSiteError] = useState("");
+  const [paymentMessage, setPaymentMessage] = useState(
+    "Pembayaran sedang ditutup sementara karena Flowix sedang maintenance. Silakan coba lagi nanti.",
+  );
 
   const { data: settings } = trpc.admin.settings.useQuery(undefined, {
     enabled: isAdmin,
   });
   const { data: siteSettings } = trpc.admin.siteSettings.useQuery(undefined, {
+    enabled: isAdmin,
+  });
+  const { data: paymentStatus } = trpc.admin.paymentStatus.useQuery(undefined, {
     enabled: isAdmin,
   });
   const updatePassword = trpc.admin.updateAdminPassword.useMutation({
@@ -165,6 +172,14 @@ export default function AdminSettings() {
       setSiteError(err.message);
     },
   });
+  const setPaymentMaintenance = trpc.admin.setPaymentMaintenance.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.admin.paymentStatus.invalidate(),
+        utils.payment.status.invalidate(),
+      ]);
+    },
+  });
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isAdmin)) navigate("/");
@@ -175,6 +190,10 @@ export default function AdminSettings() {
       setSiteForm(siteSettings);
     }
   }, [siteSettings]);
+
+  useEffect(() => {
+    if (paymentStatus?.message) setPaymentMessage(paymentStatus.message);
+  }, [paymentStatus?.message]);
 
   const submitPassword = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -370,6 +389,39 @@ export default function AdminSettings() {
                 <div className="flex items-center justify-between">
                   <span className="text-white/45">Session User</span>
                   <span className="text-[#00f0ff]">{user?.username}</span>
+                </div>
+              </div>
+
+              <div className="mt-6 border-t border-[#222] pt-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-[#ffb800]" />
+                  <p className="text-[10px] tracking-wider text-white/30">PAYMENT_MAINTENANCE</p>
+                </div>
+                <p className={paymentStatus?.enabled ? "mb-3 text-xs font-bold text-[#ffb800]" : "mb-3 text-xs font-bold text-[#0aff00]"}>
+                  {paymentStatus?.enabled ? "PAYMENT_CLOSED" : "PAYMENT_OPEN"}
+                </p>
+                <textarea
+                  value={paymentMessage}
+                  onChange={(event) => setPaymentMessage(event.target.value)}
+                  className="min-h-24 w-full border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                />
+                <div className="mt-3 grid gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMaintenance.mutate({ enabled: true, message: paymentMessage })}
+                    disabled={setPaymentMaintenance.isPending}
+                    className="bg-[#ffb800] px-4 py-2 text-xs font-bold text-black disabled:opacity-60"
+                  >
+                    TUTUP_PAYMENT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMaintenance.mutate({ enabled: false, message: paymentMessage })}
+                    disabled={setPaymentMaintenance.isPending}
+                    className="bg-[#0aff00] px-4 py-2 text-xs font-bold text-black disabled:opacity-60"
+                  >
+                    BUKA_PAYMENT
+                  </button>
                 </div>
               </div>
             </aside>

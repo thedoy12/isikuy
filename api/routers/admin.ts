@@ -24,6 +24,7 @@ import {
 } from "../lib/adminCredentials";
 import { getPublicSiteSettings } from "./site";
 import { normalizePhone } from "../queries/users";
+import { getPaymentMaintenance, setPaymentMaintenance } from "../lib/paymentMaintenance";
 
 function adminMatchKey(value: string | null | undefined) {
   return (value || "")
@@ -76,6 +77,12 @@ export const adminRouter = createRouter({
       await setAdminPassword(input.newPassword);
       return { success: true };
     }),
+
+  paymentStatus: adminQuery.query(async () => getPaymentMaintenance()),
+
+  setPaymentMaintenance: adminQuery
+    .input(z.object({ enabled: z.boolean(), message: z.string().max(240).optional() }))
+    .mutation(async ({ input }) => setPaymentMaintenance(input)),
 
   siteSettings: adminQuery.query(async () => getPublicSiteSettings()),
 

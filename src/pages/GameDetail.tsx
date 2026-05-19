@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  AlertTriangle,
   Copy,
   Check,
   Loader2,
@@ -110,6 +111,9 @@ export default function GameDetail() {
     { enabled: !!slug }
   );
   const { data: paymentMethods } = trpc.payment.methods.useQuery();
+  const { data: paymentStatus } = trpc.payment.status.useQuery(undefined, {
+    refetchInterval: 30_000,
+  });
   const createTransaction = trpc.transaction.create.useMutation({
     onSuccess: (data) => {
       setInvoiceNumber(data.invoiceNumber);
@@ -792,6 +796,16 @@ export default function GameDetail() {
                 </h3>
               </div>
 
+              {paymentStatus?.enabled && (
+                <div className="mb-4 rounded-xl border border-[#ffb800]/25 bg-[#ffb800]/10 px-4 py-3 text-sm leading-relaxed text-[#ffe4a3]">
+                  <div className="mb-1 flex items-center gap-2 font-semibold text-[#ffb800]">
+                    <AlertTriangle className="h-4 w-4" />
+                    Pembayaran Ditutup Sementara
+                  </div>
+                  {paymentStatus.message}
+                </div>
+              )}
+
               <div className="space-y-3">
                 {paymentMethods?.map((method) => {
                   const isSelected = selectedPayment === method.id;
@@ -931,10 +945,16 @@ export default function GameDetail() {
                 <p className="mb-4 text-[11px] leading-relaxed text-white/35">
                   Total akhir bisa bertambah sesuai nominal QRIS dari provider pembayaran.
                 </p>
+                {paymentStatus?.enabled && (
+                  <p className="mb-4 rounded-xl border border-[#ffb800]/25 bg-[#ffb800]/10 px-4 py-3 text-xs leading-relaxed text-[#ffe4a3]">
+                    {paymentStatus.message}
+                  </p>
+                )}
 
                 <button
                   onClick={handleCheckout}
                   disabled={
+                    paymentStatus?.enabled ||
                     !selectedProduct ||
                     !playerId ||
                     (game.hasServerId && !serverId) ||
@@ -951,7 +971,9 @@ export default function GameDetail() {
                   )}
                   {createTransaction.isPending
                     ? "Membuat QRIS di provider..."
-                    : "Buat QRIS"}
+                    : paymentStatus?.enabled
+                      ? "Pembayaran Maintenance"
+                      : "Buat QRIS"}
                 </button>
 
                 <div className="flex items-center justify-center gap-2 mt-4 text-xs text-white/30">

@@ -3,6 +3,7 @@ import { and, eq, gte, lte } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { paymentMethods, products, vouchers } from "@db/schema";
+import { getPaymentMaintenance } from "../lib/paymentMaintenance";
 
 async function calculateVoucherDiscount(input: {
   code?: string;
@@ -65,6 +66,8 @@ async function calculateVoucherDiscount(input: {
 }
 
 export const paymentRouter = createRouter({
+  status: publicQuery.query(async () => getPaymentMaintenance()),
+
   methods: publicQuery.query(async () => {
     const db = getDb();
     return db
