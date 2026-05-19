@@ -90,8 +90,10 @@ export default function AdminGames() {
     bannerImage: "",
   });
   const [productGameId, setProductGameId] = useState<number | undefined>();
+  const [productPage, setProductPage] = useState(0);
   const [productDrafts, setProductDrafts] = useState<Record<number, string>>({});
   const pageSize = 10;
+  const productPageSize = 25;
 
   const { data: gamesList } = trpc.admin.games.useQuery(
     { search: search.trim() || undefined, limit: pageSize, offset: page * pageSize },
@@ -116,7 +118,7 @@ export default function AdminGames() {
     },
   });
   const { data: productsList } = trpc.admin.products.useQuery(
-    { gameId: productGameId, limit: 80, offset: 0 },
+    { gameId: productGameId, limit: productPageSize, offset: productPage * productPageSize },
     { enabled: isAdmin },
   );
   const updateProduct = trpc.admin.updateProduct.useMutation({
@@ -133,6 +135,10 @@ export default function AdminGames() {
   useEffect(() => {
     setPage(0);
   }, [search]);
+
+  useEffect(() => {
+    setProductPage(0);
+  }, [productGameId]);
 
   useEffect(() => {
     const next: Record<number, string> = {};
@@ -642,6 +648,12 @@ export default function AdminGames() {
                 </tbody>
               </table>
             </div>
+            <TablePagination
+              page={productPage}
+              pageSize={productPageSize}
+              total={productsList?.total ?? 0}
+              onPageChange={setProductPage}
+            />
           </section>
         </div>
       </main>

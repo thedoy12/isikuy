@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
+import { TablePagination } from "@/components/admin/TablePagination";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
 
@@ -126,12 +127,17 @@ export default function AdminVouchers() {
   const utils = trpc.useUtils();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const isAdmin = user?.role === "admin";
-  const { data: vouchers, isLoading } = trpc.admin.vouchers.useQuery(undefined, { enabled: isAdmin });
+  const [page, setPage] = useState(0);
+  const pageSize = 12;
+  const { data: vouchers, isLoading } = trpc.admin.vouchers.useQuery(
+    { limit: pageSize, offset: page * pageSize },
+    { enabled: isAdmin },
+  );
   const [form, setForm] = useState<VoucherForm>(() => ({ ...emptyForm, ...defaultVoucherDates() }));
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const activeCount = useMemo(() => vouchers?.filter((voucher) => voucher.isActive).length ?? 0, [vouchers]);
+  const activeCount = useMemo(() => vouchers?.activeCount ?? 0, [vouchers?.activeCount]);
 
   const invalidate = () => utils.admin.vouchers.invalidate();
   const createVoucher = trpc.admin.createVoucher.useMutation({
@@ -162,6 +168,7 @@ export default function AdminVouchers() {
     onSuccess: async () => {
       setMessage("Voucher dihapus");
       setError("");
+      if ((vouchers?.items.length ?? 0) <= 1 && page > 0) setPage((current) => Math.max(0, current - 1));
       await invalidate();
     },
     onError: (err) => {
@@ -202,7 +209,7 @@ export default function AdminVouchers() {
     createVoucher.mutate(payload);
   };
 
-  const editVoucher = (voucher: NonNullable<typeof vouchers>[number]) => {
+  const editVoucher = (voucher: NonNullable<typeof vouchers>["items"][number]) => {
     setForm({
       id: voucher.id,
       code: voucher.code,
@@ -236,7 +243,7 @@ export default function AdminVouchers() {
         <header className="border-b border-[#222] bg-[#11131a]/50 px-4 py-4 sm:px-6">
           <p className="text-[10px] tracking-wider text-[#00f0ff]">VOUCHERS // DISCOUNT_CONTROL</p>
           <p className="mt-1 text-[9px] tracking-wider text-[#e1f5fe]/30">
-            ACTIVE_CODES: {activeCount} / TOTAL_CODES: {vouchers?.length ?? 0}
+            ACTIVE_CODES: {activeCount} / TOTAL_CODES: {vouchers?.total ?? 0}
           </p>
         </header>
 
@@ -406,7 +413,7 @@ export default function AdminVouchers() {
             </div>
 
             <div className="grid gap-3 p-3 xl:hidden">
-              {vouchers?.map((voucher) => (
+              {vouchers?.items.map((voucher) => (
                 <article key={voucher.id} className="border border-[#222] bg-[#0b0d14] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -444,7 +451,7 @@ export default function AdminVouchers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {vouchers?.map((voucher) => (
+                  {vouchers?.items.map((voucher) => (
                     <tr key={voucher.id} className="border-b border-[#222] transition-colors hover:bg-white/[0.02]">
                       <td className="px-5 py-3 text-sm font-bold text-[#00f0ff]">{voucher.code}</td>
                       <td className="px-5 py-3 text-xs text-white">
@@ -472,6 +479,12 @@ export default function AdminVouchers() {
                 </tbody>
               </table>
             </div>
+            <TablePagination
+              page={page}
+              pageSize={pageSize}
+              total={vouchers?.total ?? 0}
+              onPageChange={setPage}
+            />
           </section>
         </div>
       </main>

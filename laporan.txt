@@ -211,3 +211,11 @@ Update koreksi voucher:
 - Aturan batas bawah modal untuk voucher dibatalkan sesuai arahan user.
 - Voucher sekarang boleh dipakai untuk promosi di bawah modal karena admin bisa mengatur nilai, max diskon, min order, dan limit voucher sendiri.
 - Fitur markup AUTO/MANUAL dan kontrol harga produk admin tetap dipertahankan.
+
+Update 19 Mei 2026 - Pagination admin:
+- Menambahkan pagination GEMINI_ALERTS di halaman Tools Monitor.
+- Menambahkan pagination VOUCHER_LIST di halaman Vouchers.
+- Menambahkan pagination RECENT_TRANSACTIONS di Dashboard.
+- Menambahkan pagination PRODUCT_PRICING di Admin Games.
+- Transactions, Users, dan daftar Games tetap memakai pagination yang sudah ada.
+- Verifikasi lokal: lint OK, TypeScript OK, test OK, build OK.

@@ -536,8 +536,17 @@ export const toolsRouter = createRouter({
     return rows;
   }),
 
-  adminMonitor: adminQuery.query(async () => {
+  adminMonitor: adminQuery
+    .input(
+      z.object({
+        alertLimit: z.number().default(10),
+        alertOffset: z.number().default(0),
+      }).optional(),
+    )
+    .query(async ({ input }) => {
     const db = getDb();
+    const alertLimit = input?.alertLimit || 10;
+    const alertOffset = input?.alertOffset || 0;
     const [totalGenerates] = await db.select({ count: count() }).from(toolResults);
     const [geminiGenerates] = await db
       .select({ count: count() })
@@ -547,11 +556,13 @@ export const toolsRouter = createRouter({
       .select({ count: count() })
       .from(toolAlerts)
       .where(eq(toolAlerts.isResolved, false));
+    const [totalAlerts] = await db.select({ count: count() }).from(toolAlerts);
     const latestAlerts = await db
       .select()
       .from(toolAlerts)
       .orderBy(desc(toolAlerts.createdAt))
-      .limit(20);
+      .limit(alertLimit)
+      .offset(alertOffset);
     const latestResults = await db
       .select({
         id: toolResults.id,
@@ -568,6 +579,7 @@ export const toolsRouter = createRouter({
       totalGenerates: totalGenerates.count,
       geminiGenerates: geminiGenerates.count,
       openAlerts: openAlerts.count,
+      totalAlerts: totalAlerts.count,
       latestAlerts,
       latestResults,
     };

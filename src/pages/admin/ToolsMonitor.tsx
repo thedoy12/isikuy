@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
+import { TablePagination } from "@/components/admin/TablePagination";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
 
@@ -76,11 +77,16 @@ export default function AdminToolsMonitor() {
   const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
   const [message, setMessage] = useState("Tools sedang maintenance. Coba lagi nanti.");
+  const [alertPage, setAlertPage] = useState(0);
+  const alertPageSize = 5;
 
-  const { data: monitor, isLoading } = trpc.tools.adminMonitor.useQuery(undefined, {
-    enabled: isAdmin,
-    refetchInterval: 30_000,
-  });
+  const { data: monitor, isLoading } = trpc.tools.adminMonitor.useQuery(
+    { alertLimit: alertPageSize, alertOffset: alertPage * alertPageSize },
+    {
+      enabled: isAdmin,
+      refetchInterval: 30_000,
+    },
+  );
 
   const setMaintenance = trpc.tools.adminSetMaintenance.useMutation({
     onSuccess: () => {
@@ -187,12 +193,12 @@ export default function AdminToolsMonitor() {
                   {testGemini.data && <p className="mt-3 text-xs text-[#0aff00]">Gemini OK: {testGemini.data.result}</p>}
                 </div>
 
-                <div className="border border-[#222] bg-[#11131a] p-5">
-                  <div className="mb-4 flex items-center gap-3">
+                <div className="border border-[#222] bg-[#11131a]">
+                  <div className="flex items-center gap-3 border-b border-[#222] p-5">
                     <Bell className="h-5 w-5 text-[#ff4967]" />
                     <h2 className="font-display text-xl font-bold">GEMINI_ALERTS</h2>
                   </div>
-                  <div className="grid gap-3">
+                  <div className="grid gap-3 p-5">
                     {monitor?.latestAlerts.length ? monitor.latestAlerts.map((alert) => (
                       <article key={alert.id} className={`border p-4 ${alert.isResolved ? "border-white/10 bg-black/20" : "border-[#ff003c]/25 bg-[#27050c]/45"}`}>
                         <div className="flex items-start justify-between gap-4">
@@ -215,6 +221,12 @@ export default function AdminToolsMonitor() {
                       <p className="border border-white/10 bg-black/20 p-4 text-sm text-white/45">Belum ada alert Gemini.</p>
                     )}
                   </div>
+                  <TablePagination
+                    page={alertPage}
+                    pageSize={alertPageSize}
+                    total={monitor?.totalAlerts ?? 0}
+                    onPageChange={setAlertPage}
+                  />
                 </div>
               </section>
             </div>

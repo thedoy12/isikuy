@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
+import { TablePagination } from "@/components/admin/TablePagination";
 import BrandLogo from "@/components/BrandLogo";
 import {
   Users,
@@ -143,13 +144,15 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const isAdmin = user?.role === "admin";
+  const [recentPage, setRecentPage] = useState(0);
+  const recentPageSize = 8;
 
   const { data: stats, isLoading: statsLoading } = trpc.admin.stats.useQuery(
     undefined,
     { enabled: isAdmin }
   );
   const { data: recentTx } = trpc.admin.transactions.useQuery(
-    { limit: 10 },
+    { limit: recentPageSize, offset: recentPage * recentPageSize },
     { enabled: isAdmin }
   );
 
@@ -338,7 +341,7 @@ export default function AdminDashboard() {
               </Link>
             </div>
             <div className="grid gap-3 p-3 xl:hidden">
-              {recentTx?.items.slice(0, 8).map((tx: any) => (
+              {recentTx?.items.map((tx: any) => (
                 <article key={tx.id} className="border border-[#222] bg-[#0b0d14] p-4">
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -396,7 +399,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentTx?.items.slice(0, 8).map((tx: any) => (
+                  {recentTx?.items.map((tx: any) => (
                     <tr
                       key={tx.id}
                       className="border-b border-[#222] hover:bg-white/[0.02] transition-colors"
@@ -435,6 +438,12 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
+            <TablePagination
+              page={recentPage}
+              pageSize={recentPageSize}
+              total={recentTx?.total ?? 0}
+              onPageChange={setRecentPage}
+            />
           </div>
         </div>
       </main>

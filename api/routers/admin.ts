@@ -193,10 +193,31 @@ export const adminRouter = createRouter({
     };
   }),
 
-  vouchers: adminQuery.query(async () => {
+  vouchers: adminQuery
+    .input(
+      z.object({
+        limit: z.number().default(25),
+        offset: z.number().default(0),
+      }).optional(),
+    )
+    .query(async ({ input }) => {
     const db = getDb();
-    return db.select().from(vouchers).orderBy(desc(vouchers.createdAt));
-  }),
+      const limit = input?.limit || 25;
+      const offset = input?.offset || 0;
+      const [totalRow] = await db.select({ count: count() }).from(vouchers);
+      const [activeRow] = await db
+        .select({ count: count() })
+        .from(vouchers)
+        .where(eq(vouchers.isActive, true));
+      const items = await db
+        .select()
+        .from(vouchers)
+        .orderBy(desc(vouchers.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      return { items, total: totalRow.count, activeCount: activeRow.count, limit, offset };
+    }),
 
   createVoucher: adminQuery
     .input(
