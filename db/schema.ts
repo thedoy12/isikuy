@@ -27,6 +27,7 @@ export const users = pgTable("users", {
   passwordHash: text("passwordHash"),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 30 }),
   avatar: text("avatar"),
   role: userRoleEnum("role").default("user").notNull(),
   balance: numeric("balance", { precision: 12, scale: 2 }).default("0").notNull(),

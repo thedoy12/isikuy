@@ -92,6 +92,7 @@ export default function AdminUserEdit() {
     username: "",
     name: "",
     email: "",
+    phone: "",
     avatar: "",
     role: "user" as "user" | "admin",
     balance: 0,
@@ -134,6 +135,7 @@ export default function AdminUserEdit() {
       username: targetUser.username || "",
       name: targetUser.name || "",
       email: targetUser.email || "",
+      phone: targetUser.phone || "",
       avatar: targetUser.avatar || "",
       role: targetUser.role,
       balance: Number(targetUser.balance || 0),
@@ -161,6 +163,7 @@ export default function AdminUserEdit() {
       username: form.username,
       name: form.name,
       email: form.email,
+      phone: form.phone,
       avatar: form.avatar,
       role: form.role,
       balance: Number(form.balance) || 0,
@@ -246,6 +249,16 @@ export default function AdminUserEdit() {
                       type="email"
                       value={form.email}
                       onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                      PHONE
+                    </label>
+                    <input
+                      value={form.phone}
+                      onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
                       className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
                     />
                   </div>

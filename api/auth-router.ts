@@ -1,17 +1,28 @@
 import * as cookie from "cookie";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { eq } from "drizzle-orm";
 import { Session } from "@contracts/constants";
+import { users } from "@db/schema";
+import { getDb } from "./queries/connection";
 import { getSessionCookieOptions } from "./lib/cookies";
 import { createRouter, authedQuery, publicQuery } from "./middleware";
 import {
   getAdminCredentials,
   hashPassword,
+  setAdminPassword,
   verifyAdminPassword,
   verifyPassword,
 } from "./lib/adminCredentials";
 import { signSessionToken } from "./auth/session";
-import { findUserByUsername, upsertUser } from "./queries/users";
+import {
+  findUserByEmail,
+  findUserByIdentifier,
+  findUserByPhone,
+  findUserByUsername,
+  normalizePhone,
+  upsertUser,
+} from "./queries/users";
 
 function publicUser(user: Awaited<ReturnType<typeof findUserByUsername>>) {
   if (!user) return null;
@@ -29,11 +40,11 @@ export const authRouter = createRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const username = input.username.trim().toLowerCase();
+      const identifier = input.username.trim().toLowerCase();
       const credentials = await getAdminCredentials();
       const passwordIsValid = await verifyAdminPassword(input.password);
 
-      if (username === credentials.username.toLowerCase() && passwordIsValid) {
+      if (identifier === credentials.username.toLowerCase() && passwordIsValid) {
         await upsertUser({
           username: credentials.username,
           name: "Admin ISIKUY",
@@ -59,14 +70,14 @@ export const authRouter = createRouter({
         return publicUser(await findUserByUsername(credentials.username));
       }
 
-      if (username === credentials.username.toLowerCase()) {
+      if (identifier === credentials.username.toLowerCase()) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "Username atau password salah",
         });
       }
 
-      const user = await findUserByUsername(username);
+      const user = await findUserByIdentifier(identifier);
       if (!user?.passwordHash || !verifyPassword(input.password, user.passwordHash)) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
@@ -86,6 +97,7 @@ export const authRouter = createRouter({
         passwordHash: user.passwordHash,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         avatar: user.avatar,
         role: user.role,
         balance: user.balance,
@@ -115,6 +127,7 @@ export const authRouter = createRouter({
       z.object({
         name: z.string().min(2).max(80),
         email: z.string().email().max(320),
+        phone: z.string().min(8).max(30),
         username: z
           .string()
           .min(3)
@@ -125,6 +138,8 @@ export const authRouter = createRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const username = input.username.trim().toLowerCase();
+      const email = input.email.trim().toLowerCase();
+      const phone = normalizePhone(input.phone);
       const credentials = await getAdminCredentials();
       if (username === credentials.username.toLowerCase()) {
         throw new TRPCError({
@@ -140,12 +155,31 @@ export const authRouter = createRouter({
           message: "Username sudah digunakan",
         });
       }
+      if (await findUserByEmail(email)) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Email sudah digunakan",
+        });
+      }
+      if (!phone || phone.length < 8) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Nomor telepon tidak valid",
+        });
+      }
+      if (await findUserByPhone(phone)) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Nomor telepon sudah digunakan",
+        });
+      }
 
       await upsertUser({
         username,
         passwordHash: hashPassword(input.password),
         name: input.name,
-        email: input.email,
+        email,
+        phone,
         role: "user",
         lastSignInAt: new Date(),
       });
@@ -166,6 +200,84 @@ export const authRouter = createRouter({
       return publicUser(await findUserByUsername(username));
     }),
   me: authedQuery.query((opts) => publicUser(opts.ctx.user)),
+  updateProfile: authedQuery
+    .input(
+      z.object({
+        name: z.string().min(2).max(80),
+        email: z.string().email().max(320),
+        phone: z.string().min(8).max(30),
+        avatar: z.string().max(500).optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const email = input.email.trim().toLowerCase();
+      const phone = normalizePhone(input.phone);
+      if (!phone || phone.length < 8) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Nomor telepon tidak valid",
+        });
+      }
+
+      const emailOwner = await findUserByEmail(email);
+      if (emailOwner && emailOwner.id !== ctx.user.id) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Email sudah digunakan",
+        });
+      }
+
+      const phoneOwner = await findUserByPhone(phone);
+      if (phoneOwner && phoneOwner.id !== ctx.user.id) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Nomor telepon sudah digunakan",
+        });
+      }
+
+      await getDb()
+        .update(users)
+        .set({
+          name: input.name.trim(),
+          email,
+          phone,
+          avatar: input.avatar?.trim() || null,
+        })
+        .where(eq(users.id, ctx.user.id));
+
+      return publicUser(await findUserByUsername(ctx.user.username));
+    }),
+  changePassword: authedQuery
+    .input(
+      z.object({
+        currentPassword: z.string().min(1),
+        newPassword: z.string().min(8),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const credentials = await getAdminCredentials();
+      const isEnvAdmin = ctx.user.username.toLowerCase() === credentials.username.toLowerCase();
+
+      if (isEnvAdmin) {
+        const currentPasswordIsValid = await verifyAdminPassword(input.currentPassword);
+        if (!currentPasswordIsValid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Password lama tidak sesuai" });
+        }
+        await setAdminPassword(input.newPassword);
+        return { success: true };
+      }
+
+      if (!ctx.user.passwordHash || !verifyPassword(input.currentPassword, ctx.user.passwordHash)) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Password lama tidak sesuai" });
+      }
+
+      await getDb()
+        .update(users)
+        .set({ passwordHash: hashPassword(input.newPassword) })
+        .where(eq(users.id, ctx.user.id));
+
+      return { success: true };
+    }),
   logout: publicQuery.mutation(async ({ ctx }) => {
     const opts = getSessionCookieOptions(ctx.req.headers);
     ctx.resHeaders.append(

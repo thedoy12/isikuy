@@ -18,6 +18,7 @@ export default function Register() {
   const utils = trpc.useUtils();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -42,7 +43,7 @@ export default function Register() {
       return;
     }
 
-    register.mutate({ name, email, username, password });
+    register.mutate({ name, email, phone, username, password });
   }
 
   return (
@@ -136,6 +137,18 @@ export default function Register() {
                 onChange={(event) => setUsername(event.target.value)}
                 className="glass w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/20 focus:border-[#ff003c]/50"
                 autoComplete="username"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs text-white/50">No. Telepon</label>
+              <input
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                placeholder="Contoh: 08xxxxxxxxxx"
+                className="glass w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/20 focus:border-[#ff003c]/50"
+                autoComplete="tel"
                 required
               />
             </div>

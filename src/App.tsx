@@ -5,6 +5,7 @@ import Register from './pages/Register'
 import Games from './pages/Games'
 import GameDetail from './pages/GameDetail'
 import History from './pages/History'
+import AccountSettings from './pages/AccountSettings'
 import InfoPage from './pages/InfoPage'
 import Tools from './pages/Tools'
 import ToolDetail from './pages/ToolDetail'
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/tools" element={<Tools />} />
         <Route path="/tools/:slug" element={<ToolDetail />} />
         <Route path="/history" element={<History />} />
+        <Route path="/account" element={<AccountSettings />} />
         <Route path="/tentang" element={<InfoPage />} />
         <Route path="/kontak" element={<InfoPage />} />
         <Route path="/bantuan" element={<InfoPage />} />

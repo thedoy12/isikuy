@@ -7,6 +7,7 @@ import {
   User,
   LogOut,
   History,
+  Settings,
   Shield,
   Menu,
   X,
@@ -118,6 +119,13 @@ export default function Navbar() {
                     </div>
                     <div className="p-2">
                       <Link
+                        to="/account"
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Pengaturan Akun
+                      </Link>
+                      <Link
                         to="/history"
                         className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
                       >
@@ -222,6 +230,12 @@ export default function Navbar() {
               )}
               {isAuthenticated && (
                 <>
+                  <Link
+                    to="/account"
+                    className="px-4 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                  >
+                    Pengaturan Akun
+                  </Link>
                   <Link
                     to="/history"
                     className="px-4 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors"

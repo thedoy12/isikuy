@@ -22,6 +22,7 @@ import {
   verifyAdminPassword,
 } from "../lib/adminCredentials";
 import { getPublicSiteSettings } from "./site";
+import { normalizePhone } from "../queries/users";
 
 function adminMatchKey(value: string | null | undefined) {
   return (value || "")
@@ -367,6 +368,7 @@ export const adminRouter = createRouter({
         username: z.string().min(3).max(255).optional(),
         name: z.string().max(255).nullable().optional(),
         email: z.string().email().or(z.literal("")).nullable().optional(),
+        phone: z.string().max(30).nullable().optional(),
         avatar: z.string().max(500).nullable().optional(),
         role: z.enum(["user", "admin"]).optional(),
         balance: z.number().optional(),
@@ -380,6 +382,7 @@ export const adminRouter = createRouter({
       if (input.username !== undefined) updateData.username = input.username.trim();
       if (input.name !== undefined) updateData.name = input.name?.trim() || null;
       if (input.email !== undefined) updateData.email = input.email?.trim() || null;
+      if (input.phone !== undefined) updateData.phone = input.phone ? normalizePhone(input.phone) || null : null;
       if (input.avatar !== undefined) updateData.avatar = input.avatar?.trim() || null;
       if (input.role) updateData.role = input.role;
       if (input.balance !== undefined) updateData.balance = input.balance.toString();
@@ -400,6 +403,7 @@ export const adminRouter = createRouter({
           username: users.username,
           name: users.name,
           email: users.email,
+          phone: users.phone,
           avatar: users.avatar,
           role: users.role,
           balance: users.balance,

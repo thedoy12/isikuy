@@ -7,7 +7,7 @@ import BrandLogo from "@/components/BrandLogo";
 export default function Login() {
   const navigate = useNavigate();
   const utils = trpc.useUtils();
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -24,7 +24,7 @@ export default function Login() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    login.mutate({ username, password });
+    login.mutate({ username: identifier, password });
   }
 
   return (
@@ -57,13 +57,15 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-4 mb-6">
             <div>
               <label className="text-xs text-white/50 mb-2 block">
-                Username
+                Username / Email / No. Telepon
               </label>
               <input
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
+                value={identifier}
+                onChange={(event) => setIdentifier(event.target.value)}
+                placeholder="username, email@gmail.com, atau 08xxxxxxxxxx"
                 className="w-full px-4 py-3 rounded-xl glass text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[#ff003c]/50 transition-colors"
                 autoComplete="username"
+                required
               />
             </div>
             <div>
