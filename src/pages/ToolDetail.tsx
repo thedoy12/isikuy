@@ -51,8 +51,7 @@ function cleanResultLine(line: string) {
     .trim();
 }
 
-function readNumber(value: string, fallback: number) {
-  if (value.trim() === "") return fallback;
+function parseNumberInput(value: string, fallback: number) {
   const next = Number(value);
   return Number.isFinite(next) ? next : fallback;
 }
@@ -333,11 +332,11 @@ export default function ToolDetail() {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [wheelOptionsText, setWheelOptionsText] = useState(getDefaultWheelOptions(tool));
-  const [wins, setWins] = useState(50);
-  const [matches, setMatches] = useState(1000);
-  const [targetWr, setTargetWr] = useState(60);
-  const [diamonds, setDiamonds] = useState(86);
-  const [spinCount, setSpinCount] = useState(10);
+  const [wins, setWins] = useState("50");
+  const [matches, setMatches] = useState("1000");
+  const [targetWr, setTargetWr] = useState("60");
+  const [diamonds, setDiamonds] = useState("86");
+  const [spinCount, setSpinCount] = useState("10");
   const [error, setError] = useState("");
   const isCustomMode = mode === "Custom";
   const defaultWheelItems = tool?.kind === "wheel" ? tool.modes.filter((item) => item !== "Custom") : [];
@@ -412,11 +411,16 @@ export default function ToolDetail() {
     };
     const toolPayload =
       tool.slug === "winrate-calculator"
-        ? { ...generatePayload, matches, wins, targetWr }
+        ? {
+            ...generatePayload,
+            matches: parseNumberInput(matches, 1000),
+            wins: parseNumberInput(wins, 50),
+            targetWr: parseNumberInput(targetWr, 60),
+          }
         : tool.slug === "diamond-calculator"
-          ? { ...generatePayload, diamonds }
+          ? { ...generatePayload, diamonds: parseNumberInput(diamonds, 86) }
           : tool.slug === "magic-wheel"
-            ? { ...generatePayload, spinCount }
+            ? { ...generatePayload, spinCount: parseNumberInput(spinCount, 10) }
             : generatePayload;
 
     if (tool.kind !== "wheel") {
@@ -575,16 +579,16 @@ export default function ToolDetail() {
 
                 {tool.slug === "winrate-calculator" && (
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <input type="number" value={matches} onChange={(event) => setMatches(readNumber(event.target.value, 1000))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Total match" />
-                    <input type="number" value={wins} onChange={(event) => setWins(readNumber(event.target.value, 50))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Current WR" />
-                    <input type="number" value={targetWr} onChange={(event) => setTargetWr(readNumber(event.target.value, 60))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Target WR" />
+                    <input type="number" value={matches} onChange={(event) => setMatches(event.target.value)} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Total match" />
+                    <input type="number" value={wins} onChange={(event) => setWins(event.target.value)} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Current WR" />
+                    <input type="number" value={targetWr} onChange={(event) => setTargetWr(event.target.value)} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Target WR" />
                   </div>
                 )}
                 {tool.slug === "diamond-calculator" && (
-                  <input type="number" value={diamonds} onChange={(event) => setDiamonds(readNumber(event.target.value, 86))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Jumlah diamond" />
+                  <input type="number" value={diamonds} onChange={(event) => setDiamonds(event.target.value)} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Jumlah diamond" />
                 )}
                 {tool.slug === "magic-wheel" && (
-                  <input type="number" value={spinCount} onChange={(event) => setSpinCount(readNumber(event.target.value, 10))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Jumlah spin" />
+                  <input type="number" value={spinCount} onChange={(event) => setSpinCount(event.target.value)} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Jumlah spin" />
                 )}
 
                 {tool.kind === "wheel" && <WheelBoard items={wheelItems} rotation={rotation} isSpinning={isSpinning} />}
