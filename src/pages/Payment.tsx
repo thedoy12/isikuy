@@ -8,7 +8,6 @@ import {
   Clock,
   Copy,
   Loader2,
-  QrCode,
   XCircle,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
@@ -144,17 +143,6 @@ export default function PaymentPage() {
                       alt="QRIS pembayaran"
                       className="mx-auto h-52 w-52 rounded-xl bg-white object-contain p-2"
                     />
-                    {transaction.payment.payUrl && (
-                      <a
-                        href={transaction.payment.payUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#00f0ff] px-4 py-3 text-sm font-bold text-black"
-                      >
-                        <QrCode className="h-4 w-4" />
-                        Buka Pembayaran
-                      </a>
-                    )}
                   </>
                 ) : (
                   <div className="flex min-h-52 flex-col items-center justify-center">
