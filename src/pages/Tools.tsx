@@ -7,11 +7,13 @@ import {
   Flame,
   Gamepad2,
   Gauge,
+  Lock,
   Sparkles,
   Wand2,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
 import { toolDefinitions, type ToolDefinition } from "@contracts/toolCatalog";
 
@@ -24,8 +26,9 @@ const categoryIcons: Record<ToolDefinition["category"], React.ElementType> = {
   Calculator,
 };
 
-function ToolCard({ tool }: { tool: ToolDefinition }) {
+function ToolCard({ tool, isAuthenticated }: { tool: ToolDefinition; isAuthenticated: boolean }) {
   const Icon = categoryIcons[tool.category] || Wand2;
+  const isLocked = !isAuthenticated && !tool.publicAccess;
   return (
     <Link
       to={`/tools/${tool.slug}`}
@@ -42,6 +45,12 @@ function ToolCard({ tool }: { tool: ToolDefinition }) {
             HOT
           </span>
         )}
+        {isLocked && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] text-white/45">
+            <Lock className="h-3 w-3" />
+            LOGIN
+          </span>
+        )}
       </div>
       <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-[#00f0ff]">{tool.category}</p>
       <h3 className="font-display text-xl font-bold text-white">{tool.shortTitle}</h3>
@@ -54,6 +63,7 @@ function ToolCard({ tool }: { tool: ToolDefinition }) {
 }
 
 export default function Tools() {
+  const { isAuthenticated } = useAuth();
   const { data: status } = trpc.tools.status.useQuery(undefined, {
     staleTime: 30_000,
   });
@@ -104,6 +114,11 @@ export default function Tools() {
               <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/58">
                 Generate nickname, spin hukuman, cek aura, dan hitung winrate. Cepat, fun, mobile-friendly, dan tetap nyambung ke katalog topup ISIKUY.
               </p>
+              {!isAuthenticated && (
+                <p className="mt-3 max-w-2xl rounded-xl border border-[#ffb800]/20 bg-[#211600]/35 px-4 py-3 text-sm text-[#ffe2a3]">
+                  Beberapa tools random bisa dicoba gratis. Login dulu untuk membuka semua AI tools, calculator, dan fitur fun lainnya.
+                </p>
+              )}
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a href="#tools-list" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff003c] to-[#b30029] px-6 py-3 font-semibold text-white">
                   <Gamepad2 className="h-5 w-5" />
@@ -143,7 +158,7 @@ export default function Tools() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {items.map((tool) => (
-                  <ToolCard key={tool.slug} tool={tool} />
+                  <ToolCard key={tool.slug} tool={tool} isAuthenticated={isAuthenticated} />
                 ))}
               </div>
             </div>

@@ -14,6 +14,7 @@ export type ToolDefinition = {
   kind: ToolKind;
   modes: string[];
   aiEnabled?: boolean;
+  publicAccess?: boolean;
   trending?: boolean;
   seoTitle: string;
   seoDescription: string;
@@ -85,6 +86,7 @@ const baseToolDefinitions: ToolDefinition[] = [
     kind: "wheel",
     modes: ["No Heal", "Sniper Only", "No Recall", "Rush Mid", "Random Hero", "One Tap Only"],
     trending: true,
+    publicAccess: true,
     seoTitle: "Random Challenge Wheel Gaming - ISIKUY Tools",
     seoDescription: "Spin challenge mabar acak untuk bikin match lebih seru, lucu, dan viral.",
     ctaGameSlug: "mobile-legends",
@@ -97,6 +99,7 @@ const baseToolDefinitions: ToolDefinition[] = [
     category: "Spin Random",
     kind: "wheel",
     modes: ["Push-up", "Open Mic", "No Skin", "Pistol Only", "No Armor", "Role Swap"],
+    publicAccess: true,
     seoTitle: "Spin Hukuman Mabar Lucu - ISIKUY Tools",
     seoDescription: "Wheel hukuman mabar lucu untuk party gaming dan konten sosial media.",
     ctaGameSlug: "free-fire",
@@ -109,6 +112,7 @@ const baseToolDefinitions: ToolDefinition[] = [
     category: "Spin Random",
     kind: "picker",
     modes: ["Mobile Legends", "Valorant", "Role", "Lane", "Difficulty"],
+    publicAccess: true,
     seoTitle: "Random Hero Picker ML dan Valorant - ISIKUY Tools",
     seoDescription: "Pilih hero Mobile Legends atau agent Valorant secara random untuk challenge mabar.",
     ctaGameSlug: "mobile-legends",
@@ -122,6 +126,7 @@ const baseToolDefinitions: ToolDefinition[] = [
     kind: "meter",
     modes: ["Aura", "Hoki", "Toxic", "MVP"],
     trending: true,
+    publicAccess: true,
     seoTitle: "Aura Calculator Gaming - ISIKUY Tools",
     seoDescription: "Cek aura gaming dan hoki nickname kamu dengan hasil lucu dan progress bar neon.",
     ctaGameSlug: "mobile-legends",
@@ -207,4 +212,8 @@ export function resolveToolSlug(slug: string) {
 export function getToolDefinition(slug: string) {
   const resolved = resolveToolSlug(slug);
   return toolDefinitions.find((tool) => tool.slug === resolved) ?? null;
+}
+
+export function isPublicTool(slug: string) {
+  return getToolDefinition(slug)?.publicAccess === true;
 }

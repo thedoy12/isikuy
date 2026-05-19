@@ -4,7 +4,7 @@ import { createRouter, publicQuery, authedQuery, adminQuery } from "../middlewar
 import { getDb } from "../queries/connection";
 import { env } from "../lib/env";
 import { recentTools, siteSettings, toolAlerts, toolResults, tools, trendingTools, userFavorites } from "@db/schema";
-import { getToolDefinition, resolveToolSlug, toolDefinitions } from "@contracts/toolCatalog";
+import { getToolDefinition, isPublicTool, resolveToolSlug, toolDefinitions } from "@contracts/toolCatalog";
 
 type GenerateToolInput = {
   slug: string;
@@ -462,6 +462,9 @@ export const toolsRouter = createRouter({
       const slug = resolveToolSlug(input.slug);
       const tool = getToolDefinition(slug);
       if (!tool) throw new Error("Tool tidak ditemukan");
+      if (!ctx.user && !isPublicTool(slug)) {
+        throw new Error("Login dulu untuk memakai tool ini.");
+      }
       const normalizedInput = normalizeGenerateInput({ ...input, slug });
       const maintenance = await getToolsMaintenance();
       if (maintenance.enabled) throw new Error(maintenance.message);

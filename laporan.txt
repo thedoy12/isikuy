@@ -219,3 +219,11 @@ Update 19 Mei 2026 - Pagination admin:
 - Menambahkan pagination PRODUCT_PRICING di Admin Games.
 - Transactions, Users, dan daftar Games tetap memakai pagination yang sudah ada.
 - Verifikasi lokal: lint OK, TypeScript OK, test OK, build OK.
+
+Update 19 Mei 2026 - Login gate Tools:
+- Menambahkan publicAccess untuk beberapa tools random yang boleh dimainkan tanpa login: challenge-wheel, punishment-wheel, hero-picker, aura-calculator.
+- Tools selain daftar publik sekarang wajib login sebelum generate/spin.
+- Menambahkan popup pemberitahuan login/register di halaman detail tool.
+- Menambahkan label LOGIN di kartu tools yang terkunci untuk pengunjung.
+- Backend generateText sekarang ikut menolak user belum login untuk tools terkunci, jadi tidak bisa dibypass dari UI.
+- Verifikasi lokal: lint OK, TypeScript OK, test OK, build OK.

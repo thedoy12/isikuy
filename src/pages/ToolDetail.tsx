@@ -9,6 +9,7 @@ import {
   Dice5,
   Gauge,
   ListChecks,
+  Lock,
   Loader2,
   RefreshCw,
   Share2,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
 import { getToolDefinition, resolveToolSlug, toolDefinitions, type ToolDefinition } from "@contracts/toolCatalog";
 
@@ -320,6 +322,7 @@ export default function ToolDetail() {
   const params = useParams<{ slug: string }>();
   const slug = resolveToolSlug(params.slug || "");
   const tool = getToolDefinition(slug);
+  const { isAuthenticated } = useAuth();
   const { mutate: trackTool } = trpc.tools.track.useMutation();
   const generateText = trpc.tools.generateText.useMutation();
   const { data: status } = trpc.tools.status.useQuery(undefined, {
@@ -338,7 +341,10 @@ export default function ToolDetail() {
   const [diamonds, setDiamonds] = useState("86");
   const [spinCount, setSpinCount] = useState("10");
   const [error, setError] = useState("");
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
   const isCustomMode = mode === "Custom";
+  const requiresLogin = !!tool && !tool.publicAccess;
+  const isLocked = requiresLogin && !isAuthenticated;
   const defaultWheelItems = tool?.kind === "wheel" ? tool.modes.filter((item) => item !== "Custom") : [];
   const customWheelItems = tool?.kind === "wheel" ? parseCustomOptions(wheelOptionsText) : [];
   const wheelItems =
@@ -400,6 +406,10 @@ export default function ToolDetail() {
   const runTool = async () => {
     if (isSpinning) return;
     setError("");
+    if (isLocked) {
+      setShowLoginPopup(true);
+      return;
+    }
 
     const effectiveMode = tool.kind === "wheel" ? "Custom Wheel" : isCustomMode && name.trim() ? `Custom: ${name.trim().slice(0, 80)}` : mode;
     const generatePayload = {
@@ -482,6 +492,34 @@ export default function ToolDetail() {
             <ArrowLeft className="h-4 w-4" />
             Back to tools
           </Link>
+          {showLoginPopup && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+              <section className="w-full max-w-md rounded-2xl border border-[#ffb800]/25 bg-[#11131a] p-6 shadow-2xl shadow-black/40">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#ffb800]/25 bg-[#ffb800]/10 text-[#ffb800]">
+                  <Lock className="h-7 w-7" />
+                </div>
+                <h2 className="text-center font-display text-2xl font-bold text-white">Login dulu buat lanjut</h2>
+                <p className="mt-3 text-center text-sm leading-relaxed text-white/58">
+                  Tool ini khusus member ISIKUY. Masuk atau daftar dulu untuk membuka semua AI tools, calculator, dan hasil fun lainnya.
+                </p>
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <Link to="/login" className="inline-flex items-center justify-center rounded-xl bg-[#ff003c] px-5 py-3 text-sm font-semibold text-white">
+                    Login
+                  </Link>
+                  <Link to="/register" className="inline-flex items-center justify-center rounded-xl border border-[#00f0ff]/25 bg-[#00f0ff]/10 px-5 py-3 text-sm font-semibold text-[#00f0ff]">
+                    Daftar
+                  </Link>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPopup(false)}
+                  className="mt-3 w-full rounded-xl border border-white/10 px-5 py-3 text-sm font-semibold text-white/55 hover:text-white"
+                >
+                  Nanti dulu
+                </button>
+              </section>
+            </div>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
             <section className="rounded-2xl border border-white/10 bg-[#0b0d14]/88 p-5 sm:p-7">
@@ -493,6 +531,12 @@ export default function ToolDetail() {
                   <p className="text-[10px] uppercase tracking-[0.2em] text-[#00f0ff]">{tool.category}</p>
                   <h1 className="mt-1 font-display text-3xl font-bold sm:text-5xl">{tool.title}</h1>
                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/55">{tool.description}</p>
+                  {isLocked && (
+                    <p className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#ffb800]/20 bg-[#211600]/35 px-4 py-3 text-sm text-[#ffe2a3]">
+                      <Lock className="h-4 w-4" />
+                      Login diperlukan untuk memainkan tool ini.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -594,8 +638,8 @@ export default function ToolDetail() {
                 {tool.kind === "wheel" && <WheelBoard items={wheelItems} rotation={rotation} isSpinning={isSpinning} />}
 
                 <button onClick={runTool} disabled={generateText.isPending || isSpinning} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff003c] to-[#b30029] px-6 py-4 font-semibold text-white transition-all hover:shadow-lg hover:shadow-[#ff003c]/25 disabled:opacity-60 sm:w-fit">
-                  {generateText.isPending || isSpinning ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
-                  {tool.kind === "wheel" ? (isSpinning ? "Spinning..." : "Spin Wheel") : "Generate"}
+                  {generateText.isPending || isSpinning ? <Loader2 className="h-5 w-5 animate-spin" /> : isLocked ? <Lock className="h-5 w-5" /> : <RefreshCw className="h-5 w-5" />}
+                  {isLocked ? "Login untuk main" : tool.kind === "wheel" ? (isSpinning ? "Spinning..." : "Spin Wheel") : "Generate"}
                 </button>
                 {error && (
                   <p className="rounded-xl border border-[#ff003c]/25 bg-[#ff003c]/10 px-4 py-3 text-sm text-[#ff6a82]">
