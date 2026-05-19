@@ -121,7 +121,7 @@ export const paymentRouter = createRouter({
       const serviceAmount = 0;
       const paymentFeeAmount = 0;
       const feeAmount = 0;
-      const totalAmount = Math.max(0, basePrice - discountAmount);
+      const totalAmount = Math.max(1, basePrice - discountAmount);
 
       return {
         basePrice,

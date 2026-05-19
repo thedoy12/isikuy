@@ -356,7 +356,7 @@ export default function ToolDetail() {
     description.setAttribute("content", tool.seoDescription);
     document.head.appendChild(description);
     trackTool.mutate({ slug: tool.slug });
-  }, [tool?.slug]);
+  }, [tool, trackTool]);
 
   useEffect(() => {
     if (!tool) return;
@@ -364,7 +364,7 @@ export default function ToolDetail() {
     setWheelOptionsText(getDefaultWheelOptions(tool));
     setResult("");
     setError("");
-  }, [tool?.slug]);
+  }, [tool]);
 
   if (!tool) {
     return (

@@ -6,6 +6,7 @@ import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import BrandLogo from "@/components/BrandLogo";
 import {
   Users,
+  Bell,
   Gamepad2,
   Receipt,
   TrendingUp,
@@ -16,6 +17,7 @@ import {
   ArrowLeft,
   Loader2,
   Settings,
+  Wand2,
 } from "lucide-react";
 import {
   AreaChart,
@@ -83,6 +85,8 @@ function AdminSidebar({ active }: { active: string }) {
     { id: "games", label: "ARSENAL", icon: Gamepad2, href: "/admin/games" },
     { id: "transactions", label: "FINANCIALS", icon: Receipt, href: "/admin/transactions" },
     { id: "users", label: "INTEL", icon: Users, href: "/admin/users" },
+    { id: "tools", label: "TOOLS", icon: Wand2, href: "/admin/tools" },
+    { id: "tools-monitor", label: "TOOLS_MONITOR", icon: Bell, href: "/admin/tools-monitor" },
     { id: "settings", label: "SETTINGS", icon: Settings, href: "/admin/settings" },
   ];
 

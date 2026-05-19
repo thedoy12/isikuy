@@ -542,9 +542,7 @@ export const adminRouter = createRouter({
         .from(products)
         .leftJoin(games, eq(products.gameId, games.id))
         .where(where)
-        .orderBy(desc(products.isActive), products.sortOrder)
-        .limit(limit * 3)
-        .offset(offset);
+        .orderBy(desc(products.isActive), products.sortOrder);
 
       const seen = new Set<string>();
       const uniqueItems = items.filter((item) => {
@@ -552,9 +550,9 @@ export const adminRouter = createRouter({
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
-      }).slice(0, limit);
+      });
 
-      return { items: uniqueItems, total: uniqueItems.length, limit, offset };
+      return { items: uniqueItems.slice(offset, offset + limit), total: uniqueItems.length, limit, offset };
     }),
 
   updateProduct: adminQuery
