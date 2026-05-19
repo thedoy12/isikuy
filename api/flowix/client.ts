@@ -111,16 +111,29 @@ async function request<T>(
   init: RequestInit = {},
 ): Promise<FlowixResponse<T>> {
   assertConfigured();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
 
-  const response = await fetch(`${env.flowixBaseUrl}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      api_key: env.flowixApiKey,
-      merchant_id: env.flowixMerchantId,
-      ...(init.headers ?? {}),
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${env.flowixBaseUrl}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        api_key: env.flowixApiKey,
+        merchant_id: env.flowixMerchantId,
+        ...(init.headers ?? {}),
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Flowix terlalu lama merespons. Coba buat QRIS lagi.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const payload = (await response.json().catch(() => null)) as
     | FlowixResponse<T>

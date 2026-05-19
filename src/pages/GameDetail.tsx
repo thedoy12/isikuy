@@ -192,6 +192,14 @@ export default function GameDetail() {
   );
   const payableAmount =
     paymentDetails?.amountTotal ?? (txStatus?.totalAmount ? parseFloat(txStatus.totalAmount) : 0);
+  const productBaseAmount = paymentCalc?.basePrice ?? selectedProductPrice;
+  const voucherDiscount = paymentCalc?.discountAmount ?? 0;
+  const subtotalAfterDiscount =
+    paymentDetails?.amountRequested ?? Math.max(1, productBaseAmount - voucherDiscount);
+  const qrisAdjustment = Math.max(
+    0,
+    paymentDetails?.providerAdjustment ?? Math.max(0, payableAmount - subtotalAfterDiscount),
+  );
   const orderIsProcessing =
     txStatus?.paymentStatus === "paid" && txStatus.status === "processing";
 
@@ -261,6 +269,8 @@ export default function GameDetail() {
     const s = seconds % 60;
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
+
+  const formatRupiah = (value: number) => `Rp${Math.round(value).toLocaleString("id-ID")}`;
 
   const copyInvoice = () => {
     navigator.clipboard.writeText(invoiceNumber);
@@ -370,10 +380,31 @@ export default function GameDetail() {
                     <span className="text-white">{serverId}</span>
                   </div>
                 )}
+                <div className="h-px bg-white/10" />
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/50">Harga Awal</span>
+                  <span className="text-white">{formatRupiah(productBaseAmount)}</span>
+                </div>
+                {voucherDiscount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Diskon Voucher</span>
+                    <span className="font-semibold text-[#0aff00]">-{formatRupiah(voucherDiscount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/50">Subtotal</span>
+                  <span className="text-white">{formatRupiah(subtotalAfterDiscount)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/50">Biaya/Pajak QRIS</span>
+                  <span className={qrisAdjustment > 0 ? "text-[#ffb800]" : "text-white/50"}>
+                    {qrisAdjustment > 0 ? `+${formatRupiah(qrisAdjustment)}` : "Rp0"}
+                  </span>
+                </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-white/50">Total Bayar QRIS</span>
                   <span className="text-[#ff003c] font-semibold">
-                    Rp{payableAmount ? payableAmount.toLocaleString() : "-"}
+                    {payableAmount ? formatRupiah(payableAmount) : "-"}
                   </span>
                 </div>
               </div>
@@ -383,7 +414,7 @@ export default function GameDetail() {
             <div className="glass rounded-2xl p-6 mb-6 text-center">
               <p className="text-xs text-white/40 mb-2">Total yang harus dibayar</p>
               <p className="font-display text-4xl font-bold text-white mb-5">
-                Rp{payableAmount ? payableAmount.toLocaleString() : "-"}
+                {payableAmount ? formatRupiah(payableAmount) : "-"}
               </p>
 
               {!showQris && (
@@ -858,22 +889,31 @@ export default function GameDetail() {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-white/50">Harga</span>
+                    <span className="text-white/50">Harga Awal</span>
                     <span className="text-white">
-                      Rp
                       {selectedProduct && paymentCalc
-                        ? paymentCalc.basePrice.toLocaleString()
-                        : "0"}
+                        ? formatRupiah(paymentCalc.basePrice)
+                        : "Rp0"}
                     </span>
                   </div>
                   {paymentCalc?.discountAmount ? (
                     <div className="flex justify-between text-sm">
                       <span className="text-white/50">Diskon Voucher</span>
                       <span className="text-[#0aff00]">
-                        -Rp{Math.round(paymentCalc.discountAmount).toLocaleString()}
+                        -{formatRupiah(paymentCalc.discountAmount)}
                       </span>
                     </div>
                   ) : null}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Subtotal</span>
+                    <span className="text-white">
+                      {paymentCalc ? formatRupiah(paymentCalc.totalAmount) : "Rp0"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Biaya/Pajak QRIS</span>
+                    <span className="text-white/40">Dihitung saat QRIS dibuat</span>
+                  </div>
                 </div>
 
                 <div className="h-px bg-white/10 mb-5" />
@@ -883,12 +923,14 @@ export default function GameDetail() {
                     Total Bayar
                   </span>
                   <span className="font-display text-xl font-bold text-white">
-                    Rp
                     {paymentCalc?.totalAmount
-                      ? Math.round(paymentCalc.totalAmount).toLocaleString()
-                      : "0"}
+                      ? formatRupiah(paymentCalc.totalAmount)
+                      : "Rp0"}
                   </span>
                 </div>
+                <p className="mb-4 text-[11px] leading-relaxed text-white/35">
+                  Total akhir bisa bertambah sesuai nominal QRIS dari provider pembayaran.
+                </p>
 
                 <button
                   onClick={handleCheckout}
@@ -908,7 +950,7 @@ export default function GameDetail() {
                     <Zap className="w-5 h-5" />
                   )}
                   {createTransaction.isPending
-                    ? "Membuat QRIS..."
+                    ? "Membuat QRIS di provider..."
                     : "Buat QRIS"}
                 </button>
 
