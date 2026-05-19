@@ -9,6 +9,7 @@ import {
   checkFlowixTransaction,
   createFlowixDeposit,
   createFlowixTransaction,
+  getFlowixProfile,
   isFlowixConfigured,
   type FlowixTransaction,
 } from "../flowix/client";
@@ -21,6 +22,23 @@ function generateInvoice(): string {
   const timestamp = date.getTime().toString(36).toUpperCase();
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `${prefix}-${timestamp}-${random}`;
+}
+
+const FLOWIX_MINIMUM_BALANCE_RESERVE = 250;
+
+async function ensureFlowixBalanceCanFulfill(input: {
+  productCost: number;
+  paymentReceivedEstimate: number;
+}) {
+  if (!isFlowixConfigured()) return;
+  const profile = await getFlowixProfile();
+  const balance = Number(profile.financials?.balance ?? 0);
+  const projectedBalance = balance + input.paymentReceivedEstimate - input.productCost;
+  if (projectedBalance < FLOWIX_MINIMUM_BALANCE_RESERVE) {
+    throw new Error(
+      `Saldo Flowix tidak cukup untuk memproses produk ini. Saldo sekarang Rp${balance.toLocaleString("id-ID")}, estimasi saldo setelah transaksi Rp${Math.max(0, Math.round(projectedBalance)).toLocaleString("id-ID")}. Minimal sisa saldo Rp${FLOWIX_MINIMUM_BALANCE_RESERVE.toLocaleString("id-ID")}.`,
+    );
+  }
 }
 
 async function validateVoucher(input: { code?: string; amount: number }) {
@@ -236,6 +254,52 @@ async function syncFlowixDepositPayment(invoiceNumber: string) {
     .where(eq(transactions.id, transaction.id));
 }
 
+async function syncFlowixProductOrderStatus(invoiceNumber: string) {
+  if (!isFlowixConfigured()) return;
+
+  const db = getDb();
+  const [transaction] = await db
+    .select({
+      id: transactions.id,
+      status: transactions.status,
+      paymentStatus: transactions.paymentStatus,
+      providerResponse: transactions.providerResponse,
+    })
+    .from(transactions)
+    .where(eq(transactions.invoiceNumber, invoiceNumber))
+    .limit(1);
+
+  if (
+    !transaction ||
+    transaction.paymentStatus !== "paid" ||
+    !["pending", "processing"].includes(transaction.status)
+  ) {
+    return;
+  }
+
+  const state = parseProviderState(transaction.providerResponse) as {
+    productOrder?: FlowixTransaction;
+  };
+  const orderRef = state.productOrder?.reff_id;
+  if (!orderRef) return;
+
+  const productOrder = await checkFlowixTransaction(orderRef);
+  const nextStatus = productTransactionStatus(productOrder?.status || transaction.status);
+  const providerResponse = stringifyProviderState(transaction.providerResponse, {
+    productOrder,
+    productSyncedAt: new Date().toISOString(),
+  });
+
+  await db
+    .update(transactions)
+    .set({
+      status: nextStatus,
+      providerResponse,
+      ...(nextStatus === "success" ? { completedAt: new Date() } : {}),
+    })
+    .where(eq(transactions.id, transaction.id));
+}
+
 export const transactionRouter = createRouter({
   create: publicQuery
     .input(
@@ -303,6 +367,10 @@ export const transactionRouter = createRouter({
       const expiryAt = qrisExpiryDate();
 
       if (method.code === "qris" && isFlowixConfigured()) {
+        await ensureFlowixBalanceCanFulfill({
+          productCost: Number(product.basePrice || product.salePrice || baseAmount),
+          paymentReceivedEstimate: Math.round(totalAmount),
+        });
         const flowixDeposit = await createFlowixDeposit({
           amount: Math.round(totalAmount),
           methodCode: "QRIS",
@@ -363,6 +431,9 @@ export const transactionRouter = createRouter({
       const db = getDb();
       await syncFlowixDepositPayment(input.invoiceNumber).catch((error) => {
         console.error("[flowix] Failed to sync deposit payment", error);
+      });
+      await syncFlowixProductOrderStatus(input.invoiceNumber).catch((error) => {
+        console.error("[flowix] Failed to sync product order", error);
       });
       await failExpiredUnpaidTransactions();
       const [transaction] = await db
@@ -451,6 +522,9 @@ export const transactionRouter = createRouter({
       const db = getDb();
       await syncFlowixDepositPayment(input.invoiceNumber).catch((error) => {
         console.error("[flowix] Failed to sync deposit payment", error);
+      });
+      await syncFlowixProductOrderStatus(input.invoiceNumber).catch((error) => {
+        console.error("[flowix] Failed to sync product order", error);
       });
       await failExpiredUnpaidTransactions();
       const [transaction] = await db

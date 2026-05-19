@@ -58,6 +58,16 @@ export type FlowixTransaction = {
   createdAt?: string;
 };
 
+export type FlowixProfile = {
+  merchant_id: string;
+  username: string;
+  email?: string;
+  financials?: {
+    balance?: number;
+    balance_limit?: number;
+  };
+};
+
 function normalizeFlowixCategory(value?: string) {
   const slug = (value || "produk")
     .toLowerCase()
@@ -179,6 +189,11 @@ export async function checkFlowixDeposit(reffId: string) {
     `/deposit/${encodeURIComponent(reffId)}`,
   );
 
+  return response.data;
+}
+
+export async function getFlowixProfile() {
+  const response = await request<FlowixProfile>("/profile");
   return response.data;
 }
 
