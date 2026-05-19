@@ -41,6 +41,7 @@ export const env = {
   flowixMerchantId: process.env.FLOWIX_MERCHANT_ID ?? "",
   flowixWebhookSecret: process.env.FLOWIX_WEBHOOK_SECRET ?? "",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
+  geminiModel: process.env.GEMINI_MODEL || "gemini-2.0-flash",
   flowixProductCategories: listEnv("FLOWIX_PRODUCT_CATEGORIES", [
     "game",
     "pulsa",

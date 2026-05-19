@@ -6,6 +6,7 @@ import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
 import { handleFlowixCallback } from "./flowix/callback";
+import { failExpiredUnpaidTransactions } from "./lib/transactionExpiry";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
@@ -32,4 +33,18 @@ if (env.isProduction) {
   serve({ fetch: app.fetch, port }, () => {
     console.log(`Server running on http://localhost:${port}/`);
   });
+
+  const runExpirySweep = async () => {
+    try {
+      const count = await failExpiredUnpaidTransactions();
+      if (count > 0) {
+        console.log(`[transactions] Auto-failed ${count} expired unpaid QRIS payment(s).`);
+      }
+    } catch (error) {
+      console.error("[transactions] Failed to sweep expired QRIS payments", error);
+    }
+  };
+
+  void runExpirySweep();
+  setInterval(runExpirySweep, 5 * 60 * 1000);
 }

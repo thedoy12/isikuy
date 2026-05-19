@@ -3,7 +3,6 @@ import {
   Bot,
   Calculator,
   ChevronRight,
-  Crown,
   Dice5,
   Flame,
   Gamepad2,
@@ -23,7 +22,6 @@ const categoryIcons: Record<ToolDefinition["category"], React.ElementType> = {
   "Spin Random": Dice5,
   "Fun Viral": Gauge,
   Calculator,
-  "Fake Fun": Crown,
 };
 
 function ToolCard({ tool }: { tool: ToolDefinition }) {
@@ -56,11 +54,16 @@ function ToolCard({ tool }: { tool: ToolDefinition }) {
 }
 
 export default function Tools() {
+  const { data: status } = trpc.tools.status.useQuery(undefined, {
+    staleTime: 30_000,
+  });
   const { data: liveTools } = trpc.tools.list.useQuery(undefined, {
     staleTime: 60_000,
+    enabled: !status?.enabled,
   });
   const { data: trendingTools } = trpc.tools.trending.useQuery(undefined, {
     staleTime: 60_000,
+    enabled: !status?.enabled,
   });
   const tools: ToolWithState[] = (liveTools || toolDefinitions).filter((tool) => (tool as ToolWithState).isActive !== false);
   const grouped = tools.reduce<Record<string, typeof tools>>((acc, tool) => {
@@ -71,6 +74,20 @@ export default function Tools() {
   return (
     <div className="min-h-[100dvh] bg-[#030305] text-white">
       <Navbar />
+      {status?.enabled ? (
+        <main className="flex min-h-[calc(100dvh-120px)] items-center justify-center px-4 pt-28">
+          <section className="max-w-xl rounded-2xl border border-[#ffb800]/25 bg-[#211600]/45 p-7 text-center">
+            <Sparkles className="mx-auto mb-4 h-10 w-10 text-[#ffb800]" />
+            <h1 className="font-display text-3xl font-bold text-white">Tools sedang maintenance</h1>
+            <p className="mt-3 text-sm leading-relaxed text-white/60">
+              {status.message}
+            </p>
+            <Link to="/" className="mt-6 inline-flex rounded-xl border border-white/10 px-5 py-3 text-sm font-semibold text-white/75">
+              Kembali ke beranda
+            </Link>
+          </section>
+        </main>
+      ) : (
       <main>
         <section className="relative overflow-hidden pt-32 pb-12">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_8%,rgba(255,0,60,0.25),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(0,240,255,0.12),transparent_24%)]" />
@@ -85,7 +102,7 @@ export default function Tools() {
                 Tools mabar ringan buat konten, challenge, dan kalkulasi rank.
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/58">
-                Generate nickname, spin hukuman, cek aura, hitung winrate, sampai bikin fake rank card. Cepat, fun, mobile-friendly, dan tetap nyambung ke katalog topup ISIKUY.
+                Generate nickname, spin hukuman, cek aura, dan hitung winrate. Cepat, fun, mobile-friendly, dan tetap nyambung ke katalog topup ISIKUY.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a href="#tools-list" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff003c] to-[#b30029] px-6 py-3 font-semibold text-white">
@@ -133,6 +150,7 @@ export default function Tools() {
           ))}
         </section>
       </main>
+      )}
       <Footer />
     </div>
   );

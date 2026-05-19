@@ -6,6 +6,7 @@ import { getDb } from "../queries/connection";
 import { transactions, games, products, paymentMethods, vouchers } from "@db/schema";
 import { createFlowixDeposit, isFlowixConfigured } from "../flowix/client";
 import { env } from "../lib/env";
+import { failExpiredUnpaidTransactions, qrisExpiryDate } from "../lib/transactionExpiry";
 
 function generateInvoice(): string {
   const date = new Date();
@@ -105,8 +106,6 @@ export const transactionRouter = createRouter({
     .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const invoiceNumber = generateInvoice();
-      const expiryAt = new Date();
-      expiryAt.setHours(expiryAt.getHours() + 24);
 
       const [product] = await db
         .select()
@@ -156,6 +155,7 @@ export const transactionRouter = createRouter({
       let providerPaymentId: string | null = null;
       let providerResponse: string | null = voucher ? JSON.stringify({ voucher }) : null;
       let payment = null;
+      const expiryAt = qrisExpiryDate();
 
       if (method.code === "qris" && isFlowixConfigured()) {
         const flowixDeposit = await createFlowixDeposit({
@@ -183,7 +183,8 @@ export const transactionRouter = createRouter({
           qrString: flowixDeposit.qr_string,
           qrImage: flowixDeposit.qr_image,
           instructions: flowixDeposit.instructions ?? [],
-          expiredAt: flowixDeposit.expired_at,
+          expiredAt: expiryAt.toISOString(),
+          providerExpiredAt: flowixDeposit.expired_at,
         };
       }
 
@@ -215,6 +216,7 @@ export const transactionRouter = createRouter({
     .input(z.object({ invoiceNumber: z.string() }))
     .query(async ({ input }) => {
       const db = getDb();
+      await failExpiredUnpaidTransactions();
       const [transaction] = await db
         .select({
           id: transactions.id,
@@ -266,6 +268,7 @@ export const transactionRouter = createRouter({
 
   myHistory: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
+    await failExpiredUnpaidTransactions();
     return db
       .select({
         id: transactions.id,
@@ -298,6 +301,7 @@ export const transactionRouter = createRouter({
     .input(z.object({ invoiceNumber: z.string() }))
     .query(async ({ input }) => {
       const db = getDb();
+      await failExpiredUnpaidTransactions();
       const [transaction] = await db
         .select({
           id: transactions.id,

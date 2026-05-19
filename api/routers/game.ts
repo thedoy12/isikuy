@@ -39,6 +39,29 @@ const categoryGroupSlugs: Record<string, string[]> = {
   ],
 };
 
+const categoryRankOrder = [
+  categoryGroupSlugs.game,
+  categoryGroupSlugs.pulsa,
+  categoryGroupSlugs.ewallet,
+  ["data", "paket-data", "data-internet", "internet"],
+  ["voucher", "premium", "pln", "token-pln", "listrik", "tagihan", "produk"],
+];
+
+function categoryRank(slug: string | null | undefined) {
+  const normalized = slug || "produk";
+  const index = categoryRankOrder.findIndex((slugs) => slugs.includes(normalized));
+  return index === -1 ? 90 : index + 1;
+}
+
+const categoryRankSql = sql<number>`case
+  when ${categories.slug} in ('game', 'games', 'game-online', 'top-up-game', 'topup-game', 'voucher-game') then 1
+  when ${categories.slug} in ('pulsa', 'pulsa-reguler', 'pulsa-transfer') then 2
+  when ${categories.slug} in ('ewallet', 'e-wallet', 'e-walet', 'e-money', 'emoney', 'dompet-digital') then 3
+  when ${categories.slug} in ('data', 'paket-data', 'data-internet', 'internet') then 4
+  when ${categories.slug} in ('voucher', 'premium', 'pln', 'token-pln', 'listrik', 'tagihan', 'produk') then 5
+  else 90
+end`;
+
 const favoriteGameOrder = [
   "mobile-legends",
   "mobile-legends-gift",
@@ -386,7 +409,14 @@ export async function syncFlowixCatalog() {
 
   const categorySlugs = Array.from(new Set(flowixProducts.map(productCategorySlug)));
   const categoryBySlug = new Map<string, typeof categories.$inferSelect>();
-  for (const [index, slug] of categorySlugs.entries()) {
+  const sortedCategorySlugs = categorySlugs.sort((a, b) => {
+    const rankA = categoryRank(a);
+    const rankB = categoryRank(b);
+    if (rankA !== rankB) return rankA - rankB;
+    return productCategoryName(a).localeCompare(productCategoryName(b));
+  });
+
+  for (const [index, slug] of sortedCategorySlugs.entries()) {
     const [existing] = await db
       .select()
       .from(categories)
@@ -426,6 +456,9 @@ export async function syncFlowixCatalog() {
       }),
     ).values(),
   ).sort((a, b) => {
+    const categoryRankA = categoryRank(a.categorySlug);
+    const categoryRankB = categoryRank(b.categorySlug);
+    if (categoryRankA !== categoryRankB) return categoryRankA - categoryRankB;
     const rankA = favoriteRank(a.slug) ?? Number.MAX_SAFE_INTEGER;
     const rankB = favoriteRank(b.slug) ?? Number.MAX_SAFE_INTEGER;
     if (rankA !== rankB) return rankA - rankB;
@@ -658,7 +691,7 @@ export const gameRouter = createRouter({
           .from(games)
           .leftJoin(categories, eq(games.categoryId, categories.id))
           .where(and(...filters))
-          .orderBy(asc(games.sortOrder), asc(games.name))
+          .orderBy(categoryRankSql, asc(games.sortOrder), asc(games.name))
           .limit((input?.limit || 50) * 3)
           .offset(input?.offset || 0);
 
@@ -746,7 +779,7 @@ export const gameRouter = createRouter({
       .from(games)
       .leftJoin(categories, eq(games.categoryId, categories.id))
       .where(and(eq(games.isTrending, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
-      .orderBy(asc(games.sortOrder), asc(games.name))
+      .orderBy(categoryRankSql, asc(games.sortOrder), asc(games.name))
       .limit(24);
     return uniqueGamesByName(rows).slice(0, 8).map((game) => ({
       ...game,
@@ -776,7 +809,7 @@ export const gameRouter = createRouter({
       .from(games)
       .leftJoin(categories, eq(games.categoryId, categories.id))
       .where(and(eq(games.isPopular, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
-      .orderBy(asc(games.sortOrder), asc(games.name))
+      .orderBy(categoryRankSql, asc(games.sortOrder), asc(games.name))
       .limit(36);
     return uniqueGamesByName(rows).slice(0, 12).map((game) => ({
       ...game,
@@ -801,7 +834,7 @@ export const gameRouter = createRouter({
         .from(categories)
         .innerJoin(games, eq(games.categoryId, categories.id))
         .where(and(eq(categories.isActive, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
-        .orderBy(asc(categories.sortOrder));
+        .orderBy(categoryRankSql, asc(categories.sortOrder), asc(categories.name));
 
     const rows = await loadCategories();
 

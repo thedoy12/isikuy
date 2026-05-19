@@ -399,6 +399,12 @@ export async function handleFlowixCallback(c: Context) {
 
   let nextStatus = status.status;
   let nextPaymentStatus = status.paymentStatus;
+  const transactionIsClosed =
+    matched.status === "failed" ||
+    matched.status === "cancelled" ||
+    matched.status === "refunded" ||
+    matched.paymentStatus === "expired" ||
+    matched.paymentStatus === "refunded";
   const isProductCallback = event === "transaction.status" || providerReference.startsWith("TRX-");
   const amountReceived = getNumberCandidate(payload, [
     "amount_received",
@@ -418,6 +424,35 @@ export async function handleFlowixCallback(c: Context) {
   });
   let nextProviderReference = matched.providerReference;
   let completedAt: Date | null | undefined = status.completed ? now : undefined;
+
+  if (transactionIsClosed) {
+    const providerResponse = stringifyProviderState(matched.providerResponse, {
+      lastCallback: payload,
+      paymentHoldReason: "Callback ignored because transaction is already closed.",
+    });
+
+    await db
+      .update(transactions)
+      .set({ providerResponse })
+      .where(eq(transactions.id, matched.id));
+
+    await logFlowixEvent({
+      action: "flowix_callback_ignored_closed",
+      entityType: "transaction",
+      entityId: matched.id,
+      details: payload,
+      ipAddress: c.req.header("x-forwarded-for") || "",
+      userAgent: c.req.header("user-agent") || "",
+    });
+
+    return c.json({
+      success: true,
+      invoiceNumber: matched.invoiceNumber,
+      status: matched.status,
+      paymentStatus: matched.paymentStatus,
+      message: "Transaction is already closed.",
+    });
+  }
 
   if (isProductCallback) {
     if (matched.paymentStatus !== "paid") {

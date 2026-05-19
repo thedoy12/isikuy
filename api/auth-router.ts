@@ -15,7 +15,8 @@ import { findUserByUsername, upsertUser } from "./queries/users";
 
 function publicUser(user: Awaited<ReturnType<typeof findUserByUsername>>) {
   if (!user) return null;
-  const { passwordHash: _passwordHash, ...safeUser } = user;
+  const { passwordHash, ...safeUser } = user;
+  void passwordHash;
   return safeUser;
 }
 

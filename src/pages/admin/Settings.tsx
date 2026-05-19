@@ -255,13 +255,23 @@ export default function AdminSettings() {
                   <label className="block text-[10px] text-white/40 tracking-wider mb-2">
                     PASSWORD_LAMA
                   </label>
-                  <input
-                    type={showPasswords ? "text" : "password"}
-                    value={currentPassword}
-                    onChange={(event) => setCurrentPassword(event.target.value)}
-                    className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPasswords ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(event) => setCurrentPassword(event.target.value)}
+                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 pr-11 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords((current) => !current)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-white/40 transition-colors hover:text-white"
+                      aria-label={showPasswords ? "Sembunyikan password" : "Tampilkan password"}
+                    >
+                      {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -269,40 +279,49 @@ export default function AdminSettings() {
                     <label className="block text-[10px] text-white/40 tracking-wider mb-2">
                       PASSWORD_BARU
                     </label>
-                    <input
-                      type={showPasswords ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(event) => setNewPassword(event.target.value)}
-                      minLength={8}
-                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPasswords ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(event) => setNewPassword(event.target.value)}
+                        minLength={8}
+                        className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 pr-11 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswords((current) => !current)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-white/40 transition-colors hover:text-white"
+                        aria-label={showPasswords ? "Sembunyikan password" : "Tampilkan password"}
+                      >
+                        {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-[10px] text-white/40 tracking-wider mb-2">
                       KONFIRMASI
                     </label>
-                    <input
-                      type={showPasswords ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(event) => setConfirmPassword(event.target.value)}
-                      minLength={8}
-                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPasswords ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(event) => setConfirmPassword(event.target.value)}
+                        minLength={8}
+                        className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 pr-11 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswords((current) => !current)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-white/40 transition-colors hover:text-white"
+                        aria-label={showPasswords ? "Sembunyikan password" : "Tampilkan password"}
+                      >
+                        {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                <label className="flex items-center gap-2 text-xs text-white/45">
-                  <input
-                    type="checkbox"
-                    checked={showPasswords}
-                    onChange={(event) => setShowPasswords(event.target.checked)}
-                    className="accent-[#00f0ff]"
-                  />
-                  {showPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  Tampilkan password
-                </label>
 
                 {message && (
                   <div className="flex items-center gap-2 border border-[#0aff00]/20 bg-[#0aff00]/10 px-4 py-3 text-xs text-[#0aff00]">

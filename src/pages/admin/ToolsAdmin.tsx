@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router";
-import { BarChart3, Gamepad2, Receipt, Settings, Users, Wand2, ArrowLeft, Zap, Loader2 } from "lucide-react";
+import { BarChart3, Bell, Gamepad2, Receipt, Settings, Users, Wand2, ArrowLeft, Zap, Loader2 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +14,7 @@ function AdminSidebar({ active }: { active: string }) {
     { id: "transactions", label: "FINANCIALS", icon: Receipt, href: "/admin/transactions" },
     { id: "users", label: "INTEL", icon: Users, href: "/admin/users" },
     { id: "tools", label: "TOOLS", icon: Wand2, href: "/admin/tools" },
+    { id: "tools-monitor", label: "TOOLS_MONITOR", icon: Bell, href: "/admin/tools-monitor" },
     { id: "settings", label: "SETTINGS", icon: Settings, href: "/admin/settings" },
   ];
 

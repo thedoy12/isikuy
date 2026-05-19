@@ -3,15 +3,14 @@ export type ToolKind =
   | "wheel"
   | "picker"
   | "meter"
-  | "calculator"
-  | "fake-card";
+  | "calculator";
 
 export type ToolDefinition = {
   slug: string;
   title: string;
   shortTitle: string;
   description: string;
-  category: "AI Text" | "Spin Random" | "Fun Viral" | "Calculator" | "Fake Fun";
+  category: "AI Text" | "Spin Random" | "Fun Viral" | "Calculator";
   kind: ToolKind;
   modes: string[];
   aiEnabled?: boolean;
@@ -21,7 +20,7 @@ export type ToolDefinition = {
   ctaGameSlug?: string;
 };
 
-export const toolDefinitions: ToolDefinition[] = [
+const baseToolDefinitions: ToolDefinition[] = [
   {
     slug: "nickname-generator",
     title: "AI Nickname Generator",
@@ -188,37 +187,16 @@ export const toolDefinitions: ToolDefinition[] = [
     seoDescription: "Simulasi kebutuhan diamond dan keberuntungan untuk Magic Wheel.",
     ctaGameSlug: "mobile-legends",
   },
-  {
-    slug: "fake-rank",
-    title: "Fake Rank Generator",
-    shortTitle: "Fake Rank",
-    description: "Buat rank card palsu seperti Mythic, Radiant, dan Immortal untuk hiburan.",
-    category: "Fake Fun",
-    kind: "fake-card",
-    modes: ["Mythic", "Radiant", "Immortal"],
-    trending: true,
-    seoTitle: "Fake Rank Generator Gaming - ISIKUY Tools",
-    seoDescription: "Generate kartu rank gaming palsu untuk konten lucu dan share ke teman.",
-    ctaGameSlug: "valorant",
-  },
-  {
-    slug: "fake-mvp",
-    title: "Fake MVP Generator",
-    shortTitle: "Fake MVP",
-    description: "Generate fake MVP result dengan statistik, KDA, dan gaming result card.",
-    category: "Fake Fun",
-    kind: "fake-card",
-    modes: ["MVP", "Savage", "Carry"],
-    seoTitle: "Fake MVP Generator Gaming - ISIKUY Tools",
-    seoDescription: "Buat kartu fake MVP result dengan statistik gaming lucu.",
-    ctaGameSlug: "mobile-legends",
-  },
 ];
+
+export const toolDefinitions: ToolDefinition[] = baseToolDefinitions.map((tool) => ({
+  ...tool,
+  modes: tool.modes.includes("Custom") ? tool.modes : [...tool.modes, "Custom"],
+}));
 
 export const toolAliases: Record<string, string> = {
   "nickname-ml": "nickname-generator",
   "winrate-ml": "winrate-calculator",
-  "fake-rank": "fake-rank",
   "caption-gaming": "caption-generator",
 };
 

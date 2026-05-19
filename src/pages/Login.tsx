@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Gamepad2, Shield, Zap, Globe, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Gamepad2, Shield, Zap, Globe, Loader2 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import BrandLogo from "@/components/BrandLogo";
 
@@ -9,6 +9,7 @@ export default function Login() {
   const utils = trpc.useUtils();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
   const login = trpc.auth.login.useMutation({
@@ -69,13 +70,23 @@ export default function Login() {
               <label className="text-xs text-white/50 mb-2 block">
                 Password
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full px-4 py-3 rounded-xl glass text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[#ff003c]/50 transition-colors"
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="w-full rounded-xl glass px-4 py-3 pr-12 text-sm text-white placeholder:text-white/20 transition-colors focus:border-[#ff003c]/50 focus:outline-none"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-white/45 transition-colors hover:text-white"
+                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             {error && (

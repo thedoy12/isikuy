@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
   ArrowLeft,
@@ -7,14 +7,12 @@ import {
   CheckCircle2,
   Copy,
   Dice5,
-  Download,
   Gauge,
   ListChecks,
   Loader2,
   RefreshCw,
   Share2,
   Sparkles,
-  Trophy,
   Wand2,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
@@ -22,21 +20,12 @@ import Footer from "@/components/layout/Footer";
 import { trpc } from "@/providers/trpc";
 import { getToolDefinition, resolveToolSlug, toolDefinitions, type ToolDefinition } from "@contracts/toolCatalog";
 
-const heroPool = ["Layla", "Gusion", "Fanny", "Chou", "Lancelot", "Miya", "Tigreal", "Angela"];
-const agentPool = ["Jett", "Reyna", "Sova", "Killjoy", "Raze", "Omen", "Sage", "Phoenix"];
-const lanePool = ["EXP Lane", "Gold Lane", "Mid Lane", "Jungle", "Roam"];
-const difficultyPool = ["Easy", "Normal", "Hard", "Nightmare"];
-const rankPool = ["Mythic Glory", "Radiant", "Immortal", "Legend", "Mythical Honor"];
 const wheelColors = ["#ff003c", "#00f0ff", "#ffb800", "#7c3aed", "#0aff00", "#ff6a00"];
 
 function hashPercent(value: string, salt: string) {
-  const raw = `${value}:${salt}` || "player";
+  const raw = `${value || "player"}:${salt}`;
   const total = [...raw].reduce((sum, char) => sum + char.charCodeAt(0) * 17, 0);
   return (total % 91) + 9;
-}
-
-function pick<T>(items: T[], salt: string) {
-  return items[hashPercent(salt, "pick") % items.length];
 }
 
 function copyText(value: string) {
@@ -51,17 +40,34 @@ function shareText(value: string) {
   copyText(value);
 }
 
-function downloadCard(title: string, lines: string[]) {
-  const safeTitle = title.replace(/[&<>]/g, "");
-  const body = lines.map((line, index) => `<text x="48" y="${170 + index * 42}" fill="#ffffff" font-size="28" font-family="Arial">${line.replace(/[&<>]/g, "")}</text>`).join("");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520"><rect width="900" height="520" fill="#050307"/><rect x="24" y="24" width="852" height="472" rx="28" fill="#11131a" stroke="#ff003c"/><text x="48" y="92" fill="#00f0ff" font-size="24" font-family="Arial">ISIKUY TOOLS</text><text x="48" y="136" fill="#ffffff" font-size="44" font-weight="700" font-family="Arial">${safeTitle}</text>${body}</svg>`;
-  const blob = new Blob([svg], { type: "image/svg+xml" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.svg`;
-  link.click();
-  URL.revokeObjectURL(url);
+function cleanResultLine(line: string) {
+  return line
+    .replace(/\*\*/g, "")
+    .replace(/`/g, "")
+    .replace(/^#+\s*/g, "")
+    .replace(/^\s*\d+[.)]\s*/g, "")
+    .replace(/^\s*[-*•]\s*/g, "")
+    .replace(/^\s*\u2022\s*/g, "")
+    .trim();
+}
+
+function readNumber(value: string, fallback: number) {
+  if (value.trim() === "") return fallback;
+  const next = Number(value);
+  return Number.isFinite(next) ? next : fallback;
+}
+
+function parseCustomOptions(value: string) {
+  return value
+    .split(/[,\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
+function getDefaultWheelOptions(tool: ToolDefinition | null) {
+  if (!tool || tool.kind !== "wheel") return "";
+  return tool.modes.filter((item) => item !== "Custom").join("\n");
 }
 
 function ResultActions({ result }: { result: string }) {
@@ -102,31 +108,58 @@ function WheelBoard({
     .join(", ");
 
   return (
-    <div className="relative mx-auto my-5 h-72 w-72 sm:h-80 sm:w-80">
-      <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1">
-        <div className="h-0 w-0 border-x-[13px] border-t-[24px] border-x-transparent border-t-white drop-shadow-[0_0_12px_rgba(255,255,255,0.45)]" />
-      </div>
-      <div
-        className="relative h-full w-full rounded-full border-[10px] border-[#151821] shadow-[0_0_80px_rgba(255,0,60,0.18),inset_0_0_35px_rgba(0,0,0,0.5)] transition-transform ease-out"
-        style={{
-          background: `conic-gradient(${gradient})`,
-          transform: `rotate(${rotation}deg)`,
-          transitionDuration: isSpinning ? "1800ms" : "450ms",
-        }}
-      >
-        {items.map((item, index) => (
-          <div
-            key={item}
-            className="absolute left-1/2 top-1/2 h-1/2 origin-top"
-            style={{ transform: `rotate(${index * segmentSize + segmentSize / 2}deg)` }}
-          >
-            <span className="block w-24 -translate-x-1/2 translate-y-5 rotate-90 truncate rounded-full bg-black/30 px-2 py-1 text-center text-[10px] font-bold text-white shadow-sm sm:w-28">
-              {item}
-            </span>
+    <div className="my-5 grid gap-5 lg:grid-cols-[minmax(240px,340px)_1fr] lg:items-center">
+      <div className="relative mx-auto h-72 w-72 sm:h-80 sm:w-80">
+        <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1">
+          <div className="h-0 w-0 border-x-[14px] border-t-[26px] border-x-transparent border-t-white drop-shadow-[0_0_12px_rgba(255,255,255,0.45)]" />
+        </div>
+        <div
+          className="relative h-full w-full rounded-full border-[12px] border-[#151821] shadow-[0_0_80px_rgba(255,0,60,0.18),inset_0_0_42px_rgba(0,0,0,0.5)] transition-transform ease-out"
+          style={{
+            background: `conic-gradient(${gradient})`,
+            transform: `rotate(${rotation}deg)`,
+            transitionDuration: isSpinning ? "1800ms" : "450ms",
+          }}
+        >
+          <div className="absolute inset-[12px] rounded-full border border-black/25 shadow-[inset_0_0_30px_rgba(0,0,0,0.25)]" />
+          {items.map((item, index) => {
+            const angle = ((index * segmentSize + segmentSize / 2 - 90) * Math.PI) / 180;
+            const radius = 35;
+            const x = 50 + Math.cos(angle) * radius;
+            const y = 50 + Math.sin(angle) * radius;
+            return (
+              <span
+                key={`${item}-${index}`}
+                className="absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/45 text-[11px] font-bold text-white shadow-sm"
+                style={{ left: `${x}%`, top: `${y}%` }}
+              >
+                {index + 1}
+              </span>
+            );
+          })}
+          <div className="absolute left-1/2 top-1/2 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-[#050307] text-center font-display text-sm font-bold text-white shadow-[0_0_24px_rgba(0,0,0,0.45)]">
+            SPIN
           </div>
-        ))}
-        <div className="absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-[#050307] text-center font-display text-sm font-bold text-white shadow-[0_0_24px_rgba(0,0,0,0.45)]">
-          SPIN
+        </div>
+      </div>
+
+      <div className="grid gap-2 rounded-xl border border-white/10 bg-black/25 p-4">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">Menu aktif</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {items.map((item, index) => (
+            <div
+              key={`${item}-legend-${index}`}
+              className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white/75"
+            >
+              <span
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-black"
+                style={{ backgroundColor: wheelColors[index % wheelColors.length] }}
+              >
+                {index + 1}
+              </span>
+              <span className="truncate">{item}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -140,7 +173,7 @@ function ResultPanel({
   result: string;
   toolKind: string;
 }) {
-  const resultLines = result.split("\n").filter(Boolean);
+  const resultLines = result.split("\n").map(cleanResultLine).filter(Boolean);
 
   if (!result) {
     return (
@@ -257,16 +290,6 @@ function getToolUsageGuide(tool: ToolDefinition) {
       "Tekan Generate untuk melihat estimasi diamond yang dibutuhkan.",
       "Gunakan hasil luck sebagai hiburan sebelum topup.",
     ],
-    "fake-rank": [
-      "Pilih rank style yang ingin dibuat.",
-      "Masukkan nickname yang akan muncul di fake rank card.",
-      "Tekan Generate, lalu download atau share hasilnya untuk konten lucu.",
-    ],
-    "fake-mvp": [
-      "Pilih mode MVP, Savage, atau Carry.",
-      "Masukkan nickname yang ingin dibuatkan statistik palsunya.",
-      "Tekan Generate, lalu download atau share kartu hasilnya.",
-    ],
   };
 
   if (guides[tool.slug]) return guides[tool.slug];
@@ -300,17 +323,31 @@ export default function ToolDetail() {
   const tool = getToolDefinition(slug);
   const trackTool = trpc.tools.track.useMutation();
   const generateText = trpc.tools.generateText.useMutation();
+  const { data: status } = trpc.tools.status.useQuery(undefined, {
+    staleTime: 30_000,
+  });
   const [mode, setMode] = useState(tool?.modes[0] || "Random");
   const [name, setName] = useState("");
   const [nameTwo, setNameTwo] = useState("");
   const [result, setResult] = useState("");
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [wins, setWins] = useState(500);
+  const [wheelOptionsText, setWheelOptionsText] = useState(getDefaultWheelOptions(tool));
+  const [wins, setWins] = useState(50);
   const [matches, setMatches] = useState(1000);
   const [targetWr, setTargetWr] = useState(60);
   const [diamonds, setDiamonds] = useState(86);
   const [spinCount, setSpinCount] = useState(10);
+  const [error, setError] = useState("");
+  const isCustomMode = mode === "Custom";
+  const defaultWheelItems = tool?.kind === "wheel" ? tool.modes.filter((item) => item !== "Custom") : [];
+  const customWheelItems = tool?.kind === "wheel" ? parseCustomOptions(wheelOptionsText) : [];
+  const wheelItems =
+    tool?.kind === "wheel"
+      ? customWheelItems.length >= 2
+        ? customWheelItems
+        : defaultWheelItems
+      : [];
 
   useEffect(() => {
     if (!tool) return;
@@ -322,12 +359,13 @@ export default function ToolDetail() {
     trackTool.mutate({ slug: tool.slug });
   }, [tool?.slug]);
 
-  const winrateNeeded = useMemo(() => {
-    const currentWins = Math.round(matches * (wins / 100));
-    let needed = 0;
-    while (((currentWins + needed) / (matches + needed)) * 100 < targetWr && needed < 10000) needed += 1;
-    return needed;
-  }, [matches, targetWr, wins]);
+  useEffect(() => {
+    if (!tool) return;
+    setMode(tool.modes[0] || "Random");
+    setWheelOptionsText(getDefaultWheelOptions(tool));
+    setResult("");
+    setError("");
+  }, [tool?.slug]);
 
   if (!tool) {
     return (
@@ -341,82 +379,93 @@ export default function ToolDetail() {
     );
   }
 
+  if (status?.enabled) {
+    return (
+      <div className="min-h-[100dvh] bg-[#030305] text-white">
+        <Navbar />
+        <main className="flex min-h-[calc(100dvh-120px)] items-center justify-center px-4 pt-28">
+          <section className="max-w-xl rounded-2xl border border-[#ffb800]/25 bg-[#211600]/45 p-7 text-center">
+            <Sparkles className="mx-auto mb-4 h-10 w-10 text-[#ffb800]" />
+            <h1 className="font-display text-3xl font-bold text-white">Tools sedang maintenance</h1>
+            <p className="mt-3 text-sm leading-relaxed text-white/60">{status.message}</p>
+            <Link to="/tools" className="mt-6 inline-flex rounded-xl border border-white/10 px-5 py-3 text-sm font-semibold text-white/75">
+              Kembali ke tools
+            </Link>
+          </section>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   const runTool = async () => {
     if (isSpinning) return;
+    setError("");
 
-    if (tool.kind === "ai-text") {
-      const response = await generateText.mutateAsync({
-        slug: tool.slug,
-        mode,
-        prompt: name,
-        nickname: name,
-      });
-      setResult(response.result);
-      return;
-    }
+    const effectiveMode = tool.kind === "wheel" ? "Custom Wheel" : isCustomMode && name.trim() ? `Custom: ${name.trim().slice(0, 80)}` : mode;
+    const generatePayload = {
+      slug: tool.slug,
+      mode: effectiveMode,
+      prompt: tool.kind === "wheel" ? wheelOptionsText : name,
+      nickname: tool.kind === "wheel" ? "" : name,
+      nicknameTwo: nameTwo,
+    };
+    const toolPayload =
+      tool.slug === "winrate-calculator"
+        ? { ...generatePayload, matches, wins, targetWr }
+        : tool.slug === "diamond-calculator"
+          ? { ...generatePayload, diamonds }
+          : tool.slug === "magic-wheel"
+            ? { ...generatePayload, spinCount }
+            : generatePayload;
 
-    if (tool.kind === "wheel") {
-      const selectedIndex = hashPercent(`${mode}:${Date.now()}:${rotation}`, "wheel") % tool.modes.length;
-      const selectedValue = tool.modes[selectedIndex];
-      const segmentSize = 360 / tool.modes.length;
-      const selectedCenter = selectedIndex * segmentSize + segmentSize / 2;
-      const fullSpins = 5 * 360;
-      const finalAngle = (360 - selectedCenter) % 360;
-      setResult("");
-      setIsSpinning(true);
-      setRotation((current) => {
-        const normalized = ((current % 360) + 360) % 360;
-        const delta = fullSpins + finalAngle - normalized;
-        return current + (delta < fullSpins ? delta + 360 : delta);
-      });
-      window.setTimeout(() => {
-        setResult(selectedValue);
-        setIsSpinning(false);
-      }, 1850);
-      return;
-    }
-
-    if (tool.kind === "picker") {
-      const isValorant = mode === "Valorant";
-      const picked = isValorant ? pick(agentPool, name + Date.now()) : pick(heroPool, name + Date.now());
-      setResult(`${picked}\nRole: ${pick(["Tank", "Mage", "Marksman", "Duelist", "Sentinel"], picked)}\nLane: ${pick(lanePool, picked)}\nDifficulty: ${pick(difficultyPool, picked)}`);
-      return;
-    }
-
-    if (tool.kind === "meter") {
-      const target = `${name}:${nameTwo}:${Date.now()}`;
-      if (tool.slug === "compatibility") {
-        setResult(`Chemistry ${hashPercent(target, "chem")}%\nFriendship ${hashPercent(target, "friend")}%\nVerdict: ${hashPercent(target, "duo") > 55 ? "Cocok buat duo rank" : "Cocoknya warm up dulu"}`);
-      } else if (tool.slug === "toxic-meter") {
-        setResult(`Toxic Score ${hashPercent(target, "toxic")}%\nSavage Level ${hashPercent(target, "savage")}%\nNoob Percentage ${hashPercent(target, "noob")}%`);
-      } else {
-        setResult(`Aura ${hashPercent(target, "aura")}%\nHoki ${hashPercent(target, "hoki")}%\nToxic ${hashPercent(target, "toxic")}%\nMVP ${hashPercent(target, "mvp")}%`);
+    if (tool.kind !== "wheel") {
+      try {
+        const response = await generateText.mutateAsync({
+          ...toolPayload,
+        });
+        setResult(response.result);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Generate gagal. Coba lagi sebentar.");
       }
       return;
     }
 
-    if (tool.slug === "winrate-calculator") {
-      setResult(`Butuh ${winrateNeeded.toLocaleString()} win beruntun untuk target ${targetWr}% WR.`);
-      return;
-    }
-    if (tool.slug === "diamond-calculator") {
-      setResult(`${diamonds.toLocaleString()} diamond kira-kira Rp${Math.round(diamonds * 265).toLocaleString("id-ID")}.\nCek harga real di katalog topup sebelum checkout.`);
-      return;
-    }
-    if (tool.slug === "magic-wheel") {
-      setResult(`${spinCount} spin butuh estimasi ${spinCount * 60} diamond.\nLuck hari ini: ${hashPercent(String(spinCount), "luck")}%`);
+    if (wheelItems.length < 2) {
+      setError("Isi minimal 2 menu wheel, pisahkan dengan koma atau baris baru.");
       return;
     }
 
-    const kda = `${hashPercent(name, "kill") % 25}/${hashPercent(name, "death") % 7}/${hashPercent(name, "assist") % 30}`;
-    if (tool.slug === "fake-rank") {
-      setResult(`${name || "Player"}\nRank: ${pick(rankPool, name + mode)}\nWin Streak: ${hashPercent(name, "ws") % 18}`);
-    } else {
-      setResult(`${name || "Player"} MVP\nKDA: ${kda}\nDamage: ${hashPercent(name, "damage")}%\nTeamfight: ${hashPercent(name, "fight")}%`);
-    }
+    const selectedIndex = hashPercent(`${wheelOptionsText}:${Date.now()}:${rotation}`, "wheel") % wheelItems.length;
+    const selectedValue = wheelItems[selectedIndex];
+    const segmentSize = 360 / wheelItems.length;
+    const selectedCenter = selectedIndex * segmentSize + segmentSize / 2;
+    const fullSpins = 5 * 360;
+    const finalAngle = (360 - selectedCenter) % 360;
+    setResult("");
+    setIsSpinning(true);
+    setRotation((current) => {
+      const normalized = ((current % 360) + 360) % 360;
+      const delta = fullSpins + finalAngle - normalized;
+      return current + (delta < fullSpins ? delta + 360 : delta);
+    });
+    window.setTimeout(() => {
+      generateText
+        .mutateAsync({
+          ...generatePayload,
+          selectedValue,
+        })
+        .then((response) => setResult(response.result))
+        .catch((err) => {
+          setResult(selectedValue);
+          setError(err instanceof Error ? err.message : "Generate gagal, hasil spin tetap dipakai.");
+        })
+        .finally(() => {
+          setIsSpinning(false);
+        });
+    }, 1850);
   };
 
-  const resultLines = result.split("\n").filter(Boolean);
   const usageGuide = getToolUsageGuide(tool);
 
   return (
@@ -434,7 +483,7 @@ export default function ToolDetail() {
             <section className="rounded-2xl border border-white/10 bg-[#0b0d14]/88 p-5 sm:p-7">
               <div className="mb-6 flex items-start gap-4">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#ff4967]/25 bg-[#ff003c]/10 text-[#ff4967]">
-                  {tool.kind === "calculator" ? <Calculator className="h-7 w-7" /> : tool.kind === "meter" ? <Gauge className="h-7 w-7" /> : tool.kind === "wheel" ? <Dice5 className="h-7 w-7" /> : tool.kind === "fake-card" ? <Trophy className="h-7 w-7" /> : <Bot className="h-7 w-7" />}
+                  {tool.kind === "calculator" ? <Calculator className="h-7 w-7" /> : tool.kind === "meter" ? <Gauge className="h-7 w-7" /> : tool.kind === "wheel" ? <Dice5 className="h-7 w-7" /> : <Bot className="h-7 w-7" />}
                 </div>
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.2em] text-[#00f0ff]">{tool.category}</p>
@@ -466,22 +515,54 @@ export default function ToolDetail() {
               </div>
 
               <div className="grid gap-4">
-                <div>
-                  <label className="mb-2 block text-[10px] uppercase tracking-wider text-white/35">Mode</label>
-                  <div className="flex flex-wrap gap-2">
-                    {tool.modes.map((item) => (
-                      <button key={item} onClick={() => setMode(item)} className={`rounded-lg border px-3 py-2 text-xs ${mode === item ? "border-[#ff003c] bg-[#ff003c]/15 text-white" : "border-white/10 bg-white/[0.03] text-white/50"}`}>
-                        {item}
+                {tool.kind === "wheel" ? (
+                  <div>
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <label className="block text-[10px] uppercase tracking-wider text-white/35">Menu Wheel</label>
+                      <button
+                        type="button"
+                        onClick={() => setWheelOptionsText(getDefaultWheelOptions(tool))}
+                        className="rounded-lg border border-[#00f0ff]/20 bg-[#00f0ff]/10 px-3 py-2 text-xs font-semibold text-[#00f0ff]"
+                      >
+                        Reset preset
                       </button>
-                    ))}
+                    </div>
+                    <textarea
+                      value={wheelOptionsText}
+                      onChange={(event) => setWheelOptionsText(event.target.value)}
+                      rows={6}
+                      placeholder="Tulis menu wheel kamu, satu item per baris. Contoh: No recall, Pistol only, Random hero"
+                      className="min-h-36 w-full resize-y rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm leading-relaxed text-white outline-none focus:border-[#00f0ff]/50"
+                    />
+                    <p className="mt-2 text-xs text-white/40">
+                      Minimal 2 menu, maksimal 12. Bisa pakai baris baru atau koma.
+                    </p>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <label className="mb-2 block text-[10px] uppercase tracking-wider text-white/35">Mode</label>
+                    <div className="flex flex-wrap gap-2">
+                      {tool.modes.map((item) => (
+                        <button key={item} onClick={() => setMode(item)} className={`rounded-lg border px-3 py-2 text-xs ${mode === item ? "border-[#ff003c] bg-[#ff003c]/15 text-white" : "border-white/10 bg-white/[0.03] text-white/50"}`}>
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                {["ai-text", "meter", "fake-card", "picker"].includes(tool.kind) && (
+                {(["ai-text", "meter", "picker"].includes(tool.kind) || (isCustomMode && tool.kind !== "wheel")) && (
                   <div className="grid gap-3 sm:grid-cols-2">
                     <label>
-                      <span className="mb-2 block text-[10px] uppercase tracking-wider text-white/35">Nickname / Prompt</span>
-                      <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Masukkan nickname" className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50" />
+                      <span className="mb-2 block text-[10px] uppercase tracking-wider text-white/35">
+                        {tool.kind === "wheel" && isCustomMode ? "Custom options" : "Nickname / Prompt"}
+                      </span>
+                      <input
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
+                        placeholder={tool.kind === "wheel" && isCustomMode ? "Contoh: No recall, Pistol only, Random hero" : "Masukkan nickname atau prompt custom"}
+                        className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
+                      />
                     </label>
                     {tool.slug === "compatibility" && (
                       <label>
@@ -494,24 +575,29 @@ export default function ToolDetail() {
 
                 {tool.slug === "winrate-calculator" && (
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <input type="number" value={matches} onChange={(event) => setMatches(Number(event.target.value))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Total match" />
-                    <input type="number" value={wins} onChange={(event) => setWins(Number(event.target.value))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Current WR" />
-                    <input type="number" value={targetWr} onChange={(event) => setTargetWr(Number(event.target.value))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Target WR" />
+                    <input type="number" value={matches} onChange={(event) => setMatches(readNumber(event.target.value, 1000))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Total match" />
+                    <input type="number" value={wins} onChange={(event) => setWins(readNumber(event.target.value, 50))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Current WR" />
+                    <input type="number" value={targetWr} onChange={(event) => setTargetWr(readNumber(event.target.value, 60))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Target WR" />
                   </div>
                 )}
                 {tool.slug === "diamond-calculator" && (
-                  <input type="number" value={diamonds} onChange={(event) => setDiamonds(Number(event.target.value))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Jumlah diamond" />
+                  <input type="number" value={diamonds} onChange={(event) => setDiamonds(readNumber(event.target.value, 86))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Jumlah diamond" />
                 )}
                 {tool.slug === "magic-wheel" && (
-                  <input type="number" value={spinCount} onChange={(event) => setSpinCount(Number(event.target.value))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Jumlah spin" />
+                  <input type="number" value={spinCount} onChange={(event) => setSpinCount(readNumber(event.target.value, 10))} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white" placeholder="Jumlah spin" />
                 )}
 
-                {tool.kind === "wheel" && <WheelBoard items={tool.modes} rotation={rotation} isSpinning={isSpinning} />}
+                {tool.kind === "wheel" && <WheelBoard items={wheelItems} rotation={rotation} isSpinning={isSpinning} />}
 
                 <button onClick={runTool} disabled={generateText.isPending || isSpinning} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff003c] to-[#b30029] px-6 py-4 font-semibold text-white transition-all hover:shadow-lg hover:shadow-[#ff003c]/25 disabled:opacity-60 sm:w-fit">
                   {generateText.isPending || isSpinning ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
                   {tool.kind === "wheel" ? (isSpinning ? "Spinning..." : "Spin Wheel") : "Generate"}
                 </button>
+                {error && (
+                  <p className="rounded-xl border border-[#ff003c]/25 bg-[#ff003c]/10 px-4 py-3 text-sm text-[#ff6a82]">
+                    {error}
+                  </p>
+                )}
               </div>
             </section>
 
@@ -522,12 +608,6 @@ export default function ToolDetail() {
               </div>
               <ResultPanel result={result} toolKind={tool.kind} />
               <ResultActions result={result} />
-              {tool.kind === "fake-card" && result && (
-                <button onClick={() => downloadCard(tool.shortTitle, resultLines)} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#ffb800]/25 bg-[#ffb800]/10 px-4 py-2 text-sm text-[#ffb800]">
-                  <Download className="h-4 w-4" />
-                  Download Card
-                </button>
-              )}
               <Link to={`/games/${tool.ctaGameSlug || "mobile-legends"}`} className="mt-6 flex items-center justify-center gap-2 rounded-xl border border-[#ff003c]/25 bg-[#ff003c]/10 px-5 py-3 text-sm font-semibold text-[#ff6a82]">
                 Topup setelah mabar
               </Link>

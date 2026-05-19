@@ -8,6 +8,8 @@ import {
   ArrowLeft,
   BarChart3,
   CheckCircle2,
+  Eye,
+  EyeOff,
   Gamepad2,
   Loader2,
   Receipt,
@@ -95,6 +97,8 @@ export default function AdminUserEdit() {
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { data: targetUser, isLoading } = trpc.admin.userById.useQuery(
     { id: userId },
@@ -341,27 +345,47 @@ export default function AdminUserEdit() {
                         <label className="mb-2 block text-[10px] tracking-wider text-white/40">
                           NEW_PASSWORD
                         </label>
-                        <input
-                          type="password"
-                          value={form.newPassword}
-                          onChange={(event) => setForm((current) => ({ ...current, newPassword: event.target.value }))}
-                          minLength={8}
-                          placeholder="Minimal 8 karakter"
-                          className="w-full border border-[#222] bg-[#07080d] px-4 py-3 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#ffb800]/50"
-                        />
+                        <div className="relative">
+                          <input
+                            type={showNewPassword ? "text" : "password"}
+                            value={form.newPassword}
+                            onChange={(event) => setForm((current) => ({ ...current, newPassword: event.target.value }))}
+                            minLength={8}
+                            placeholder="Minimal 8 karakter"
+                            className="w-full border border-[#222] bg-[#07080d] px-4 py-3 pr-11 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#ffb800]/50"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword((current) => !current)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-white/40 transition-colors hover:text-white"
+                            aria-label={showNewPassword ? "Sembunyikan password baru" : "Tampilkan password baru"}
+                          >
+                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </div>
                       <div>
                         <label className="mb-2 block text-[10px] tracking-wider text-white/40">
                           CONFIRM_PASSWORD
                         </label>
-                        <input
-                          type="password"
-                          value={form.confirmPassword}
-                          onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
-                          minLength={8}
-                          placeholder="Ulangi password"
-                          className="w-full border border-[#222] bg-[#07080d] px-4 py-3 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#ffb800]/50"
-                        />
+                        <div className="relative">
+                          <input
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={form.confirmPassword}
+                            onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+                            minLength={8}
+                            placeholder="Ulangi password"
+                            className="w-full border border-[#222] bg-[#07080d] px-4 py-3 pr-11 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#ffb800]/50"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword((current) => !current)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-white/40 transition-colors hover:text-white"
+                            aria-label={showConfirmPassword ? "Sembunyikan konfirmasi password" : "Tampilkan konfirmasi password"}
+                          >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

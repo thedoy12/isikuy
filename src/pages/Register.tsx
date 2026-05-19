@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
   CheckCircle2,
+  Eye,
+  EyeOff,
   Globe,
   Loader2,
   Shield,
@@ -19,6 +21,8 @@ export default function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
 
   const register = trpc.auth.register.useMutation({
@@ -139,29 +143,49 @@ export default function Register() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-2 block text-xs text-white/50">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  minLength={8}
-                  className="glass w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/20 focus:border-[#ff003c]/50"
-                  autoComplete="new-password"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    minLength={8}
+                    className="glass w-full rounded-xl px-4 py-3 pr-12 text-sm text-white outline-none transition-colors placeholder:text-white/20 focus:border-[#ff003c]/50"
+                    autoComplete="new-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-white/45 transition-colors hover:text-white"
+                    aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="mb-2 block text-xs text-white/50">
                   Konfirmasi
                 </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  minLength={8}
-                  className="glass w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/20 focus:border-[#ff003c]/50"
-                  autoComplete="new-password"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    minLength={8}
+                    className="glass w-full rounded-xl px-4 py-3 pr-12 text-sm text-white outline-none transition-colors placeholder:text-white/20 focus:border-[#ff003c]/50"
+                    autoComplete="new-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((current) => !current)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-white/45 transition-colors hover:text-white"
+                    aria-label={showConfirmPassword ? "Sembunyikan konfirmasi password" : "Tampilkan konfirmasi password"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </div>
 

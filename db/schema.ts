@@ -246,6 +246,20 @@ export const trendingTools = pgTable("trendingTools", {
   lastUsedAt: timestamp("lastUsedAt").defaultNow().notNull(),
 });
 
+export const toolAlerts = pgTable("toolAlerts", {
+  id: serial("id").primaryKey(),
+  toolSlug: varchar("toolSlug", { length: 100 }),
+  model: varchar("model", { length: 100 }),
+  statusCode: integer("statusCode"),
+  message: text("message").notNull(),
+  isResolved: boolean("isResolved").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+}, (table) => [
+  index("idx_tool_alerts_created_at").on(table.createdAt),
+  index("idx_tool_alerts_resolved").on(table.isResolved),
+]);
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Category = typeof categories.$inferSelect;
@@ -263,3 +277,4 @@ export type ToolResult = typeof toolResults.$inferSelect;
 export type RecentTool = typeof recentTools.$inferSelect;
 export type UserFavorite = typeof userFavorites.$inferSelect;
 export type TrendingTool = typeof trendingTools.$inferSelect;
+export type ToolAlert = typeof toolAlerts.$inferSelect;
