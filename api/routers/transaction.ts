@@ -114,6 +114,41 @@ function stringifyProviderState(raw: string | null, patch: Record<string, unknow
   });
 }
 
+function getPaymentDetails(raw: string | null) {
+  const state = parseProviderState(raw) as {
+    deposit?: {
+      reff_id?: string;
+      pay_id?: string;
+      amount_total?: number;
+      amount_received?: number;
+      pay_url?: string | null;
+      pay_code?: string | null;
+      qr_string?: string | null;
+      qr_image?: string | null;
+      instructions?: Array<{ title: string; steps: string[] }>;
+      expired_at?: string;
+      method?: string;
+    };
+  };
+  const deposit = state.deposit;
+  if (!deposit) return null;
+
+  return {
+    provider: "flowix",
+    reference: deposit.reff_id || null,
+    paymentId: deposit.pay_id || null,
+    method: deposit.method || "QRIS",
+    amountTotal: Number(deposit.amount_total || 0),
+    amountReceived: Number(deposit.amount_received || 0),
+    payUrl: deposit.pay_url || null,
+    payCode: deposit.pay_code || null,
+    qrString: deposit.qr_string || null,
+    qrImage: deposit.qr_image || null,
+    instructions: deposit.instructions || [],
+    providerExpiredAt: deposit.expired_at || null,
+  };
+}
+
 function productTransactionStatus(status: string) {
   const normalized = status.toLowerCase();
   if (["paid", "success", "settlement", "settled", "completed", "capture"].includes(normalized)) {
@@ -461,6 +496,7 @@ export const transactionRouter = createRouter({
           productId: transactions.productId,
           paymentMethodId: transactions.paymentMethodId,
           providerProductName: transactions.providerProductName,
+          providerResponse: transactions.providerResponse,
         })
         .from(transactions)
         .where(eq(transactions.invoiceNumber, input.invoiceNumber))
@@ -488,7 +524,8 @@ export const transactionRouter = createRouter({
         .where(eq(paymentMethods.id, transaction.paymentMethodId))
         .limit(1);
 
-      return { ...transaction, game, product, method };
+      const { providerResponse, ...safeTransaction } = transaction;
+      return { ...safeTransaction, game, product, method, payment: getPaymentDetails(providerResponse) };
     }),
 
   myHistory: authedQuery.query(async ({ ctx }) => {

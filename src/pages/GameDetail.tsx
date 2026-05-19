@@ -118,6 +118,7 @@ export default function GameDetail() {
     onSuccess: (data) => {
       setInvoiceNumber(data.invoiceNumber);
       setPaymentDetails(data.payment);
+      localStorage.setItem("isikuy:lastPendingInvoice", data.invoiceNumber);
       setShowQris(false);
       setStep("payment");
     },
@@ -482,6 +483,13 @@ export default function GameDetail() {
             </div>
 
             {/* Status / dev simulation button */}
+            <Link
+              to={`/payment/${invoiceNumber}`}
+              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#00f0ff]/25 bg-[#00f0ff]/10 px-4 py-3 text-sm font-semibold text-[#00f0ff] transition-colors hover:bg-[#00f0ff]/15"
+            >
+              <QrCode className="h-4 w-4" />
+              Buka Halaman Pembayaran
+            </Link>
             <button
               onClick={handlePayNow}
               disabled={processPayment.isPending || (!paymentDetails && !import.meta.env.DEV)}

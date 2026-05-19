@@ -136,6 +136,12 @@ export default function HistoryPage() {
                     Rp{parseFloat(searchedTx.totalAmount).toLocaleString()}
                   </span>
                 </div>
+                <Link
+                  to={`/payment/${searchedTx.invoiceNumber}`}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#00f0ff]/25 bg-[#00f0ff]/10 px-4 py-3 text-sm font-semibold text-[#00f0ff]"
+                >
+                  Lihat Pembayaran / QRIS
+                </Link>
               </div>
             )}
           </div>
@@ -211,6 +217,12 @@ export default function HistoryPage() {
                                 {status.label}
                               </span>
                             </div>
+                            <Link
+                              to={`/payment/${tx.invoiceNumber}`}
+                              className="mt-2 inline-flex items-center justify-center rounded-lg border border-[#00f0ff]/25 px-3 py-1.5 text-xs font-semibold text-[#00f0ff] hover:bg-[#00f0ff]/10"
+                            >
+                              {tx.paymentStatus === "unpaid" ? "Lanjut Bayar" : "Detail"}
+                            </Link>
                           </div>
                         </div>
                       </div>

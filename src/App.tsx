@@ -6,6 +6,7 @@ import Games from './pages/Games'
 import GameDetail from './pages/GameDetail'
 import History from './pages/History'
 import AccountSettings from './pages/AccountSettings'
+import Payment from './pages/Payment'
 import InfoPage from './pages/InfoPage'
 import Tools from './pages/Tools'
 import ToolDetail from './pages/ToolDetail'
@@ -22,6 +23,7 @@ import NotFound from './pages/NotFound'
 import SiteMeta from './components/SiteMeta'
 import SitePopup from './components/SitePopup'
 import ToolsPromoPopup from './components/ToolsPromoPopup'
+import PendingPaymentResume from './components/PendingPaymentResume'
 
 export default function App() {
   return (
@@ -36,6 +38,7 @@ export default function App() {
         <Route path="/tools" element={<Tools />} />
         <Route path="/tools/:slug" element={<ToolDetail />} />
         <Route path="/history" element={<History />} />
+        <Route path="/payment/:invoiceNumber" element={<Payment />} />
         <Route path="/account" element={<AccountSettings />} />
         <Route path="/tentang" element={<InfoPage />} />
         <Route path="/kontak" element={<InfoPage />} />
@@ -54,6 +57,7 @@ export default function App() {
         <Route path="/admin/settings" element={<AdminSettings />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <PendingPaymentResume />
       <SitePopup />
       <ToolsPromoPopup />
     </>
