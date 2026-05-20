@@ -37,7 +37,7 @@ export function serveStaticFiles(app: App) {
     }
 
     const accept = c.req.header("accept") ?? "";
-    if (!accept.includes("text/html") && c.req.method !== "GET") {
+    if (!accept.includes("text/html") && !["GET", "HEAD"].includes(c.req.method)) {
       return c.json({ error: "Not Found" }, 404);
     }
     const indexPath = path.resolve(distPath, "index.html");
