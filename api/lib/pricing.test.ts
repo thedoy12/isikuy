@@ -9,7 +9,9 @@ describe("priceWithMarkup", () => {
 
   it("uses softer percentage for medium and high priced products", () => {
     expect(priceWithMarkup(10_000)).toBe(10_200);
-    expect(priceWithMarkup(100_000)).toBe(101_500);
+    expect(priceWithMarkup(75_000)).toBe(76_200);
+    expect(priceWithMarkup(100_000)).toBe(101_300);
+    expect(priceWithMarkup(250_000)).toBe(252_500);
   });
 
   it("still honors explicit markup overrides", () => {

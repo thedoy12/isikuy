@@ -8,7 +8,9 @@ function tieredMarkupRule(price: number) {
   if (price < 2_000) return { percent: 2, rounding: 25 };
   if (price < 5_000) return { percent: 2, rounding: 50 };
   if (price < 50_000) return { percent: 2, rounding: 100 };
-  return { percent: 1.5, rounding: 100 };
+  if (price < 100_000) return { percent: 1.5, rounding: 100 };
+  if (price < 200_000) return { percent: 1.25, rounding: 100 };
+  return { percent: 1, rounding: 100 };
 }
 
 export function priceWithMarkup(price: number, markupPercent = env.productMarkupPercent) {
