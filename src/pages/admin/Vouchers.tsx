@@ -67,6 +67,53 @@ function defaultVoucherDates() {
   };
 }
 
+function splitDateTimeInput(value: string) {
+  const [date = "", time = ""] = value.split("T");
+  return { date, time: time.slice(0, 5) };
+}
+
+function updateDateTimePart(value: string, part: "date" | "time", nextValue: string) {
+  const current = splitDateTimeInput(value);
+  const nextDate = part === "date" ? nextValue : current.date;
+  const nextTime = part === "time" ? nextValue : current.time || "00:00";
+  if (!nextDate) return "";
+  return `${nextDate}T${nextTime}`;
+}
+
+function VoucherDateTimeField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const parts = splitDateTimeInput(value);
+
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[10px] tracking-wider text-white/40">{label}</span>
+      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_8.5rem]">
+        <input
+          type="date"
+          value={parts.date}
+          onChange={(event) => onChange(updateDateTimePart(value, "date", event.target.value))}
+          className="h-12 w-full min-w-0 border border-[#222] bg-[#0b0d14] px-4 text-sm text-white [color-scheme:dark] outline-none focus:border-[#00f0ff]/50"
+          required
+        />
+        <input
+          type="time"
+          value={parts.time}
+          onChange={(event) => onChange(updateDateTimePart(value, "time", event.target.value))}
+          className="h-12 w-full min-w-0 border border-[#222] bg-[#0b0d14] px-4 text-sm text-white [color-scheme:dark] outline-none focus:border-[#00f0ff]/50"
+          required
+        />
+      </div>
+    </label>
+  );
+}
+
 function AdminSidebar({ active }: { active: string }) {
   const { logout } = useAuth();
   const navItems = [
@@ -348,27 +395,17 @@ export default function AdminVouchers() {
                 )}
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label>
-                  <span className="mb-2 block text-[10px] tracking-wider text-white/40">VALID_FROM</span>
-                  <input
-                    type="datetime-local"
-                    value={form.validFrom}
-                    onChange={(event) => setForm((current) => ({ ...current, validFrom: event.target.value }))}
-                    className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
-                    required
-                  />
-                </label>
-                <label>
-                  <span className="mb-2 block text-[10px] tracking-wider text-white/40">VALID_UNTIL</span>
-                  <input
-                    type="datetime-local"
-                    value={form.validUntil}
-                    onChange={(event) => setForm((current) => ({ ...current, validUntil: event.target.value }))}
-                    className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
-                    required
-                  />
-                </label>
+              <div className="grid gap-4">
+                <VoucherDateTimeField
+                  label="VALID_FROM"
+                  value={form.validFrom}
+                  onChange={(value) => setForm((current) => ({ ...current, validFrom: value }))}
+                />
+                <VoucherDateTimeField
+                  label="VALID_UNTIL"
+                  value={form.validUntil}
+                  onChange={(value) => setForm((current) => ({ ...current, validUntil: value }))}
+                />
               </div>
 
               <label className="flex items-center justify-between border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm">
