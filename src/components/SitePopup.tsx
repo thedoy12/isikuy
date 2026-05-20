@@ -48,8 +48,8 @@ export default function SitePopup() {
     "inline-flex min-w-0 items-center justify-center gap-2 rounded-lg bg-[#ff003c] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#b30029]";
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-x-hidden bg-black/70 px-4 backdrop-blur-sm">
-      <div className="relative w-[calc(100vw-2rem)] max-w-md overflow-hidden rounded-xl border border-[#ff4967]/30 bg-[#0b0509] p-5 shadow-[0_30px_100px_rgba(0,0,0,0.65),0_0_70px_rgba(255,0,60,0.18)] sm:w-full sm:p-6">
+    <div className="fixed inset-0 z-[80] overflow-x-hidden bg-black/70 backdrop-blur-sm">
+      <div className="absolute left-4 right-4 top-1/2 mx-auto max-w-md -translate-y-1/2 overflow-hidden rounded-xl border border-[#ff4967]/30 bg-[#0b0509] p-5 shadow-[0_30px_100px_rgba(0,0,0,0.65),0_0_70px_rgba(255,0,60,0.18)] sm:p-6">
         <div
           className="absolute inset-0 opacity-[0.12]"
           style={{
