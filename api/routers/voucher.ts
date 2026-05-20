@@ -3,6 +3,7 @@ import { eq, and, gte, lte } from "drizzle-orm";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { vouchers } from "@db/schema";
+import { safeDiscountAmount } from "../lib/pricing";
 
 export const voucherRouter = createRouter({
   validate: publicQuery
@@ -43,15 +44,17 @@ export const voucherRouter = createRouter({
         return { valid: false, message: `Minimal pembelian Rp${minOrder.toLocaleString()}` };
       }
 
-      let discount = 0;
-      if (voucher.type === "percent") {
-        discount = input.amount * (parseFloat(voucher.value) / 100);
-        if (voucher.maxDiscount) {
-          discount = Math.min(discount, parseFloat(voucher.maxDiscount));
-        }
-      } else {
-        discount = parseFloat(voucher.value);
-      }
+      const rawDiscount =
+        voucher.type === "percent"
+          ? input.amount * (parseFloat(voucher.value) / 100)
+          : parseFloat(voucher.value);
+      const cappedDiscount = voucher.maxDiscount
+        ? Math.min(rawDiscount, parseFloat(voucher.maxDiscount))
+        : rawDiscount;
+      const discount = safeDiscountAmount({
+        amount: input.amount,
+        rawDiscount: cappedDiscount,
+      });
 
       return {
         valid: true,

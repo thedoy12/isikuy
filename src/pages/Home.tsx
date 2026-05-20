@@ -88,7 +88,7 @@ function HeroSection() {
             <div className="inline-flex items-center gap-2 rounded-full border border-[#ff003c]/20 bg-[#ff003c]/10 px-4 py-2 mb-6">
               <Sparkles className="w-4 h-4 text-[#ff003c]" />
               <span className="text-xs font-medium text-[#e1f5fe]">
-                {heroBanner?.subtitle || "Platform Top-Up Game #1 Indonesia"}
+                {heroBanner?.subtitle || "Platform Top-Up Game Cepat dan Praktis"}
               </span>
             </div>
 
@@ -100,7 +100,7 @@ function HeroSection() {
               </span>
             </h1>
 
-            <p className="text-base sm:text-lg text-[#e1f5fe]/70 max-w-xl mx-auto lg:mx-0 mb-8 font-body leading-relaxed">
+            <p className="mx-auto mb-8 max-w-[21rem] text-sm leading-relaxed text-[#e1f5fe]/70 sm:max-w-xl sm:text-lg lg:mx-0">
               Top up game, pulsa, e-wallet, dan voucher digital dalam satu katalog
               yang rapi. Pilih produk, bayar QRIS, lalu pesanan diproses otomatis.
             </p>
@@ -122,36 +122,36 @@ function HeroSection() {
             </div>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+            <div className="mx-auto flex w-full max-w-[21rem] flex-col items-stretch justify-center gap-4 sm:max-w-none sm:flex-row sm:items-center lg:mx-0 lg:justify-start">
               <Link
                 to="/games"
-                className="group flex items-center gap-3 rounded-lg bg-gradient-to-r from-[#ff003c] via-[#ff3158] to-[#a60027] px-8 py-4 text-base font-semibold text-white shadow-[0_18px_45px_rgba(255,0,60,0.28)] transition-all hover:-translate-y-0.5 hover:shadow-[#ff003c]/35"
+                className="group flex min-w-0 items-center justify-center gap-3 rounded-lg bg-gradient-to-r from-[#ff003c] via-[#ff3158] to-[#a60027] px-6 py-4 text-base font-semibold text-white shadow-[0_18px_45px_rgba(255,0,60,0.28)] transition-all hover:-translate-y-0.5 hover:shadow-[#ff003c]/35 sm:px-8"
               >
                 <Gamepad2 className="w-5 h-5" />
-                Mulai Top Up
+                <span className="truncate">Mulai Top Up</span>
                 <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 to="/games?trending=true"
-                className="flex items-center gap-3 rounded-lg border border-[#ff003c]/25 bg-[#13060b]/70 px-8 py-4 text-base font-semibold text-white transition-all hover:border-[#ff4967]/50 hover:bg-[#240910]"
+                className="flex min-w-0 items-center justify-center gap-3 rounded-lg border border-[#ff003c]/25 bg-[#13060b]/70 px-6 py-4 text-base font-semibold text-white transition-all hover:border-[#ff4967]/50 hover:bg-[#240910] sm:px-8"
               >
                 <TrendingUp className="w-5 h-5" />
-                Lihat Trending
+                <span className="truncate">Lihat Trending</span>
               </Link>
             </div>
 
             {/* Quick Stats */}
-            <div className="mt-12 grid grid-cols-3 gap-4 max-w-lg mx-auto lg:mx-0">
+            <div className="mx-auto mt-12 grid max-w-[21rem] grid-cols-3 gap-2 sm:max-w-lg sm:gap-4 lg:mx-0">
               {[
                 { value: "60+", label: "Produk aktif" },
                 { value: "4", label: "Kategori" },
                 { value: "24/7", label: "Checkout" },
               ].map((s) => (
-                <div key={s.label} className="rounded-lg border border-[#ff003c]/18 bg-[#090508]/80 px-4 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] lg:text-left">
-                  <p className="font-display text-2xl sm:text-3xl font-bold text-white">
+                <div key={s.label} className="min-w-0 rounded-lg border border-[#ff003c]/18 bg-[#090508]/80 px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:px-4 lg:text-left">
+                  <p className="font-display text-2xl font-bold text-white sm:text-3xl">
                     {s.value}
                   </p>
-                  <p className="text-xs text-white/40 mt-1">{s.label}</p>
+                  <p className="mt-1 truncate text-[11px] text-white/40 sm:text-xs">{s.label}</p>
                 </div>
               ))}
             </div>
@@ -728,7 +728,7 @@ function MarqueeSection() {
 /* ─── Home Page ─── */
 export default function Home() {
   return (
-    <div className="min-h-[100dvh] bg-[#030305]">
+    <div className="min-h-[100dvh] overflow-x-hidden bg-[#030305]">
       <Navbar />
       <main>
         <HeroSection />

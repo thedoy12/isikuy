@@ -123,7 +123,7 @@ export default function Tools() {
                 <Sparkles className="h-4 w-4 text-[#ff4967]" />
                 Mini Gaming Fun Tools
               </div>
-              <h1 className="max-w-[11ch] font-display text-[2.65rem] font-bold leading-[0.92] sm:max-w-none sm:text-6xl sm:leading-tight">
+              <h1 className="max-w-[11ch] font-display text-[2.45rem] font-bold leading-[0.94] sm:max-w-none sm:text-6xl sm:leading-tight">
                 Tools mabar ringan buat konten, challenge, dan kalkulasi rank.
               </h1>
               <p className="mt-4 max-w-full text-sm leading-relaxed text-white/62 sm:mt-5 sm:max-w-2xl sm:text-base">
@@ -134,12 +134,12 @@ export default function Tools() {
                   Beberapa tools random bisa dicoba gratis. Login dulu untuk membuka semua AI tools, calculator, dan fitur fun lainnya.
                 </p>
               )}
-              <div className="mt-6 flex max-w-full gap-3 sm:mt-8 sm:max-w-none sm:flex-row">
+              <div className="mt-6 grid max-w-full grid-cols-2 gap-3 sm:mt-8 sm:flex sm:max-w-none sm:flex-row">
                 <a href="#tools-list" className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ff003c] to-[#b30029] px-3 py-3 text-sm font-semibold text-white shadow-[0_14px_35px_rgba(255,0,60,0.22)] sm:flex-none sm:px-6 sm:text-base">
                   <Gamepad2 className="h-5 w-5" />
                   <span className="truncate">Mulai Main</span>
                 </a>
-                <Link to="/games" className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl border border-[#00f0ff]/25 bg-[#00f0ff]/10 px-3 py-3 text-sm font-semibold text-[#00f0ff] sm:flex-none sm:px-6 sm:text-base">
+                <Link to="/games" className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl border border-[#00f0ff]/25 bg-[#00f0ff]/10 px-2 py-3 text-sm font-semibold text-[#00f0ff] sm:flex-none sm:px-6 sm:text-base">
                   <span className="truncate">Topup Game</span>
                 </Link>
               </div>

@@ -74,14 +74,14 @@ export default function Games() {
     `https://placehold.co/600x800/09090b/ffffff?text=${encodeURIComponent(name)}`;
 
   return (
-    <div className="min-h-[100dvh] bg-[#030305]">
+    <div className="min-h-[100dvh] overflow-x-hidden bg-[#030305]">
       <Navbar />
 
       {/* Hero Header */}
       <div className="pt-28 pb-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0b0d14] to-[#030305]" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#ff003c]/5 rounded-full blur-[120px]" />
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto w-full max-w-[22rem] px-4 sm:max-w-7xl sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-sm text-white/40 mb-4">
             <Link to="/" className="hover:text-white transition-colors">
               Home
@@ -148,7 +148,7 @@ export default function Games() {
             </div>
           </div>
 
-          <div className="mt-8 flex flex-wrap gap-2">
+          <div className="mt-8 flex max-w-full flex-wrap gap-2">
             <button
               onClick={() => {
                 setSelectedType(undefined);
@@ -226,9 +226,9 @@ export default function Games() {
       </div>
 
       {/* Games Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+      <div className="mx-auto w-full max-w-[22rem] px-4 pb-24 sm:max-w-7xl sm:px-6 lg:px-8">
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {Array.from({ length: 15 }).map((_, i) => (
               <div
                 key={i}
@@ -237,7 +237,7 @@ export default function Games() {
             ))}
           </div>
         ) : games && games.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {games.map((game) => (
               <Link
                 key={game.id}
