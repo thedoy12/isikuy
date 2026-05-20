@@ -61,7 +61,7 @@ export default function ToolsPromoPopup() {
 
   return (
     <div className="fixed inset-0 z-[78] flex items-center justify-center overflow-x-hidden bg-black/70 px-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-[#00f0ff]/25 bg-[#05090d] p-5 shadow-[0_30px_100px_rgba(0,0,0,0.65),0_0_70px_rgba(0,240,255,0.14)] sm:max-w-md sm:p-6">
+      <div className="relative w-[calc(100vw-2rem)] max-w-md overflow-hidden rounded-xl border border-[#00f0ff]/25 bg-[#05090d] p-5 shadow-[0_30px_100px_rgba(0,0,0,0.65),0_0_70px_rgba(0,240,255,0.14)] sm:w-full sm:p-6">
         <div
           className="absolute inset-0 opacity-[0.12]"
           style={{
