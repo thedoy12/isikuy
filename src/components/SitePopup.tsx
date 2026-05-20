@@ -45,11 +45,11 @@ export default function SitePopup() {
   };
   const isExternalButton = /^https?:\/\//i.test(settings.popupButtonUrl);
   const buttonClassName =
-    "inline-flex items-center justify-center gap-2 rounded-lg bg-[#ff003c] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#b30029]";
+    "inline-flex min-w-0 items-center justify-center gap-2 rounded-lg bg-[#ff003c] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#b30029]";
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-md overflow-hidden rounded-xl border border-[#ff4967]/30 bg-[#0b0509] p-6 shadow-[0_30px_100px_rgba(0,0,0,0.65),0_0_70px_rgba(255,0,60,0.18)]">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-x-hidden bg-black/70 px-4 backdrop-blur-sm">
+      <div className="relative w-full max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-[#ff4967]/30 bg-[#0b0509] p-5 shadow-[0_30px_100px_rgba(0,0,0,0.65),0_0_70px_rgba(255,0,60,0.18)] sm:max-w-md sm:p-6">
         <div
           className="absolute inset-0 opacity-[0.12]"
           style={{
@@ -67,7 +67,7 @@ export default function SitePopup() {
           <X className="h-4 w-4" />
         </button>
 
-        <div className="relative">
+        <div className="relative min-w-0">
           <BrandLogo compact className="mb-5" imageClassName="h-14" />
           {settings.popupImage ? (
             <div className="mb-5 overflow-hidden rounded-lg border border-white/10 bg-black/30">
@@ -83,13 +83,13 @@ export default function SitePopup() {
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ff6a82]">
             ISIKUY ALERT
           </p>
-          <h2 className="font-display text-3xl font-bold leading-tight text-white">
+          <h2 className="break-words font-display text-3xl font-bold leading-tight text-white">
             {settings.popupTitle}
           </h2>
-          <p className="mt-3 text-sm leading-relaxed text-white/60">
+          <p className="mt-3 break-words text-sm leading-relaxed text-white/60">
             {settings.popupMessage}
           </p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-6 grid gap-3 sm:flex sm:flex-row">
             {settings.popupButtonUrl && isExternalButton ? (
               <a
                 href={settings.popupButtonUrl}
@@ -97,7 +97,7 @@ export default function SitePopup() {
                 className={buttonClassName}
               >
                 <Zap className="h-4 w-4" />
-                {settings.popupButtonText || "Lihat Detail"}
+                <span className="truncate">{settings.popupButtonText || "Lihat Detail"}</span>
               </a>
             ) : settings.popupButtonUrl ? (
               <Link
@@ -106,7 +106,7 @@ export default function SitePopup() {
                 className={buttonClassName}
               >
                 <Zap className="h-4 w-4" />
-                {settings.popupButtonText || "Lihat Detail"}
+                <span className="truncate">{settings.popupButtonText || "Lihat Detail"}</span>
               </Link>
             ) : null}
             <button

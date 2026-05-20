@@ -57,11 +57,11 @@ export default function ToolsPromoPopup() {
   };
   const isExternalButton = /^https?:\/\//i.test(settings.toolsPopupButtonUrl);
   const buttonClassName =
-    "inline-flex items-center justify-center gap-2 rounded-lg bg-[#ff003c] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#b30029]";
+    "inline-flex min-w-0 items-center justify-center gap-2 rounded-lg bg-[#ff003c] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#b30029]";
 
   return (
-    <div className="fixed inset-0 z-[78] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-md overflow-hidden rounded-xl border border-[#00f0ff]/25 bg-[#05090d] p-6 shadow-[0_30px_100px_rgba(0,0,0,0.65),0_0_70px_rgba(0,240,255,0.14)]">
+    <div className="fixed inset-0 z-[78] flex items-center justify-center overflow-x-hidden bg-black/70 px-4 backdrop-blur-sm">
+      <div className="relative w-full max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-[#00f0ff]/25 bg-[#05090d] p-5 shadow-[0_30px_100px_rgba(0,0,0,0.65),0_0_70px_rgba(0,240,255,0.14)] sm:max-w-md sm:p-6">
         <div
           className="absolute inset-0 opacity-[0.12]"
           style={{
@@ -79,7 +79,7 @@ export default function ToolsPromoPopup() {
           <X className="h-4 w-4" />
         </button>
 
-        <div className="relative">
+        <div className="relative min-w-0">
           <BrandLogo compact className="mb-5" imageClassName="h-14" />
           {settings.toolsPopupImage ? (
             <div className="mb-5 overflow-hidden rounded-lg border border-white/10 bg-black/30">
@@ -96,22 +96,22 @@ export default function ToolsPromoPopup() {
             <Sparkles className="h-4 w-4" />
             ISIKUY TOOLS
           </p>
-          <h2 className="font-display text-3xl font-bold leading-tight text-white">
+          <h2 className="break-words font-display text-3xl font-bold leading-tight text-white">
             {settings.toolsPopupTitle}
           </h2>
-          <p className="mt-3 text-sm leading-relaxed text-white/60">
+          <p className="mt-3 break-words text-sm leading-relaxed text-white/60">
             {settings.toolsPopupMessage}
           </p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-6 grid gap-3 sm:flex sm:flex-row">
             {settings.toolsPopupButtonUrl && isExternalButton ? (
               <a href={settings.toolsPopupButtonUrl} onClick={dismiss} className={buttonClassName}>
                 <Wand2 className="h-4 w-4" />
-                {settings.toolsPopupButtonText || "Buka Tools"}
+                <span className="truncate">{settings.toolsPopupButtonText || "Buka Tools"}</span>
               </a>
             ) : settings.toolsPopupButtonUrl ? (
               <Link to={settings.toolsPopupButtonUrl} onClick={dismiss} className={buttonClassName}>
                 <Wand2 className="h-4 w-4" />
-                {settings.toolsPopupButtonText || "Buka Tools"}
+                <span className="truncate">{settings.toolsPopupButtonText || "Buka Tools"}</span>
               </Link>
             ) : null}
             <button
