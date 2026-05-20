@@ -1,7 +1,20 @@
 import { env } from "./env";
 
+function ceilToIncrement(amount: number, increment: number) {
+  return Math.ceil(amount / increment) * increment;
+}
+
+function tieredMarkupRule(price: number) {
+  if (price < 2_000) return { percent: 2, rounding: 25 };
+  if (price < 5_000) return { percent: 2, rounding: 50 };
+  if (price < 50_000) return { percent: 2, rounding: 100 };
+  return { percent: 1.5, rounding: 100 };
+}
+
 export function priceWithMarkup(price: number, markupPercent = env.productMarkupPercent) {
-  return Math.ceil((price * (1 + markupPercent / 100)) / 100) * 100;
+  const rule = tieredMarkupRule(price);
+  const percent = markupPercent ?? rule.percent;
+  return ceilToIncrement(price * (1 + percent / 100), rule.rounding);
 }
 
 export function parseMoney(value: string | number | null | undefined) {

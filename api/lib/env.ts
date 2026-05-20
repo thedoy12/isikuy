@@ -15,6 +15,13 @@ function numberEnv(name: string, fallback: number): number {
   return Number.isFinite(value) ? value : fallback;
 }
 
+function optionalNumberEnv(name: string): number | undefined {
+  const raw = process.env[name];
+  if (!raw) return undefined;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : undefined;
+}
+
 function listEnv(name: string, fallback: string[]): string[] {
   const raw = process.env[name];
   if (!raw) return fallback;
@@ -50,6 +57,6 @@ export const env = {
     "voucher",
     "pln",
   ]),
-  productMarkupPercent: numberEnv("PRODUCT_MARKUP_PERCENT", 3),
+  productMarkupPercent: optionalNumberEnv("PRODUCT_MARKUP_PERCENT"),
   checkoutTaxPercent: numberEnv("CHECKOUT_TAX_PERCENT", 0),
 };
