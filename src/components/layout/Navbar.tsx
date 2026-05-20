@@ -162,10 +162,10 @@ export default function Navbar() {
                 </Link>
                 <Link
                   to="/login"
-                  className="flex items-center gap-2 bg-gradient-to-r from-[#ff003c] to-[#b30029] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                  className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-[#ff003c] to-[#b30029] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
                 >
                   <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">Login</span>
+                  <span>Login</span>
                 </Link>
               </div>
             )}
