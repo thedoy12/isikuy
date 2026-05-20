@@ -105,6 +105,8 @@
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
   .site-bg {
+    position: relative;
+    isolation: isolate;
     background-color: #030305;
     background-image:
       linear-gradient(rgba(255, 45, 77, 0.055) 1px, transparent 1px),
@@ -114,13 +116,68 @@
     background-size: 74px 74px, 74px 74px, 100% 100%, 100% 100%;
     background-attachment: fixed;
   }
+  .site-bg > * {
+    position: relative;
+    z-index: 1;
+  }
+  .site-bg::before,
+  .site-bg::after {
+    content: "";
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+  }
+  .site-bg::before {
+    opacity: 0.42;
+    background-image:
+      radial-gradient(circle at 12% 28%, rgba(255, 255, 255, 0.55) 0 1px, transparent 1.8px),
+      radial-gradient(circle at 32% 64%, rgba(0, 240, 255, 0.5) 0 1px, transparent 1.8px),
+      radial-gradient(circle at 58% 18%, rgba(255, 73, 103, 0.5) 0 1px, transparent 1.8px),
+      radial-gradient(circle at 76% 72%, rgba(255, 255, 255, 0.42) 0 1px, transparent 1.8px),
+      radial-gradient(circle at 88% 36%, rgba(0, 240, 255, 0.45) 0 1px, transparent 1.8px);
+    background-size: 360px 360px, 420px 420px, 510px 510px, 460px 460px, 560px 560px;
+    animation: star-drift 38s linear infinite;
+  }
+  .site-bg::after {
+    opacity: 0.72;
+    background-image:
+      linear-gradient(115deg, transparent 0 45%, rgba(0, 240, 255, 0.9) 49%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 73, 103, 0.7) 51%, transparent 56%),
+      linear-gradient(115deg, transparent 0 46%, rgba(255, 73, 103, 0.8) 49%, rgba(255, 255, 255, 0.7) 50%, rgba(0, 240, 255, 0.75) 51%, transparent 55%),
+      linear-gradient(115deg, transparent 0 45%, rgba(0, 240, 255, 0.55) 49%, rgba(255, 255, 255, 0.7) 50%, rgba(255, 73, 103, 0.5) 51%, transparent 56%);
+    background-repeat: no-repeat;
+    background-size: 260px 2px, 190px 2px, 230px 2px;
+    background-position: -28% 18%, -36% 56%, -24% 84%;
+    filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.28)) drop-shadow(0 0 16px rgba(255, 0, 60, 0.2));
+    animation: shooting-stars 9s linear infinite;
+  }
   .site-bg-soft {
+    position: relative;
+    isolation: isolate;
     background-color: #030305;
     background-image:
       linear-gradient(rgba(255, 45, 77, 0.045) 1px, transparent 1px),
       linear-gradient(90deg, rgba(0, 240, 255, 0.028) 1px, transparent 1px),
       repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 48px);
     background-size: 78px 78px, 78px 78px, 100% 100%;
+  }
+  .site-bg-soft > * {
+    position: relative;
+    z-index: 1;
+  }
+  .site-bg-soft::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.28;
+    background-image:
+      radial-gradient(circle at 18% 40%, rgba(255, 255, 255, 0.45) 0 1px, transparent 1.8px),
+      radial-gradient(circle at 66% 22%, rgba(0, 240, 255, 0.42) 0 1px, transparent 1.8px),
+      radial-gradient(circle at 82% 70%, rgba(255, 73, 103, 0.42) 0 1px, transparent 1.8px);
+    background-size: 340px 340px, 430px 430px, 520px 520px;
+    animation: star-drift 44s linear infinite;
   }
   .glow-crimson {
     box-shadow: 0 0 20px rgba(255, 0, 60, 0.3), 0 0 60px rgba(255, 0, 60, 0.1);
@@ -200,6 +257,45 @@
     transform: translateY(0) rotate(0.5deg) scale(1.012);
   }
 }
+@keyframes star-drift {
+  0% {
+    background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
+  }
+  100% {
+    background-position: 360px 360px, -420px 420px, 510px -510px, -460px -460px, 560px 560px;
+  }
+}
+@keyframes shooting-stars {
+  0% {
+    background-position: -32% 18%, -42% 56%, -28% 84%;
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.72;
+  }
+  31% {
+    opacity: 0.72;
+  }
+  42% {
+    background-position: 132% 58%, 118% 96%, 126% 124%;
+    opacity: 0;
+  }
+  57% {
+    background-position: -38% 12%, -30% 48%, -44% 78%;
+    opacity: 0;
+  }
+  63% {
+    opacity: 0.62;
+  }
+  92% {
+    background-position: 128% 52%, 138% 90%, 118% 118%;
+    opacity: 0.62;
+  }
+  100% {
+    background-position: 128% 52%, 138% 90%, 118% 118%;
+    opacity: 0;
+  }
+}
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
@@ -231,7 +327,10 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-mascot-float,
   .animate-mascot-glow,
-  .animate-hero-mascot {
+  .animate-hero-mascot,
+  .site-bg::before,
+  .site-bg::after,
+  .site-bg-soft::before {
     animation: none;
   }
 }
