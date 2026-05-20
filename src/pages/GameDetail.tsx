@@ -779,6 +779,13 @@ export default function GameDetail() {
                   </div>
                 )}
 
+                <div className="flex items-start gap-2 rounded-xl border border-[#ffb800]/20 bg-[#ffb800]/10 px-3 py-3 text-xs leading-relaxed text-[#ffe0a3]">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#ffb800]" />
+                  <span>
+                    Pastikan ID akun sudah benar. Kami tidak bertanggung jawab atas kesalahan input ID.
+                  </span>
+                </div>
+
                 <div className="flex items-center gap-2 text-xs text-white/30">
                   <Shield className="w-3 h-3" />
                   <span>Data Anda terlindungi dengan enkripsi SSL</span>
