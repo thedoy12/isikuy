@@ -635,12 +635,18 @@ export const transactionRouter = createRouter({
           createdAt: transactions.createdAt,
           paidAt: transactions.paidAt,
           completedAt: transactions.completedAt,
+          providerResponse: transactions.providerResponse,
         })
         .from(transactions)
         .where(eq(transactions.invoiceNumber, input.invoiceNumber))
         .limit(1);
 
-      return transaction || null;
+      if (!transaction) return null;
+      const { providerResponse, ...safeTransaction } = transaction;
+      return {
+        ...safeTransaction,
+        issue: getTransactionIssue(providerResponse),
+      };
     }),
 
   cancel: authedQuery

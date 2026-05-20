@@ -193,7 +193,13 @@ export default function GameDetail() {
 
   const { data: txStatus } = trpc.transaction.checkStatus.useQuery(
     { invoiceNumber },
-    { enabled: !!invoiceNumber && step === "payment", refetchInterval: 3000 }
+    {
+      enabled: !!invoiceNumber && step === "payment",
+      refetchInterval: (query) => {
+        const data = query.state.data;
+        return data && ["pending", "processing"].includes(data.status) ? 3000 : false;
+      },
+    }
   );
   const payableAmount =
     paymentDetails?.amountTotal ?? (txStatus?.totalAmount ? parseFloat(txStatus.totalAmount) : 0);
@@ -207,6 +213,9 @@ export default function GameDetail() {
   );
   const orderIsProcessing =
     txStatus?.paymentStatus === "paid" && txStatus.status === "processing";
+  const paymentIsPaid = txStatus?.paymentStatus === "paid";
+  const orderFailedAfterPayment = paymentIsPaid && txStatus?.status === "failed";
+  const showPaymentQr = !paymentIsPaid;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -319,30 +328,59 @@ export default function GameDetail() {
           <div className="max-w-lg mx-auto px-4">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-full bg-[#ff003c]/10 flex items-center justify-center mx-auto mb-4 animate-pulse-glow">
-                <Clock className="w-8 h-8 text-[#ff003c]" />
+              <div
+                className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${
+                  orderFailedAfterPayment
+                    ? "bg-[#ff003c]/10 text-[#ff4967]"
+                    : orderIsProcessing
+                      ? "bg-[#ffb800]/10 text-[#ffb800]"
+                      : "bg-[#ff003c]/10 text-[#ff003c]"
+                }`}
+              >
+                {orderFailedAfterPayment ? (
+                  <AlertCircle className="h-8 w-8" />
+                ) : orderIsProcessing ? (
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                ) : (
+                  <Clock className="h-8 w-8" />
+                )}
               </div>
               <h2 className="font-display text-2xl font-bold text-white mb-1">
-                {orderIsProcessing ? "Pesanan Diproses" : "Menunggu Pembayaran"}
+                {orderFailedAfterPayment
+                  ? "Pesanan Gagal"
+                  : orderIsProcessing
+                    ? "Pesanan Diproses"
+                    : "Menunggu Pembayaran"}
               </h2>
               <p className="text-sm text-white/50">
-                {orderIsProcessing
+                {orderFailedAfterPayment
+                  ? "Pembayaran berhasil, tetapi pesanan gagal diproses"
+                  : orderIsProcessing
                   ? "Pembayaran sudah diterima, produk sedang dikirim"
                   : "Selesaikan pembayaran sebelum waktu habis"}
               </p>
             </div>
 
             {/* Timer */}
-            <div className="glass rounded-2xl p-6 mb-6 text-center">
-              <p className="text-xs text-white/40 mb-2">Waktu Tersisa</p>
-              <p
-                className={`font-display text-4xl font-bold ${
-                  timeLeft < 300 ? "text-[#ff003c]" : "text-white"
-                }`}
-              >
-                {formatTime(timeLeft)}
-              </p>
-            </div>
+            {showPaymentQr ? (
+              <div className="glass rounded-2xl p-6 mb-6 text-center">
+                <p className="text-xs text-white/40 mb-2">Waktu Tersisa</p>
+                <p
+                  className={`font-display text-4xl font-bold ${
+                    timeLeft < 300 ? "text-[#ff003c]" : "text-white"
+                  }`}
+                >
+                  {formatTime(timeLeft)}
+                </p>
+              </div>
+            ) : (
+              <div className="glass rounded-2xl p-6 mb-6 text-center">
+                <p className="text-xs text-white/40 mb-2">Status Pembayaran</p>
+                <p className="font-display text-2xl font-bold text-[#0aff00]">
+                  QRIS Sudah Dibayar
+                </p>
+              </div>
+            )}
 
             {/* Invoice */}
             <div className="glass rounded-2xl p-6 mb-6">
@@ -415,14 +453,46 @@ export default function GameDetail() {
               </div>
             </div>
 
+            {orderFailedAfterPayment && (
+              <div className="mb-6 rounded-2xl border border-[#ffb800]/25 bg-[#2a1d05]/45 p-4 text-sm text-[#ffe5a3]">
+                <div className="flex gap-3">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#ffb800]" />
+                  <div>
+                    <p className="font-semibold text-white">Pembayaran berhasil, pesanan gagal</p>
+                    <p className="mt-1 text-white/60">
+                      {txStatus?.issue ||
+                        "Pesanan gagal diproses oleh provider. Silakan hubungi kami dengan nomor invoice ini."}
+                    </p>
+                    <Link
+                      to="/kontak"
+                      className="mt-3 inline-flex rounded-xl border border-[#ffb800]/30 bg-[#ffb800]/10 px-4 py-2 text-xs font-semibold text-[#ffb800] hover:bg-[#ffb800]/15"
+                    >
+                      Hubungi kami
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* QRIS Placeholder */}
             <div className="glass rounded-2xl p-6 mb-6 text-center">
-              <p className="text-xs text-white/40 mb-2">Total yang harus dibayar</p>
-              <p className="font-display text-4xl font-bold text-white mb-5">
-                {payableAmount ? formatRupiah(payableAmount) : "-"}
-              </p>
+              {showPaymentQr ? (
+                <>
+                  <p className="text-xs text-white/40 mb-2">Total yang harus dibayar</p>
+                  <p className="font-display text-4xl font-bold text-white mb-5">
+                    {payableAmount ? formatRupiah(payableAmount) : "-"}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-white/40 mb-2">Status Pesanan</p>
+                  <p className={orderFailedAfterPayment ? "font-display text-2xl font-bold text-[#ff4967]" : "font-display text-2xl font-bold text-[#ffb800]"}>
+                    {orderFailedAfterPayment ? "Pesanan Gagal" : "Pesanan Sedang Diproses"}
+                  </p>
+                </>
+              )}
 
-              {!showQris && (
+              {showPaymentQr && !showQris && (
                 <button
                   type="button"
                   onClick={() => setShowQris(true)}
@@ -435,12 +505,12 @@ export default function GameDetail() {
 
               <div
                 className={`overflow-hidden transition-all duration-700 ease-out ${
-                  showQris ? "mt-5 max-h-[440px] opacity-100" : "max-h-0 opacity-0"
+                  showPaymentQr && showQris ? "mt-5 max-h-[440px] opacity-100" : "max-h-0 opacity-0"
                 }`}
               >
                 <div
                   className={`origin-top transition-transform duration-700 ease-out ${
-                    showQris ? "translate-y-0 scale-y-100" : "-translate-y-4 scale-y-0"
+                    showPaymentQr && showQris ? "translate-y-0 scale-y-100" : "-translate-y-4 scale-y-0"
                   }`}
                 >
                   <p className="text-xs text-white/40 mb-4">
@@ -483,34 +553,48 @@ export default function GameDetail() {
             </div>
 
             {/* Status / dev simulation button */}
-            <button
-              onClick={handlePayNow}
-              disabled={processPayment.isPending || (!paymentDetails && !import.meta.env.DEV)}
-              className="w-full py-4 bg-gradient-to-r from-[#00f0ff] to-[#00b8c4] text-black font-semibold rounded-xl hover:shadow-lg hover:shadow-[#00f0ff]/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {processPayment.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <CheckCircle2 className="w-5 h-5" />
-              )}
-              {paymentDetails
-                ? "Cek Status Pesanan"
-                : import.meta.env.DEV
-                  ? "Simulasikan Pembayaran"
-                  : "Menunggu Callback Pembayaran"}
-            </button>
+            {orderFailedAfterPayment ? (
+              <Link
+                to="/kontak"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ffb800] to-[#ff7a00] py-4 font-semibold text-black transition-all hover:shadow-lg hover:shadow-[#ffb800]/20"
+              >
+                <AlertCircle className="h-5 w-5" />
+                Hubungi kami
+              </Link>
+            ) : (
+              <button
+                onClick={handlePayNow}
+                disabled={processPayment.isPending || (!paymentDetails && !import.meta.env.DEV)}
+                className="w-full py-4 bg-gradient-to-r from-[#00f0ff] to-[#00b8c4] text-black font-semibold rounded-xl hover:shadow-lg hover:shadow-[#00f0ff]/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {processPayment.isPending ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-5 h-5" />
+                )}
+                {orderIsProcessing
+                  ? "Cek Status Pesanan"
+                  : paymentDetails
+                    ? "Cek Status Pesanan"
+                    : import.meta.env.DEV
+                      ? "Simulasikan Pembayaran"
+                      : "Menunggu Callback Pembayaran"}
+              </button>
+            )}
 
-            <button
-              onClick={() => {
-                setStep("form");
-                setInvoiceNumber("");
-                setPaymentDetails(null);
-                setShowQris(false);
-              }}
-              className="w-full py-3 mt-3 text-sm text-white/40 hover:text-white transition-colors"
-            >
-              Batal
-            </button>
+            {!paymentIsPaid && (
+              <button
+                onClick={() => {
+                  setStep("form");
+                  setInvoiceNumber("");
+                  setPaymentDetails(null);
+                  setShowQris(false);
+                }}
+                className="w-full py-3 mt-3 text-sm text-white/40 hover:text-white transition-colors"
+              >
+                Batal
+              </button>
+            )}
           </div>
         </div>
         <Footer />

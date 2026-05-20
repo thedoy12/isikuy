@@ -114,8 +114,16 @@ export default function PaymentPage() {
                     <p className="font-semibold text-white">Butuh pengecekan admin</p>
                     <p className="mt-1 text-white/60">
                       {transaction.issue ||
-                        "Pembayaran sudah masuk, tetapi status order belum berhasil. Simpan invoice ini untuk bantuan admin."}
+                        "Pembayaran sudah masuk, tetapi pesanan gagal diproses. Simpan invoice ini untuk bantuan admin."}
                     </p>
+                    {paidButFailed && (
+                      <Link
+                        to="/kontak"
+                        className="mt-3 inline-flex rounded-xl border border-[#ffb800]/30 bg-[#ffb800]/10 px-4 py-2 text-xs font-semibold text-[#ffb800] hover:bg-[#ffb800]/15"
+                      >
+                        Hubungi kami
+                      </Link>
+                    )}
                   </div>
                 </div>
               </section>
@@ -166,7 +174,11 @@ export default function PaymentPage() {
                   <div className="flex min-h-52 flex-col items-center justify-center">
                     <StatusIcon className={`mb-3 h-10 w-10 ${isSuccess ? "text-[#0aff00]" : isFailed ? "text-[#ff003c]" : "text-[#ffb800]"}`} />
                     <p className="text-sm text-white/55">
-                      {isPaid ? "QRIS sudah dibayar." : "Detail QRIS tidak tersedia."}
+                      {paidButFailed
+                        ? "QRIS sudah dibayar, pesanan gagal diproses."
+                        : isPaid
+                          ? "QRIS sudah dibayar."
+                          : "Detail QRIS tidak tersedia."}
                     </p>
                   </div>
                 )}
