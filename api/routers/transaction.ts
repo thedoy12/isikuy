@@ -154,6 +154,15 @@ function getPaymentDetails(raw: string | null) {
   };
 }
 
+function getTransactionIssue(raw: string | null) {
+  const state = parseProviderState(raw) as {
+    paymentHoldReason?: string;
+    orderSubmitError?: string;
+    voucherUsageError?: string;
+  };
+  return state.paymentHoldReason || state.orderSubmitError || state.voucherUsageError || null;
+}
+
 function productTransactionStatus(status: string) {
   const normalized = status.toLowerCase();
   if (["paid", "success", "settlement", "settled", "completed", "capture"].includes(normalized)) {
@@ -202,15 +211,34 @@ async function countVoucherUsageOnce(raw: string | null) {
   if (!voucher || voucher.usageCounted) return raw;
 
   const db = getDb();
-  await db
+  const now = new Date();
+  const counted = await db
     .update(vouchers)
     .set({ usageCount: sql`${vouchers.usageCount} + 1` })
-    .where(eq(vouchers.id, voucher.id));
+    .where(
+      and(
+        eq(vouchers.id, voucher.id),
+        eq(vouchers.isActive, true),
+        lte(vouchers.validFrom, now),
+        gte(vouchers.validUntil, now),
+        sql`${vouchers.usageCount} < ${vouchers.usageLimit}`,
+      ),
+    )
+    .returning({ id: vouchers.id });
 
   try {
+    const state = JSON.parse(raw || "{}");
+    if (counted.length === 0) {
+      return JSON.stringify({
+        ...state,
+        voucherUsageError: "Voucher tidak dihitung karena sudah tidak valid atau limitnya sudah habis saat order selesai.",
+      });
+    }
+
     return JSON.stringify({
-      ...JSON.parse(raw || "{}"),
+      ...state,
       voucher: { ...voucher, usageCounted: true },
+      voucherUsageError: undefined,
     });
   } catch {
     return raw;
@@ -258,7 +286,6 @@ async function syncFlowixDepositPayment(invoiceNumber: string) {
     depositSyncedAt: new Date().toISOString(),
     paymentHoldReason: undefined,
   });
-  providerResponse = await countVoucherUsageOnce(providerResponse) ?? providerResponse;
 
   let nextStatus: "processing" | "success" | "failed" | "cancelled" | "refunded" = "processing";
   let completedAt: Date | undefined;
@@ -276,6 +303,9 @@ async function syncFlowixDepositPayment(invoiceNumber: string) {
       productOrder,
       orderSubmitError: undefined,
     });
+    if (nextStatus === "success") {
+      providerResponse = await countVoucherUsageOnce(providerResponse) ?? providerResponse;
+    }
   } catch (error) {
     nextStatus = "failed";
     providerResponse = stringifyProviderState(providerResponse, {
@@ -330,12 +360,16 @@ async function syncFlowixProductOrderStatus(invoiceNumber: string) {
     productOrder,
     productSyncedAt: new Date().toISOString(),
   });
+  const finalProviderResponse =
+    nextStatus === "success"
+      ? await countVoucherUsageOnce(providerResponse) ?? providerResponse
+      : providerResponse;
 
   await db
     .update(transactions)
     .set({
       status: nextStatus,
-      providerResponse,
+      providerResponse: finalProviderResponse,
       ...(nextStatus === "success" ? { completedAt: new Date() } : {}),
     })
     .where(eq(transactions.id, transaction.id));
@@ -531,7 +565,14 @@ export const transactionRouter = createRouter({
         .limit(1);
 
       const { providerResponse, ...safeTransaction } = transaction;
-      return { ...safeTransaction, game, product, method, payment: getPaymentDetails(providerResponse) };
+      return {
+        ...safeTransaction,
+        game,
+        product,
+        method,
+        payment: getPaymentDetails(providerResponse),
+        issue: getTransactionIssue(providerResponse),
+      };
     }),
 
   myHistory: authedQuery.query(async ({ ctx }) => {
@@ -553,6 +594,7 @@ export const transactionRouter = createRouter({
         gameCover: games.coverImage,
         productName: products.name,
         providerProductName: transactions.providerProductName,
+        providerResponse: transactions.providerResponse,
         nominalAmount: products.nominalAmount,
         methodName: paymentMethods.name,
       })
@@ -562,7 +604,13 @@ export const transactionRouter = createRouter({
       .leftJoin(paymentMethods, eq(transactions.paymentMethodId, paymentMethods.id))
       .where(eq(transactions.userId, ctx.user.id))
       .orderBy(desc(transactions.createdAt))
-      .limit(50);
+      .limit(50)
+      .then((items) =>
+        items.map(({ providerResponse, ...item }) => ({
+          ...item,
+          issue: getTransactionIssue(providerResponse),
+        })),
+      );
   }),
 
   checkStatus: publicQuery
@@ -638,32 +686,28 @@ export const transactionRouter = createRouter({
       }
 
       const db = getDb();
-      const [transaction] = await db
-        .select({
-          id: transactions.id,
-          providerResponse: transactions.providerResponse,
-        })
-        .from(transactions)
-        .where(eq(transactions.invoiceNumber, input.invoiceNumber))
-        .limit(1);
-
-      const providerResponse = await countVoucherUsageOnce(transaction?.providerResponse ?? null);
       await db
         .update(transactions)
         .set({
           status: "processing",
           paymentStatus: "paid",
           paidAt: new Date(),
-          ...(providerResponse ? { providerResponse } : {}),
         })
         .where(eq(transactions.invoiceNumber, input.invoiceNumber));
 
       setTimeout(async () => {
+        const [latest] = await db
+          .select({ providerResponse: transactions.providerResponse })
+          .from(transactions)
+          .where(eq(transactions.invoiceNumber, input.invoiceNumber))
+          .limit(1);
+        const providerResponse = await countVoucherUsageOnce(latest?.providerResponse ?? null);
         await db
           .update(transactions)
           .set({
             status: "success",
             completedAt: new Date(),
+            ...(providerResponse ? { providerResponse } : {}),
           })
           .where(eq(transactions.invoiceNumber, input.invoiceNumber));
       }, 3000);

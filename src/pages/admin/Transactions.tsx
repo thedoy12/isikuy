@@ -79,6 +79,17 @@ const statusConfig: Record<string, { icon: any; color: string; label: string }> 
   refunded: { icon: AlertCircle, color: "text-[#ffb800]", label: "REFUNDED" },
 };
 
+function displayStatus(tx: any) {
+  if (tx.paymentStatus === "paid" && tx.status === "failed") {
+    return {
+      icon: AlertCircle,
+      color: "text-[#ffb800]",
+      label: "PAID_NEEDS_HELP",
+    };
+  }
+  return statusConfig[tx.status] || { icon: AlertCircle, color: "text-white/30", label: tx.status };
+}
+
 export default function AdminTransactions() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -137,7 +148,7 @@ export default function AdminTransactions() {
           <div className="border border-[#222] bg-[#11131a]">
             <div className="grid gap-3 p-3 xl:hidden">
               {txList?.items.map((tx: any) => {
-                const sc = statusConfig[tx.status] || { icon: AlertCircle, color: "text-white/30", label: tx.status };
+                const sc = displayStatus(tx);
                 const StatusIcon = sc.icon;
                 return (
                   <article key={tx.id} className="border border-[#222] bg-[#0b0d14] p-4">
@@ -145,6 +156,9 @@ export default function AdminTransactions() {
                       <div className="min-w-0">
                         <p className="break-all text-[11px] text-[#00f0ff]">{tx.invoiceNumber}</p>
                         <p className="mt-1 text-sm font-bold text-white">{tx.gameName || "-"}</p>
+                        <p className="mt-1 text-[10px] uppercase tracking-wider text-white/35">
+                          PAYMENT: {tx.paymentStatus || "-"}
+                        </p>
                       </div>
                       <span className={`flex shrink-0 items-center gap-1 text-[10px] ${sc.color}`}>
                         <StatusIcon className="h-3 w-3" />
@@ -165,6 +179,11 @@ export default function AdminTransactions() {
                         <p className="mt-1 text-[#ff003c]">Rp{parseFloat(tx.totalAmount).toLocaleString()}</p>
                       </div>
                     </div>
+                    {tx.issue && (
+                      <div className="mt-3 border border-[#ffb800]/20 bg-[#ffb800]/5 p-3 text-[10px] leading-relaxed text-[#ffb800]">
+                        {tx.issue}
+                      </div>
+                    )}
                     {(tx.status === "pending" || tx.status === "processing") && (
                       <div className="mt-4 flex flex-wrap gap-2">
                         {tx.status === "pending" && (
@@ -201,12 +220,13 @@ export default function AdminTransactions() {
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">PLAYER</th>
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">AMOUNT</th>
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">STATUS</th>
+                  <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">PAYMENT</th>
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
                 {txList?.items.map((tx: any) => {
-                  const sc = statusConfig[tx.status] || { icon: AlertCircle, color: "text-white/30", label: tx.status };
+                  const sc = displayStatus(tx);
                   const StatusIcon = sc.icon;
                   return (
                     <tr key={tx.id} className="border-b border-[#222] hover:bg-white/[0.02]">
@@ -216,10 +236,20 @@ export default function AdminTransactions() {
                       <td className="px-4 py-3 text-[10px] text-white/50">{tx.playerId}</td>
                       <td className="px-4 py-3 text-xs text-[#ff003c]">Rp{parseFloat(tx.totalAmount).toLocaleString()}</td>
                       <td className="px-4 py-3">
-                        <span className={`flex items-center gap-1 text-[10px] ${sc.color}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {sc.label}
-                        </span>
+                        <div>
+                          <span className={`flex items-center gap-1 text-[10px] ${sc.color}`}>
+                            <StatusIcon className="w-3 h-3" />
+                            {sc.label}
+                          </span>
+                          {tx.issue && (
+                            <p className="mt-1 max-w-64 text-[9px] leading-relaxed text-[#ffb800]/80">
+                              {tx.issue}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-[10px] uppercase text-white/45">
+                        {tx.paymentStatus || "-"}
                       </td>
                       <td className="px-4 py-3">
                         {tx.status === "pending" && (

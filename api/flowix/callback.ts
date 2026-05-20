@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { eq, or, sql } from "drizzle-orm";
+import { and, eq, gte, lte, or, sql } from "drizzle-orm";
 import { env } from "../lib/env";
 import { getDb } from "../queries/connection";
 import { activityLogs, transactions, vouchers } from "@db/schema";
@@ -39,6 +39,7 @@ type ProviderState = {
   productCallback?: unknown;
   orderSubmitError?: string;
   paymentHoldReason?: string;
+  voucherUsageError?: string;
   lastCallback?: unknown;
 };
 
@@ -215,10 +216,27 @@ function stringifyProviderState(
 async function countVoucherUsageOnce(state: ProviderState) {
   if (!state.voucher || state.voucher.usageCounted) return state;
 
-  await getDb()
+  const now = new Date();
+  const counted = await getDb()
     .update(vouchers)
     .set({ usageCount: sql`${vouchers.usageCount} + 1` })
-    .where(eq(vouchers.id, state.voucher.id));
+    .where(
+      and(
+        eq(vouchers.id, state.voucher.id),
+        eq(vouchers.isActive, true),
+        lte(vouchers.validFrom, now),
+        gte(vouchers.validUntil, now),
+        sql`${vouchers.usageCount} < ${vouchers.usageLimit}`,
+      ),
+    )
+    .returning({ id: vouchers.id });
+
+  if (counted.length === 0) {
+    return {
+      ...state,
+      voucherUsageError: "Voucher tidak dihitung karena sudah tidak valid atau limitnya sudah habis saat order selesai.",
+    };
+  }
 
   return {
     ...state,
@@ -226,6 +244,7 @@ async function countVoucherUsageOnce(state: ProviderState) {
       ...state.voucher,
       usageCounted: true,
     },
+    voucherUsageError: undefined,
   };
 }
 
@@ -519,7 +538,7 @@ export async function handleFlowixCallback(c: Context) {
   }
 
   try {
-    if (!isProductCallback && status.paid && receivedAmountIsEnough && !paymentAlreadyPaid) {
+    if (nextPaymentStatus === "paid" && nextStatus === "success") {
       const countedProviderState = await countVoucherUsageOnce({
         ...parseProviderState(providerResponse),
         voucher: previousProviderState.voucher,

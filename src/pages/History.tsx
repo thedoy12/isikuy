@@ -54,6 +54,21 @@ export default function HistoryPage() {
     refunded: { icon: AlertCircle, color: "text-[#ffb800]", label: "Refunded" },
   };
 
+  const displayStatus = (tx: any) => {
+    if (tx.paymentStatus === "paid" && tx.status === "failed") {
+      return {
+        icon: AlertCircle,
+        color: "text-[#ffb800]",
+        label: "Paid - Butuh Bantuan",
+      };
+    }
+    return statusConfig[tx.status] || {
+      icon: AlertCircle,
+      color: "text-white/30",
+      label: tx.status,
+    };
+  };
+
   return (
     <div className="min-h-[100dvh] bg-[#030305]">
       <Navbar />
@@ -120,10 +135,10 @@ export default function HistoryPage() {
                   </span>
                   <span
                     className={`text-xs font-medium ${
-                      statusConfig[searchedTx.status]?.color || "text-white/50"
+                      displayStatus(searchedTx).color || "text-white/50"
                     }`}
                   >
-                    {statusConfig[searchedTx.status]?.label || searchedTx.status}
+                    {displayStatus(searchedTx).label || searchedTx.status}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
@@ -163,11 +178,7 @@ export default function HistoryPage() {
               ) : myHistory && myHistory.length > 0 ? (
                 <div className="space-y-3">
                   {myHistory.map((tx: any) => {
-                    const status = statusConfig[tx.status] || {
-                      icon: AlertCircle,
-                      color: "text-white/30",
-                      label: tx.status,
-                    };
+                    const status = displayStatus(tx);
                     const StatusIcon = status.icon;
 
                     return (
@@ -199,6 +210,11 @@ export default function HistoryPage() {
                             <p className="font-terminal text-[10px] text-white/20 mt-1">
                               {tx.invoiceNumber}
                             </p>
+                            {tx.issue && (
+                              <p className="mt-1 line-clamp-2 text-[10px] text-[#ffb800]/80">
+                                {tx.issue}
+                              </p>
+                            )}
                           </div>
                         </div>
 

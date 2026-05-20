@@ -50,6 +50,7 @@ export default function PaymentPage() {
   const isPaid = paymentStatus === "paid";
   const isSuccess = status === "success";
   const isFailed = ["failed", "cancelled", "refunded"].includes(status);
+  const paidButFailed = isPaid && status === "failed";
   const StatusIcon = isSuccess ? CheckCircle2 : isFailed ? XCircle : isPaid ? Loader2 : Clock;
 
   return (
@@ -95,13 +96,30 @@ export default function PaymentPage() {
               <p className="mt-3 text-sm text-white/45">
                 {isSuccess
                   ? "Pesanan berhasil diproses."
-                  : isFailed
+                  : paidButFailed
+                    ? "Pembayaran sudah diterima, tetapi order gagal diproses. Admin akan bantu cek untuk proses ulang atau refund."
+                    : isFailed
                     ? "Transaksi tidak bisa dilanjutkan."
                     : isPaid
                       ? "Pembayaran sudah diterima, pesanan sedang diproses."
                       : "Selesaikan pembayaran QRIS sebelum waktu habis."}
               </p>
             </section>
+
+            {(transaction.issue || paidButFailed) && (
+              <section className="rounded-2xl border border-[#ffb800]/25 bg-[#2a1d05]/45 p-4 text-sm text-[#ffe5a3]">
+                <div className="flex gap-3">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#ffb800]" />
+                  <div>
+                    <p className="font-semibold text-white">Butuh pengecekan admin</p>
+                    <p className="mt-1 text-white/60">
+                      {transaction.issue ||
+                        "Pembayaran sudah masuk, tetapi status order belum berhasil. Simpan invoice ini untuk bantuan admin."}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
 
             <section className="grid gap-6 lg:grid-cols-[1fr_280px]">
               <div className="rounded-2xl border border-white/10 bg-[#11131a] p-6">

@@ -88,6 +88,21 @@ function transactionNetRevenue(row: {
   }
 }
 
+function transactionIssue(providerResponse: string | null) {
+  if (!providerResponse) return null;
+
+  try {
+    const state = JSON.parse(providerResponse) as {
+      paymentHoldReason?: string;
+      orderSubmitError?: string;
+      voucherUsageError?: string;
+    };
+    return state.paymentHoldReason || state.orderSubmitError || state.voucherUsageError || null;
+  } catch {
+    return null;
+  }
+}
+
 export const adminRouter = createRouter({
   settings: adminQuery.query(async () => {
     const credentials = await getAdminCredentials();
@@ -426,6 +441,7 @@ export const adminRouter = createRouter({
           createdAt: transactions.createdAt,
           paidAt: transactions.paidAt,
           completedAt: transactions.completedAt,
+          providerResponse: transactions.providerResponse,
           gameName: games.name,
           productName: products.name,
           methodName: paymentMethods.name,
@@ -439,7 +455,15 @@ export const adminRouter = createRouter({
         .limit(limit)
         .offset(offset);
 
-      return { items, total: totalRow.count, limit, offset };
+      return {
+        items: items.map(({ providerResponse, ...item }) => ({
+          ...item,
+          issue: transactionIssue(providerResponse),
+        })),
+        total: totalRow.count,
+        limit,
+        offset,
+      };
     }),
 
   updateTransaction: adminQuery
