@@ -926,7 +926,7 @@ export default function GameDetail() {
                           {method.name}
                         </p>
                         <p className="text-xs text-white/40">
-                          Tanpa biaya tambahan - scan dengan e-wallet atau mobile banking
+                          Scan dengan e-wallet atau mobile banking
                         </p>
                       </div>
                       {isSelected && (

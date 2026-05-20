@@ -559,10 +559,6 @@ function PaymentSection() {
                   QRIS
                 </div>
                 <div className="rounded-xl bg-white/[0.03] px-4 py-3">
-                  <span className="block text-white/80">Biaya</span>
-                  Tanpa biaya tambahan
-                </div>
-                <div className="rounded-xl bg-white/[0.03] px-4 py-3">
                   <span className="block text-white/80">Status</span>
                   Otomatis
                 </div>
