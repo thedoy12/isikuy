@@ -374,7 +374,7 @@ export default function ToolDetail() {
 
   if (!tool) {
     return (
-      <div className="min-h-[100dvh] bg-[#030305] text-white">
+      <div className="min-h-[100dvh] site-bg text-white">
         <Navbar />
         <div className="mx-auto max-w-3xl px-4 pt-32">
           <h1 className="font-display text-3xl font-bold">Tool tidak ditemukan</h1>
@@ -386,7 +386,7 @@ export default function ToolDetail() {
 
   if (status?.enabled) {
     return (
-      <div className="min-h-[100dvh] bg-[#030305] text-white">
+      <div className="min-h-[100dvh] site-bg text-white">
         <Navbar />
         <main className="flex min-h-[calc(100dvh-120px)] items-center justify-center px-4 pt-28">
           <section className="max-w-xl rounded-2xl border border-[#ffb800]/25 bg-[#211600]/45 p-7 text-center">
@@ -483,7 +483,7 @@ export default function ToolDetail() {
   const usageGuide = getToolUsageGuide(tool);
 
   return (
-    <div className="min-h-[100dvh] bg-[#030305] text-white">
+    <div className="min-h-[100dvh] site-bg text-white">
       <Navbar />
       <main className="relative overflow-hidden pt-28 pb-20">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,0,60,0.24),transparent_32%),radial-gradient(circle_at_82%_16%,rgba(0,240,255,0.12),transparent_28%)]" />

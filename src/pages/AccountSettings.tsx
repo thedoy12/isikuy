@@ -100,14 +100,14 @@ export default function AccountSettings() {
 
   if (isLoading || !user) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-[#030305]">
+      <div className="flex min-h-[100dvh] items-center justify-center site-bg">
         <Loader2 className="h-8 w-8 animate-spin text-[#ff003c]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-[100dvh] bg-[#030305] text-white">
+    <div className="min-h-[100dvh] site-bg text-white">
       <Navbar />
       <main className="mx-auto max-w-6xl px-4 pb-20 pt-28 sm:px-6 lg:px-8">
         <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-white/45 hover:text-white">

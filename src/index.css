@@ -104,6 +104,24 @@
     backdrop-filter: blur(40px);
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
+  .site-bg {
+    background-color: #030305;
+    background-image:
+      linear-gradient(rgba(255, 45, 77, 0.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 240, 255, 0.035) 1px, transparent 1px),
+      repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.024) 0 1px, transparent 1px 44px),
+      linear-gradient(180deg, rgba(255, 0, 60, 0.055), transparent 34rem);
+    background-size: 74px 74px, 74px 74px, 100% 100%, 100% 100%;
+    background-attachment: fixed;
+  }
+  .site-bg-soft {
+    background-color: #030305;
+    background-image:
+      linear-gradient(rgba(255, 45, 77, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 240, 255, 0.028) 1px, transparent 1px),
+      repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 48px);
+    background-size: 78px 78px, 78px 78px, 100% 100%;
+  }
   .glow-crimson {
     box-shadow: 0 0 20px rgba(255, 0, 60, 0.3), 0 0 60px rgba(255, 0, 60, 0.1);
   }

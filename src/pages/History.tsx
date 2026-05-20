@@ -70,7 +70,7 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#030305]">
+    <div className="min-h-[100dvh] site-bg">
       <Navbar />
 
       <div className="pt-28 pb-16">

@@ -174,7 +174,7 @@ export default function InfoPage() {
   }, [page, settings?.siteName]);
 
   return (
-    <div className="min-h-[100dvh] bg-[#050307]">
+    <div className="min-h-[100dvh] site-bg">
       <Navbar />
       <main className="relative overflow-hidden pt-28">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_8%,rgba(255,0,60,0.26),transparent_30%),radial-gradient(circle_at_82%_0%,rgba(0,240,255,0.08),transparent_24%)]" />

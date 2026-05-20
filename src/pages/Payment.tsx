@@ -54,7 +54,7 @@ export default function PaymentPage() {
   const StatusIcon = isSuccess ? CheckCircle2 : isFailed ? XCircle : isPaid ? Loader2 : Clock;
 
   return (
-    <div className="min-h-[100dvh] bg-[#030305] text-white">
+    <div className="min-h-[100dvh] site-bg text-white">
       <Navbar />
       <main className="mx-auto max-w-3xl px-4 pb-16 pt-28 sm:px-6">
         <Link to="/history" className="mb-6 inline-flex items-center gap-2 text-sm text-white/45 hover:text-white">

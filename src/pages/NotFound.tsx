@@ -4,7 +4,7 @@ import BrandLogo from "@/components/BrandLogo";
 
 export default function NotFound() {
   return (
-    <div className="min-h-[100dvh] bg-[#030305] flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-[100dvh] site-bg flex items-center justify-center relative overflow-hidden">
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#ff003c]/5 rounded-full blur-[150px]" />
 
       <div className="relative z-10 text-center max-w-md mx-4">

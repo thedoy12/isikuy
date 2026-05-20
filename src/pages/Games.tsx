@@ -74,7 +74,7 @@ export default function Games() {
     `https://placehold.co/600x800/09090b/ffffff?text=${encodeURIComponent(name)}`;
 
   return (
-    <div className="min-h-[100dvh] overflow-x-hidden bg-[#030305]">
+    <div className="min-h-[100dvh] overflow-x-hidden site-bg">
       <Navbar />
 
       {/* Hero Header */}

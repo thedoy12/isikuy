@@ -294,7 +294,7 @@ export default function GameDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[100dvh] bg-[#030305] flex items-center justify-center">
+      <div className="min-h-[100dvh] site-bg flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-[#ff003c] animate-spin" />
       </div>
     );
@@ -302,7 +302,7 @@ export default function GameDetail() {
 
   if (!game) {
     return (
-      <div className="min-h-[100dvh] bg-[#030305] flex items-center justify-center">
+      <div className="min-h-[100dvh] site-bg flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-[#ff003c] mx-auto mb-4" />
           <h2 className="font-display text-2xl font-bold text-white mb-2">
@@ -322,7 +322,7 @@ export default function GameDetail() {
   // ─── Payment Status Screen ───
   if (step === "payment" && invoiceNumber) {
     return (
-      <div className="min-h-[100dvh] bg-[#030305]">
+      <div className="min-h-[100dvh] site-bg">
         <Navbar />
         <div className="pt-28 pb-16">
           <div className="max-w-lg mx-auto px-4">
@@ -605,7 +605,7 @@ export default function GameDetail() {
   // ─── Success Screen ───
   if (step === "success") {
     return (
-      <div className="min-h-[100dvh] bg-[#030305]">
+      <div className="min-h-[100dvh] site-bg">
         <Navbar />
         <div className="pt-28 pb-16 flex items-center justify-center min-h-[60vh]">
           <div className="max-w-md mx-auto px-4 text-center">
@@ -670,7 +670,7 @@ export default function GameDetail() {
 
   // ─── Form Screen ───
   return (
-    <div className="min-h-[100dvh] bg-[#030305]">
+    <div className="min-h-[100dvh] site-bg">
       <Navbar />
 
       {/* Game Header */}

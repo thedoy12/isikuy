@@ -97,7 +97,7 @@ export default function Tools() {
   }, {});
 
   return (
-    <div className="min-h-[100dvh] overflow-x-hidden bg-[#030305] text-white">
+    <div className="min-h-[100dvh] overflow-x-hidden site-bg text-white">
       <Navbar />
       {status?.enabled ? (
         <main className="flex min-h-[calc(100dvh-120px)] items-center justify-center px-4 pt-28">

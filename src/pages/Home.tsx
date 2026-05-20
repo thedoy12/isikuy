@@ -342,7 +342,7 @@ function PopularSection() {
 
   return (
     <section className="relative py-24">
-      <div className="absolute inset-0 bg-[#030305]" />
+      <div className="absolute inset-0 site-bg-soft" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-10">
           <div>
@@ -481,7 +481,7 @@ function WhyChooseSection() {
 
   return (
     <section className="relative py-24">
-      <div className="absolute inset-0 bg-[#030305]" />
+      <div className="absolute inset-0 site-bg-soft" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
           <span className="text-xs font-medium text-[#ff003c] tracking-wider uppercase">
@@ -600,7 +600,7 @@ function TestimonialsSection() {
 
   return (
     <section className="relative py-24">
-      <div className="absolute inset-0 bg-[#030305]" />
+      <div className="absolute inset-0 site-bg-soft" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
           <span className="text-xs font-medium text-[#ffb800] tracking-wider uppercase">
@@ -728,7 +728,7 @@ function MarqueeSection() {
 /* ─── Home Page ─── */
 export default function Home() {
   return (
-    <div className="min-h-[100dvh] overflow-x-hidden bg-[#030305]">
+    <div className="min-h-[100dvh] overflow-x-hidden site-bg">
       <Navbar />
       <main>
         <HeroSection />

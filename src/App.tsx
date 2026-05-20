@@ -28,7 +28,7 @@ const AdminToolsMonitor = lazy(() => import('./pages/admin/ToolsMonitor'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 function PageFallback() {
-  return <div className="min-h-[100dvh] bg-[#030305]" />
+  return <div className="min-h-[100dvh] site-bg" />
 }
 
 export default function App() {

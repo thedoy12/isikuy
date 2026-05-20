@@ -47,7 +47,7 @@ export default function Register() {
   }
 
   return (
-    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden bg-[#030305] px-4 py-10">
+    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden site-bg px-4 py-10">
       <div className="absolute inset-0">
         <div className="absolute left-1/2 top-1/4 h-[620px] w-[620px] -translate-x-1/2 rounded-full bg-[#ff003c]/8 blur-[160px]" />
         <div className="absolute bottom-0 right-0 h-[420px] w-[420px] rounded-full bg-[#00f0ff]/5 blur-[150px]" />
