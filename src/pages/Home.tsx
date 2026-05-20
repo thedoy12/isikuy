@@ -480,31 +480,31 @@ function WhyChooseSection() {
   ];
 
   return (
-    <section className="relative py-24">
+    <section className="relative py-14 sm:py-20 lg:py-24">
       <div className="absolute inset-0 site-bg-soft" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
+        <div className="mb-8 text-center sm:mb-12 lg:mb-14">
           <span className="text-xs font-medium text-[#ff003c] tracking-wider uppercase">
             Keunggulan
           </span>
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-white mt-2">
+          <h2 className="mt-2 font-display text-2xl font-bold text-white sm:text-4xl">
             Kenapa Pilih ISIKUY?
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
           {features.map((f) => (
             <div
               key={f.title}
-              className="glass rounded-2xl p-6 group hover:border-[#ff003c]/30 transition-all duration-300"
+              className="glass group rounded-2xl p-4 transition-all duration-300 hover:border-[#ff003c]/30 sm:p-6"
             >
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ff003c]/20 to-[#ff003c]/5 flex items-center justify-center mb-4 group-hover:from-[#ff003c]/30 group-hover:to-[#ff003c]/10 transition-all">
-                <f.icon className="w-6 h-6 text-[#ff003c]" />
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff003c]/20 to-[#ff003c]/5 transition-all group-hover:from-[#ff003c]/30 group-hover:to-[#ff003c]/10 sm:mb-4 sm:h-12 sm:w-12">
+                <f.icon className="h-5 w-5 text-[#ff003c] sm:h-6 sm:w-6" />
               </div>
-              <h3 className="font-display text-lg font-semibold text-white mb-2">
+              <h3 className="mb-1 font-display text-base font-semibold leading-tight text-white sm:mb-2 sm:text-lg">
                 {f.title}
               </h3>
-              <p className="text-sm text-white/50 leading-relaxed">{f.desc}</p>
+              <p className="text-xs leading-relaxed text-white/50 sm:text-sm">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -599,41 +599,41 @@ function TestimonialsSection() {
   ];
 
   return (
-    <section className="relative py-24">
+    <section className="relative py-14 sm:py-20 lg:py-24">
       <div className="absolute inset-0 site-bg-soft" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
+        <div className="mb-8 text-center sm:mb-12 lg:mb-14">
           <span className="text-xs font-medium text-[#ffb800] tracking-wider uppercase">
             Testimoni
           </span>
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-white mt-2">
+          <h2 className="mt-2 font-display text-2xl font-bold text-white sm:text-4xl">
             Apa Kata Mereka?
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
           {testimonials.map((t) => (
-            <div key={t.name} className="glass rounded-2xl p-6">
-              <div className="flex items-center gap-1 mb-4">
+            <div key={t.name} className="glass min-w-[82%] snap-center rounded-2xl p-5 sm:min-w-[55%] sm:p-6 md:min-w-0">
+              <div className="mb-3 flex items-center gap-1 sm:mb-4">
                 {Array.from({ length: t.rating }).map((_, i) => (
                   <Star
                     key={i}
-                    className="w-4 h-4 text-[#ffb800] fill-[#ffb800]"
+                    className="h-4 w-4 fill-[#ffb800] text-[#ffb800]"
                   />
                 ))}
               </div>
-              <p className="text-sm text-white/70 leading-relaxed mb-5">
+              <p className="mb-5 text-sm leading-relaxed text-white/70">
                 &ldquo;{t.text}&rdquo;
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff003c] to-[#b30029] flex items-center justify-center">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ff003c] to-[#b30029]">
                   <span className="text-sm font-bold text-white">
                     {t.name[0]}
                   </span>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-white">{t.name}</p>
-                  <p className="text-xs text-white/40">{t.role}</p>
+                  <p className="truncate text-xs text-white/40">{t.role}</p>
                 </div>
               </div>
             </div>
