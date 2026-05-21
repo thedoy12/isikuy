@@ -81,7 +81,7 @@ function HeroSection() {
 
   return (
     <section className="relative min-h-[100dvh] overflow-hidden bg-[#050307]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(255,0,60,0.18),transparent_34%),linear-gradient(180deg,#050307_0%,#030305_100%)]" />
+      <div className="absolute inset-0 bg-[#050307]" />
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 lg:pt-40">
@@ -325,7 +325,7 @@ function PopularSection() {
 
   return (
     <section className="relative py-24">
-      <div className="absolute inset-0 site-bg-soft" />
+      <div className="absolute inset-0 bg-[#030305]" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-10">
           <div>
@@ -464,7 +464,7 @@ function WhyChooseSection() {
 
   return (
     <section className="relative py-14 sm:py-20 lg:py-24">
-      <div className="absolute inset-0 site-bg-soft" />
+      <div className="absolute inset-0 bg-[#030305]" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8 text-center sm:mb-12 lg:mb-14">
           <span className="text-xs font-medium text-[#ff003c] tracking-wider uppercase">
@@ -579,7 +579,7 @@ function TestimonialsSection() {
 
   return (
     <section className="relative py-14 sm:py-20 lg:py-24">
-      <div className="absolute inset-0 site-bg-soft" />
+      <div className="absolute inset-0 bg-[#030305]" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8 text-center sm:mb-12 lg:mb-14">
           <span className="text-xs font-medium text-[#ffb800] tracking-wider uppercase">
@@ -707,7 +707,7 @@ function MarqueeSection() {
 /* ─── Home Page ─── */
 export default function Home() {
   return (
-    <div className="min-h-[100dvh] overflow-x-hidden site-bg">
+    <div className="min-h-[100dvh] overflow-x-hidden bg-[#030305]">
       <Navbar />
       <main>
         <HeroSection />
