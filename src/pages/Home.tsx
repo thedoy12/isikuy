@@ -202,8 +202,8 @@ function HeroSection() {
             </div>
           </div>
 
-          <div className="relative hidden min-h-[520px] lg:block">
-            <div className="absolute inset-x-2 top-0 h-[500px] overflow-hidden rounded-[1.35rem] border border-[#ff4967]/20 bg-[#080407]/92 shadow-[0_24px_70px_rgba(0,0,0,0.5),0_0_44px_rgba(255,0,60,0.1)]">
+          <div className="hidden lg:block">
+            <div className="relative mx-2 mt-8 min-h-[520px] overflow-hidden rounded-[1.35rem] border border-[#ff4967]/20 bg-[#080407]/92 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.5),0_0_44px_rgba(255,0,60,0.1)]">
               <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_22%_8%,rgba(255,0,60,0.32),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(0,240,255,0.12),transparent_24%)]" />
               <img
                 src={optimizedImagePath("/aset/valorant.png")}
@@ -214,7 +214,7 @@ function HeroSection() {
               />
               <div className="absolute inset-y-0 right-0 w-[62%] bg-gradient-to-l from-[#050307]/30 via-[#050307]/76 to-[#050307]" />
               <div
-                className="absolute inset-0 opacity-[0.14]"
+                className="absolute inset-0 opacity-[0.1]"
                 style={{
                   backgroundImage:
                     "linear-gradient(rgba(255,55,86,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,55,86,0.42) 1px, transparent 1px)",
@@ -223,79 +223,80 @@ function HeroSection() {
               />
               <div className="absolute -right-16 top-28 h-64 w-64 rotate-45 border border-[#ff003c]/20" />
               <div className="absolute -right-8 top-36 h-44 w-44 rotate-45 border border-[#00f0ff]/10" />
-            </div>
-            <div className="absolute left-8 right-8 top-5 flex items-center justify-between rounded-xl border border-[#ff4967]/18 bg-black/70 px-4 py-3">
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-[#ff4967]">Live Catalog</p>
-                <p className="font-display text-xl font-bold text-white">Pilih produk favorit</p>
-              </div>
-              <span className="rounded-full border border-[#0aff00]/20 bg-[#0aff00]/10 px-3 py-1 text-xs font-semibold text-[#0aff00]">
-                Online
-              </span>
-            </div>
 
-            <div className="absolute left-8 right-8 top-24 grid h-[260px] grid-cols-[1.18fr_0.82fr] grid-rows-2 gap-4">
-              {featuredProducts.map((product) => (
-                <Link
-                  key={product.name}
-                  to="/games"
-                  className={`group relative overflow-hidden rounded-xl border border-[#ff4967]/25 bg-[#12060b] shadow-[0_12px_40px_rgba(0,0,0,0.34)] ${
-                    product.className || ""
-                  }`}
-                >
-                  <img
-                    src={optimizedImagePath(product.image)}
-                    alt={product.name}
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/18 to-transparent" />
-                  <div className="absolute inset-0 opacity-0 ring-1 ring-inset ring-[#ff4967]/60 transition-opacity group-hover:opacity-100" />
-                  <div className="absolute left-3 right-3 top-3 flex justify-end">
-                    <span className="rounded bg-[#ff003c]/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/80">
-                      {product.tag}
-                    </span>
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#ff6a82]">
-                      Featured
-                    </p>
-                    <p className="font-display text-xl font-semibold leading-tight text-white">
-                      {product.name}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            <div className="absolute bottom-8 left-8 right-8 overflow-hidden rounded-xl border border-[#ff4967]/22 bg-[#0d0509]/92 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <div className="absolute inset-y-0 right-0 w-1/2 bg-[linear-gradient(135deg,transparent_0%,rgba(255,0,60,0.18)_48%,transparent_49%)]" />
-              <div className="relative flex items-center justify-between gap-5">
+              <div className="relative z-10 flex items-center justify-between rounded-xl border border-[#ff4967]/18 bg-black/70 px-4 py-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-[#ff6a82]">
-                    Battle-ready checkout
-                  </p>
-                  <p className="mt-2 max-w-sm font-display text-xl font-bold leading-tight text-white">
-                    Top up cepat, katalog rapi, pembayaran otomatis.
-                  </p>
+                  <p className="text-[10px] uppercase tracking-wider text-[#ff4967]">Live Catalog</p>
+                  <p className="font-display text-xl font-bold text-white">Pilih produk favorit</p>
                 </div>
-                <div className="grid w-[300px] shrink-0 grid-cols-3 gap-2">
-                  {[
-                    { icon: Gamepad2, label: "60+ Game" },
-                    { icon: QrCode, label: "QRIS" },
-                    { icon: Zap, label: "Instant" },
-                  ].map((item) => (
-                    <div
-                      key={item.label}
-                      className="rounded-lg border border-white/10 bg-black/30 px-3 py-3 text-center"
-                    >
-                      <item.icon className="mx-auto mb-2 h-4 w-4 text-[#ff4967]" />
-                      <p className="text-[11px] font-semibold text-white/75">
-                        {item.label}
+                <span className="rounded-full border border-[#0aff00]/20 bg-[#0aff00]/10 px-3 py-1 text-xs font-semibold text-[#0aff00]">
+                  Online
+                </span>
+              </div>
+
+              <div className="relative z-10 mt-4 grid h-[260px] grid-cols-[1.18fr_0.82fr] grid-rows-2 gap-4">
+                {featuredProducts.map((product) => (
+                  <Link
+                    key={product.name}
+                    to="/games"
+                    className={`group relative overflow-hidden rounded-xl border border-[#ff4967]/25 bg-[#12060b] shadow-[0_12px_40px_rgba(0,0,0,0.34)] ${
+                      product.className || ""
+                    }`}
+                  >
+                    <img
+                      src={optimizedImagePath(product.image)}
+                      alt={product.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/18 to-transparent" />
+                    <div className="absolute inset-0 opacity-0 ring-1 ring-inset ring-[#ff4967]/60 transition-opacity group-hover:opacity-100" />
+                    <div className="absolute left-3 right-3 top-3 flex justify-end">
+                      <span className="rounded bg-[#ff003c]/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/80">
+                        {product.tag}
+                      </span>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-[#ff6a82]">
+                        Featured
+                      </p>
+                      <p className="font-display text-xl font-semibold leading-tight text-white">
+                        {product.name}
                       </p>
                     </div>
-                  ))}
+                  </Link>
+                ))}
+              </div>
+
+              <div className="relative z-10 mt-4 overflow-hidden rounded-xl border border-[#ff4967]/22 bg-[#0d0509]/92 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                <div className="absolute inset-y-0 right-0 w-1/2 bg-[linear-gradient(135deg,transparent_0%,rgba(255,0,60,0.18)_48%,transparent_49%)]" />
+                <div className="relative flex items-center justify-between gap-5">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.22em] text-[#ff6a82]">
+                      Battle-ready checkout
+                    </p>
+                    <p className="mt-2 max-w-sm font-display text-xl font-bold leading-tight text-white">
+                      Top up cepat, katalog rapi, pembayaran otomatis.
+                    </p>
+                  </div>
+                  <div className="grid w-[300px] shrink-0 grid-cols-3 gap-2">
+                    {[
+                      { icon: Gamepad2, label: "60+ Game" },
+                      { icon: QrCode, label: "QRIS" },
+                      { icon: Zap, label: "Instant" },
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        className="rounded-lg border border-white/10 bg-black/30 px-3 py-3 text-center"
+                      >
+                        <item.icon className="mx-auto mb-2 h-4 w-4 text-[#ff4967]" />
+                        <p className="text-[11px] font-semibold text-white/75">
+                          {item.label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
