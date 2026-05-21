@@ -20,6 +20,9 @@ export async function authenticateRequest(headers: Headers) {
   if (!user) {
     throw Errors.forbidden("User not found. Please re-login.");
   }
+  if (!user.isActive) {
+    throw Errors.forbidden("Akun tidak aktif. Silakan hubungi admin.");
+  }
 
   return user;
 }

@@ -26,6 +26,7 @@ import {
 import { getPublicSiteSettings } from "./site";
 import { normalizePhone } from "../queries/users";
 import { getPaymentMaintenance, setPaymentMaintenance } from "../lib/paymentMaintenance";
+import { logAdminAction } from "../lib/adminAudit";
 
 function adminMatchKey(value: string | null | undefined) {
   return (value || "")
@@ -119,13 +120,18 @@ export const adminRouter = createRouter({
         newPassword: z.string().min(8),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const currentPasswordIsValid = await verifyAdminPassword(input.currentPassword);
       if (!currentPasswordIsValid) {
         throw new Error("Password lama tidak sesuai");
       }
 
       await setAdminPassword(input.newPassword);
+      await logAdminAction({
+        ctx,
+        action: "admin.password.update",
+        entityType: "admin",
+      });
       return { success: true };
     }),
 
@@ -133,7 +139,16 @@ export const adminRouter = createRouter({
 
   setPaymentMaintenance: adminQuery
     .input(z.object({ enabled: z.boolean(), message: z.string().max(240).optional() }))
-    .mutation(async ({ input }) => setPaymentMaintenance(input)),
+    .mutation(async ({ input, ctx }) => {
+      const result = await setPaymentMaintenance(input);
+      await logAdminAction({
+        ctx,
+        action: "payment.maintenance.set",
+        entityType: "payment",
+        details: input,
+      });
+      return result;
+    }),
 
   siteSettings: adminQuery.query(async () => getPublicSiteSettings()),
 
@@ -169,7 +184,7 @@ export const adminRouter = createRouter({
         toolsPopupDismissHours: z.number().min(1).max(720),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const entries = Object.entries(input).map(([key, value]) => ({
         key,
@@ -196,11 +211,23 @@ export const adminRouter = createRouter({
           });
       }
 
+      await logAdminAction({
+        ctx,
+        action: "site.settings.update",
+        entityType: "siteSettings",
+        details: { keys: Object.keys(input) },
+      });
       return { success: true };
     }),
 
-  syncFlowixCatalog: adminQuery.mutation(async () => {
+  syncFlowixCatalog: adminQuery.mutation(async ({ ctx }) => {
     const result = await syncFlowixCatalog();
+    await logAdminAction({
+      ctx,
+      action: "catalog.flowix.sync",
+      entityType: "catalog",
+      details: { games: result.games.length, products: result.productCodes.length },
+    });
     return {
       success: true,
       games: result.games.length,
@@ -248,7 +275,7 @@ export const adminRouter = createRouter({
         isActive: z.boolean().default(true),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const code = input.code.trim().toUpperCase();
       const validFrom = new Date(input.validFrom);
@@ -260,7 +287,7 @@ export const adminRouter = createRouter({
         throw new Error("Tanggal selesai harus lebih besar dari tanggal mulai");
       }
 
-      await db.insert(vouchers).values({
+      const [created] = await db.insert(vouchers).values({
         code,
         type: input.type,
         value: input.value.toString(),
@@ -270,8 +297,15 @@ export const adminRouter = createRouter({
         validFrom,
         validUntil,
         isActive: input.isActive,
-      });
+      }).returning({ id: vouchers.id });
 
+      await logAdminAction({
+        ctx,
+        action: "voucher.create",
+        entityType: "voucher",
+        entityId: created?.id,
+        details: { code, type: input.type, value: input.value },
+      });
       return { success: true };
     }),
 
@@ -291,7 +325,7 @@ export const adminRouter = createRouter({
         isActive: z.boolean(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const validFrom = new Date(input.validFrom);
       const validUntil = new Date(input.validUntil);
@@ -318,14 +352,27 @@ export const adminRouter = createRouter({
         })
         .where(eq(vouchers.id, input.id));
 
+      await logAdminAction({
+        ctx,
+        action: "voucher.update",
+        entityType: "voucher",
+        entityId: input.id,
+        details: { code: input.code.trim().toUpperCase(), isActive: input.isActive },
+      });
       return { success: true };
     }),
 
   deleteVoucher: adminQuery
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       await db.delete(vouchers).where(eq(vouchers.id, input.id));
+      await logAdminAction({
+        ctx,
+        action: "voucher.delete",
+        entityType: "voucher",
+        entityId: input.id,
+      });
       return { success: true };
     }),
 
@@ -474,7 +521,7 @@ export const adminRouter = createRouter({
         paymentStatus: z.enum(["unpaid", "paid", "expired", "refunded"]).optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const updateData: any = { status: input.status };
       if (input.paymentStatus) updateData.paymentStatus = input.paymentStatus;
@@ -484,6 +531,13 @@ export const adminRouter = createRouter({
         .set(updateData)
         .where(eq(transactions.id, input.id));
 
+      await logAdminAction({
+        ctx,
+        action: "transaction.update",
+        entityType: "transaction",
+        entityId: input.id,
+        details: { status: input.status, paymentStatus: input.paymentStatus },
+      });
       return { success: true };
     }),
 
@@ -566,12 +620,11 @@ export const adminRouter = createRouter({
         phone: z.string().max(30).nullable().optional(),
         avatar: z.string().max(500).nullable().optional(),
         role: z.enum(["user", "admin"]).optional(),
-        balance: z.number().optional(),
         isActive: z.boolean().optional(),
         newPassword: z.string().min(8).max(128).optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const updateData: any = {};
       if (input.username !== undefined) updateData.username = input.username.trim();
@@ -580,11 +633,20 @@ export const adminRouter = createRouter({
       if (input.phone !== undefined) updateData.phone = input.phone ? normalizePhone(input.phone) || null : null;
       if (input.avatar !== undefined) updateData.avatar = input.avatar?.trim() || null;
       if (input.role) updateData.role = input.role;
-      if (input.balance !== undefined) updateData.balance = input.balance.toString();
       if (input.isActive !== undefined) updateData.isActive = input.isActive;
       if (input.newPassword) updateData.passwordHash = hashPassword(input.newPassword);
 
       await db.update(users).set(updateData).where(eq(users.id, input.id));
+      await logAdminAction({
+        ctx,
+        action: "user.update",
+        entityType: "user",
+        entityId: input.id,
+        details: {
+          fields: Object.keys(updateData).filter((key) => key !== "passwordHash"),
+          passwordChanged: !!input.newPassword,
+        },
+      });
       return { success: true };
     }),
 
@@ -690,7 +752,7 @@ export const adminRouter = createRouter({
         sortOrder: z.number().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const { id, ...updateData } = input;
       const values: typeof updateData & { isManuallyHidden?: boolean } = { ...updateData };
@@ -699,6 +761,13 @@ export const adminRouter = createRouter({
       }
 
       await db.update(games).set(values).where(eq(games.id, id));
+      await logAdminAction({
+        ctx,
+        action: "game.update",
+        entityType: "game",
+        entityId: id,
+        details: values,
+      });
       return { success: true };
     }),
 
@@ -769,7 +838,7 @@ export const adminRouter = createRouter({
         isActive: z.boolean().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const { id, ...data } = input;
       const updateData: any = {};
@@ -795,6 +864,13 @@ export const adminRouter = createRouter({
       }
 
       await db.update(products).set(updateData).where(eq(products.id, id));
+      await logAdminAction({
+        ctx,
+        action: "product.update",
+        entityType: "product",
+        entityId: id,
+        details: updateData,
+      });
       return { success: true };
     }),
 
@@ -811,10 +887,17 @@ export const adminRouter = createRouter({
         sortOrder: z.number().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
       const { id, ...data } = input;
       await db.update(banners).set(data).where(eq(banners.id, id));
+      await logAdminAction({
+        ctx,
+        action: "banner.update",
+        entityType: "banner",
+        entityId: id,
+        details: data,
+      });
       return { success: true };
     }),
 

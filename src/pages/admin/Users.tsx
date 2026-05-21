@@ -153,7 +153,6 @@ export default function AdminUsers() {
                           {u.role === "admin" ? <Shield className="h-3 w-3" /> : <Users className="h-3 w-3" />}
                           {u.role.toUpperCase()}
                         </span>
-                        <span className="text-[#00f0ff]">Rp{parseFloat(u.balance || "0").toLocaleString()}</span>
                         <span className={u.isActive ? "text-[#0aff00]" : "text-[#ff003c]"}>
                           {u.isActive ? "ACTIVE" : "INACTIVE"}
                         </span>
@@ -195,7 +194,6 @@ export default function AdminUsers() {
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">USER</th>
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">EMAIL</th>
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">ROLE</th>
-                  <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">BALANCE</th>
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">STATUS</th>
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">JOINED</th>
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">ACTIONS</th>
@@ -230,9 +228,6 @@ export default function AdminUsers() {
                         {u.role === "admin" ? <Shield className="w-3 h-3" /> : <Users className="w-3 h-3" />}
                         {u.role.toUpperCase()}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-[#00f0ff]">
-                      Rp{parseFloat(u.balance || "0").toLocaleString()}
                     </td>
                     <td className="px-4 py-3">
                       <button onClick={() => updateUser.mutate({ id: u.id, isActive: !u.isActive })}

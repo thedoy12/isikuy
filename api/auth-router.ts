@@ -14,6 +14,7 @@ import {
   verifyAdminPassword,
   verifyPassword,
 } from "./lib/adminCredentials";
+import { checkRateLimit, rateLimitKey } from "./lib/rateLimit";
 import { signSessionToken } from "./auth/session";
 import {
   findUserByEmail,
@@ -41,6 +42,12 @@ export const authRouter = createRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const identifier = input.username.trim().toLowerCase();
+      checkRateLimit({
+        key: rateLimitKey(ctx.req.headers, "auth:login", identifier),
+        limit: 8,
+        windowMs: 15 * 60 * 1000,
+        message: "Terlalu banyak percobaan login. Coba lagi nanti.",
+      });
       const credentials = await getAdminCredentials();
       const passwordIsValid = await verifyAdminPassword(input.password);
 
@@ -139,6 +146,12 @@ export const authRouter = createRouter({
     .mutation(async ({ input, ctx }) => {
       const username = input.username.trim().toLowerCase();
       const email = input.email.trim().toLowerCase();
+      checkRateLimit({
+        key: rateLimitKey(ctx.req.headers, "auth:register", username || email),
+        limit: 5,
+        windowMs: 60 * 60 * 1000,
+        message: "Terlalu banyak percobaan daftar. Coba lagi nanti.",
+      });
       const phone = normalizePhone(input.phone);
       const credentials = await getAdminCredentials();
       if (username === credentials.username.toLowerCase()) {

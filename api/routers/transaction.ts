@@ -17,6 +17,9 @@ import { env } from "../lib/env";
 import { failExpiredUnpaidTransactions, qrisExpiryDate } from "../lib/transactionExpiry";
 import { getPaymentMaintenance } from "../lib/paymentMaintenance";
 import { safeDiscountAmount } from "../lib/pricing";
+import { checkRateLimit, rateLimitKey } from "../lib/rateLimit";
+import { withTransactionLock } from "../lib/transactionLock";
+import { checkoutAmounts } from "../lib/checkout";
 
 function generateInvoice(): string {
   const date = new Date();
@@ -248,7 +251,7 @@ async function countVoucherUsageOnce(raw: string | null) {
 async function syncFlowixDepositPayment(invoiceNumber: string) {
   if (!isFlowixConfigured()) return;
 
-  const db = getDb();
+  return withTransactionLock(`flowix-sync:${invoiceNumber}`, async (db) => {
   const [transaction] = await db
     .select({
       id: transactions.id,
@@ -323,12 +326,13 @@ async function syncFlowixDepositPayment(invoiceNumber: string) {
       ...(completedAt ? { completedAt } : {}),
     })
     .where(eq(transactions.id, transaction.id));
+  });
 }
 
 async function syncFlowixProductOrderStatus(invoiceNumber: string) {
   if (!isFlowixConfigured()) return;
 
-  const db = getDb();
+  return withTransactionLock(`flowix-order:${invoiceNumber}`, async (db) => {
   const [transaction] = await db
     .select({
       id: transactions.id,
@@ -373,6 +377,7 @@ async function syncFlowixProductOrderStatus(invoiceNumber: string) {
       ...(nextStatus === "success" ? { completedAt: new Date() } : {}),
     })
     .where(eq(transactions.id, transaction.id));
+  });
 }
 
 export const transactionRouter = createRouter({
@@ -388,6 +393,12 @@ export const transactionRouter = createRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      checkRateLimit({
+        key: rateLimitKey(ctx.req.headers, "transaction:create", ctx.user?.id ? `user:${ctx.user.id}` : undefined),
+        limit: 12,
+        windowMs: 10 * 60 * 1000,
+        message: "Terlalu banyak percobaan checkout. Tunggu sebentar lalu coba lagi.",
+      });
       const paymentMaintenance = await getPaymentMaintenance();
       if (paymentMaintenance.enabled) {
         throw new Error(paymentMaintenance.message);
@@ -437,8 +448,12 @@ export const transactionRouter = createRouter({
         code: input.voucherCode,
         amount: baseAmount,
       });
-      const feeAmount = 0;
-      const totalAmount = Math.max(1, baseAmount - (voucher?.discountAmount || 0));
+      const amounts = checkoutAmounts({
+        baseAmount,
+        discountAmount: voucher?.discountAmount,
+      });
+      const totalAmount = amounts.totalAmount;
+      const feeAmount = amounts.feeAmount;
       const finalFeeAmount = feeAmount;
       let finalTotalAmount = totalAmount;
       let providerReference: string | null = null;
@@ -509,6 +524,11 @@ export const transactionRouter = createRouter({
   getByInvoice: publicQuery
     .input(z.object({ invoiceNumber: z.string() }))
     .query(async ({ input }) => {
+      checkRateLimit({
+        key: `transaction:get:${input.invoiceNumber}`,
+        limit: 90,
+        windowMs: 10 * 60 * 1000,
+      });
       const db = getDb();
       await syncFlowixDepositPayment(input.invoiceNumber).catch((error) => {
         console.error("[flowix] Failed to sync deposit payment", error);
@@ -616,6 +636,11 @@ export const transactionRouter = createRouter({
   checkStatus: publicQuery
     .input(z.object({ invoiceNumber: z.string() }))
     .query(async ({ input }) => {
+      checkRateLimit({
+        key: `transaction:status:${input.invoiceNumber}`,
+        limit: 180,
+        windowMs: 10 * 60 * 1000,
+      });
       const db = getDb();
       await syncFlowixDepositPayment(input.invoiceNumber).catch((error) => {
         console.error("[flowix] Failed to sync deposit payment", error);

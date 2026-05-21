@@ -9,6 +9,7 @@ import {
   createFlowixTransaction,
   type FlowixTransaction,
 } from "./client";
+import { withTransactionLock } from "../lib/transactionLock";
 
 type TransactionStatus =
   | "pending"
@@ -110,7 +111,7 @@ function getFlowixEvent(payload: Record<string, unknown>, headerEvent?: string) 
   ).toLowerCase();
 }
 
-function mapStatus(status: string): FlowixStatusUpdate {
+export function mapStatus(status: string): FlowixStatusUpdate {
   if (["paid", "success", "settlement", "settled", "completed", "capture"].includes(status)) {
     return {
       status: "success",
@@ -350,7 +351,7 @@ export async function handleFlowixCallback(c: Context) {
   const status = mapStatus(getFlowixStatus(payload));
   const event = getFlowixEvent(payload, headerEvent);
   const now = new Date();
-  const db = getDb();
+  return withTransactionLock(`flowix-callback:${lookup}`, async (db) => {
   let matched:
     | {
         id: number;
@@ -582,5 +583,6 @@ export async function handleFlowixCallback(c: Context) {
     invoiceNumber: matched.invoiceNumber,
     status: nextStatus,
     paymentStatus: nextPaymentStatus,
+  });
   });
 }

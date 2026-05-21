@@ -3,6 +3,8 @@ import { count, desc, eq, sql } from "drizzle-orm";
 import { createRouter, publicQuery, authedQuery, adminQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { env } from "../lib/env";
+import { checkRateLimit, rateLimitKey } from "../lib/rateLimit";
+import { logAdminAction } from "../lib/adminAudit";
 import { recentTools, siteSettings, toolAlerts, toolResults, tools, trendingTools, userFavorites } from "@db/schema";
 import { getToolDefinition, isPublicTool, resolveToolSlug, toolDefinitions } from "@contracts/toolCatalog";
 
@@ -465,6 +467,12 @@ export const toolsRouter = createRouter({
       if (!ctx.user && !isPublicTool(slug)) {
         throw new Error("Login dulu untuk memakai tool ini.");
       }
+      checkRateLimit({
+        key: rateLimitKey(ctx.req.headers, "tools:generate", ctx.user?.id ? `user:${ctx.user.id}` : undefined),
+        limit: ctx.user ? 60 : 20,
+        windowMs: 10 * 60 * 1000,
+        message: "Terlalu banyak memakai tools. Tunggu sebentar lalu coba lagi.",
+      });
       const normalizedInput = normalizeGenerateInput({ ...input, slug });
       const maintenance = await getToolsMaintenance();
       if (maintenance.enabled) throw new Error(maintenance.message);
@@ -590,26 +598,38 @@ export const toolsRouter = createRouter({
 
   adminSetMaintenance: adminQuery
     .input(z.object({ enabled: z.boolean(), message: z.string().max(240).optional() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       await setSetting(TOOLS_MAINTENANCE_KEY, String(input.enabled), "boolean");
       await setSetting(
         TOOLS_MAINTENANCE_MESSAGE_KEY,
         input.message?.trim() || DEFAULT_TOOLS_MAINTENANCE_MESSAGE,
       );
+      await logAdminAction({
+        ctx,
+        action: "tools.maintenance.set",
+        entityType: "tools",
+        details: input,
+      });
       return { success: true };
     }),
 
   adminResolveAlert: adminQuery
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       await getDb()
         .update(toolAlerts)
         .set({ isResolved: true, resolvedAt: new Date() })
         .where(eq(toolAlerts.id, input.id));
+      await logAdminAction({
+        ctx,
+        action: "tools.alert.resolve",
+        entityType: "toolAlert",
+        entityId: input.id,
+      });
       return { success: true };
     }),
 
-  adminTestGemini: adminQuery.mutation(async () => {
+  adminTestGemini: adminQuery.mutation(async ({ ctx }) => {
     const result = await callGemini(
       {
         slug: "nickname-generator",
@@ -619,17 +639,29 @@ export const toolsRouter = createRouter({
       },
       "TestKoneksi\nTESTKONEKSI",
     );
+    await logAdminAction({
+      ctx,
+      action: "tools.gemini.test",
+      entityType: "tools",
+      details: { resultPreview: result.slice(0, 120) },
+    });
     return { success: true, result };
   }),
 
   adminToggle: adminQuery
     .input(z.object({ slug: z.string(), isActive: z.boolean() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       await ensureToolsSeeded();
       await getDb()
         .update(tools)
         .set({ isActive: input.isActive, updatedAt: new Date() })
         .where(eq(tools.slug, resolveToolSlug(input.slug)));
+      await logAdminAction({
+        ctx,
+        action: "tools.toggle",
+        entityType: "tool",
+        details: { slug: resolveToolSlug(input.slug), isActive: input.isActive },
+      });
       return { success: true };
     }),
 });

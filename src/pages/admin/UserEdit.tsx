@@ -97,7 +97,6 @@ export default function AdminUserEdit() {
     phone: "",
     avatar: "",
     role: "user" as "user" | "admin",
-    balance: 0,
     isActive: true,
     newPassword: "",
     confirmPassword: "",
@@ -140,7 +139,6 @@ export default function AdminUserEdit() {
       phone: targetUser.phone || "",
       avatar: targetUser.avatar || "",
       role: targetUser.role,
-      balance: Number(targetUser.balance || 0),
       isActive: targetUser.isActive,
       newPassword: "",
       confirmPassword: "",
@@ -168,7 +166,6 @@ export default function AdminUserEdit() {
       phone: form.phone,
       avatar: form.avatar,
       role: form.role,
-      balance: Number(form.balance) || 0,
       isActive: form.isActive,
       newPassword: newPassword || undefined,
     });
@@ -215,7 +212,7 @@ export default function AdminUserEdit() {
                   <div>
                     <h1 className="text-lg font-bold tracking-wider text-white">USER_PROFILE</h1>
                     <p className="text-[10px] tracking-wider text-white/35">
-                      Ubah identitas, role, status, dan saldo user
+                      Ubah identitas, role, status, dan password user
                     </p>
                   </div>
                 </div>
@@ -294,18 +291,6 @@ export default function AdminUserEdit() {
                         </option>
                       ))}
                     </select>
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[10px] tracking-wider text-white/40">
-                      BALANCE
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={form.balance}
-                      onChange={(event) => setForm((current) => ({ ...current, balance: Number(event.target.value) }))}
-                      className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#00f0ff]/50"
-                    />
                   </div>
                 </div>
 

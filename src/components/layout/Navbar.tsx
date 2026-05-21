@@ -146,9 +146,7 @@ export default function Navbar() {
                       <p className="text-sm font-medium text-white truncate">
                         {user?.name}
                       </p>
-                      <p className="text-xs text-[#00f0ff]">
-                        Rp{parseFloat(user?.balance || "0").toLocaleString()}
-                      </p>
+                      <p className="text-xs text-[#00f0ff]">{user?.role === "admin" ? "Admin" : "Member"}</p>
                     </div>
                     <div className="p-2">
                       <Link
@@ -242,9 +240,7 @@ export default function Navbar() {
                 )}
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white">{user?.name || "User"}</p>
-                  <p className="text-xs font-medium text-[#00f0ff]">
-                    Rp{parseFloat(user?.balance || "0").toLocaleString()}
-                  </p>
+                  <p className="text-xs font-medium text-[#00f0ff]">{user?.role === "admin" ? "Admin" : "Member"}</p>
                 </div>
               </div>
             )}

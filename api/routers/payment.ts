@@ -5,6 +5,8 @@ import { getDb } from "../queries/connection";
 import { paymentMethods, products, vouchers } from "@db/schema";
 import { getPaymentMaintenance } from "../lib/paymentMaintenance";
 import { safeDiscountAmount } from "../lib/pricing";
+import { checkRateLimit, rateLimitKey } from "../lib/rateLimit";
+import { checkoutAmounts } from "../lib/checkout";
 
 async function calculateVoucherDiscount(input: {
   code?: string;
@@ -90,7 +92,12 @@ export const paymentRouter = createRouter({
         voucherCode: z.string().optional(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      checkRateLimit({
+        key: rateLimitKey(ctx.req.headers, "payment:calculate"),
+        limit: 120,
+        windowMs: 10 * 60 * 1000,
+      });
       const db = getDb();
       const [product] =
         input.productId > 0
@@ -122,13 +129,14 @@ export const paymentRouter = createRouter({
           code: input.voucherCode,
           amount: basePrice,
         });
+      const amounts = checkoutAmounts({ baseAmount: basePrice, discountAmount });
       const feePercent = 0;
       const feeFixed = 0;
       const servicePercent = 0;
       const serviceAmount = 0;
       const paymentFeeAmount = 0;
-      const feeAmount = 0;
-      const totalAmount = Math.max(1, basePrice - discountAmount);
+      const feeAmount = amounts.feeAmount;
+      const totalAmount = amounts.totalAmount;
 
       return {
         basePrice,
