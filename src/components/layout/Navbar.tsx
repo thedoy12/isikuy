@@ -69,9 +69,9 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-[200] transition-all duration-500 ${
+      className={`fixed top-0 left-0 right-0 z-[1000] transition-all duration-300 ${
         scrolled || mobileOpen
-          ? "glass-strong py-3"
+          ? "border-b border-white/10 bg-[#07050a]/98 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.32)]"
           : "border-b border-white/5 bg-[#050307]/96 py-4 shadow-[0_10px_30px_rgba(0,0,0,0.22)]"
       }`}
     >
@@ -141,7 +141,7 @@ export default function Navbar() {
                 </button>
 
                 {profileOpen && (
-                  <div className="absolute right-0 z-[220] mt-2 w-56 glass-strong rounded-xl overflow-hidden shadow-2xl">
+                  <div className="absolute right-0 z-[1100] mt-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-[#11131a] shadow-[0_24px_70px_rgba(0,0,0,0.68)]">
                     <div className="p-3 border-b border-white/5">
                       <p className="text-sm font-medium text-white truncate">
                         {user?.name}
@@ -224,7 +224,7 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {mobileOpen && (
-          <div className="md:hidden mt-4 overflow-hidden rounded-2xl border border-white/10 bg-[#07090f]/95 p-3 shadow-[0_24px_70px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
+          <div className="md:hidden mt-4 overflow-hidden rounded-2xl border border-white/10 bg-[#07090f]/98 p-3 shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
             {isAuthenticated && (
               <div className="mb-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3">
                 {user?.avatar ? (

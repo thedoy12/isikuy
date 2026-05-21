@@ -294,7 +294,7 @@ export default function GameDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[100dvh] site-bg flex items-center justify-center">
+      <div className="page-aura min-h-[100dvh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-[#ff003c] animate-spin" />
       </div>
     );
@@ -302,7 +302,7 @@ export default function GameDetail() {
 
   if (!game) {
     return (
-      <div className="min-h-[100dvh] site-bg flex items-center justify-center">
+      <div className="page-aura min-h-[100dvh] flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-[#ff003c] mx-auto mb-4" />
           <h2 className="font-display text-2xl font-bold text-white mb-2">
@@ -322,7 +322,7 @@ export default function GameDetail() {
   // ─── Payment Status Screen ───
   if (step === "payment" && invoiceNumber) {
     return (
-      <div className="min-h-[100dvh] site-bg">
+      <div className="page-aura min-h-[100dvh]">
         <Navbar />
         <div className="pt-28 pb-16">
           <div className="max-w-lg mx-auto px-4">
@@ -605,7 +605,7 @@ export default function GameDetail() {
   // ─── Success Screen ───
   if (step === "success") {
     return (
-      <div className="min-h-[100dvh] site-bg">
+      <div className="page-aura min-h-[100dvh]">
         <Navbar />
         <div className="pt-28 pb-16 flex items-center justify-center min-h-[60vh]">
           <div className="max-w-md mx-auto px-4 text-center">
@@ -670,20 +670,20 @@ export default function GameDetail() {
 
   // ─── Form Screen ───
   return (
-    <div className="min-h-[100dvh] site-bg">
+    <div className="page-aura min-h-[100dvh]">
       <Navbar />
 
       {/* Game Header */}
-      <div className="relative pt-20">
-        <div className="absolute inset-0 h-72 overflow-hidden">
+      <div className="section-aura relative pt-20">
+        <div className="absolute inset-x-0 top-0 h-72 overflow-hidden">
           <img
             src={optimizedImagePath(game.bannerImage || game.coverImage) || fallbackCover}
             alt={game.name}
             loading="eager"
             decoding="async"
-            className="w-full h-full object-cover opacity-30"
+            className="w-full h-full object-cover opacity-[0.18]"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#030305] via-[#030305]/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#030305] via-[#030305]/82 to-[#030305]/42" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
@@ -729,7 +729,7 @@ export default function GameDetail() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
           {/* Left Column - Form */}
           <div className="space-y-6">
