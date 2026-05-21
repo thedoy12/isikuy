@@ -819,7 +819,7 @@ export const gameRouter = createRouter({
     const db = getDb();
     const loadCategories = () =>
       db
-        .selectDistinct({
+        .select({
           id: categories.id,
           name: categories.name,
           slug: categories.slug,
@@ -835,6 +835,11 @@ export const gameRouter = createRouter({
 
     const rows = await loadCategories();
 
-    return rows;
+    const seen = new Set<number>();
+    return rows.filter((category) => {
+      if (seen.has(category.id)) return false;
+      seen.add(category.id);
+      return true;
+    });
   }),
 });
