@@ -80,7 +80,7 @@ export default function Games() {
       <Navbar />
 
       {/* Hero Header */}
-      <div className="pt-32 pb-12 relative overflow-hidden bg-[#050307]">
+      <div className="pt-24 pb-8 sm:pt-28 sm:pb-10 relative overflow-hidden bg-[#050307]">
         <div className="relative z-10 mx-auto w-full max-w-[22rem] px-4 sm:max-w-7xl sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-sm text-white/40 mb-4">
             <Link to="/" className="hover:text-white transition-colors">
@@ -148,7 +148,7 @@ export default function Games() {
             </div>
           </div>
 
-          <div className="mt-8 flex max-w-full flex-wrap gap-2">
+          <div className="mt-6 flex max-w-full flex-wrap gap-2">
             <button
               onClick={() => {
                 setSelectedType(undefined);
@@ -226,7 +226,7 @@ export default function Games() {
       </div>
 
       {/* Games Grid */}
-      <div className="mx-auto w-full max-w-[22rem] px-4 pb-24 sm:max-w-7xl sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[22rem] px-4 pb-14 sm:max-w-7xl sm:px-6 lg:px-8">
         {isLoading ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {Array.from({ length: 15 }).map((_, i) => (
@@ -290,7 +290,7 @@ export default function Games() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20">
+          <div className="text-center py-14">
             <Gamepad2 className="w-12 h-12 text-white/10 mx-auto mb-4" />
             <h3 className="font-display text-xl font-semibold text-white/40 mb-2">
               Produk tidak ditemukan

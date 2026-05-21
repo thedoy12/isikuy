@@ -120,11 +120,11 @@ function HeroSection() {
   ];
 
   return (
-    <section className="relative min-h-[100dvh] overflow-hidden bg-[#050307]">
+    <section className="relative overflow-hidden bg-[#050307]">
       <div className="absolute inset-0 bg-[#050307]" />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 lg:pt-40">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10 lg:pt-32 lg:pb-14">
         <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)]">
           <div className="text-center lg:text-left">
             {/* Badge */}
@@ -317,7 +317,7 @@ function TrendingSection() {
   const { data: trendingGames, isLoading } = trpc.game.trending.useQuery();
 
   return (
-    <section className="relative py-24 overflow-hidden">
+    <section className="relative py-14 sm:py-16 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-[#030305] via-[#0b0d14] to-[#030305]" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-10">
@@ -392,7 +392,7 @@ function PopularSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
-    <section className="relative py-24">
+    <section className="relative py-14 sm:py-16">
       <div className="absolute inset-0 bg-[#030305]" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-10">
@@ -531,7 +531,7 @@ function WhyChooseSection() {
   ];
 
   return (
-    <section className="relative py-14 sm:py-20 lg:py-24">
+    <section className="relative py-12 sm:py-14 lg:py-16">
       <div className="absolute inset-0 bg-[#030305]" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8 text-center sm:mb-12 lg:mb-14">
@@ -570,7 +570,7 @@ function PaymentSection() {
   const qrisMethod = methods?.find((m) => m.code === "qris") ?? methods?.[0];
 
   return (
-    <section className="relative py-20 sm:py-24">
+    <section className="relative py-14 sm:py-16">
       <div className="absolute inset-0 bg-gradient-to-b from-[#030305] via-[#0b0d14] to-[#030305]" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
@@ -646,7 +646,7 @@ function TestimonialsSection() {
   ];
 
   return (
-    <section className="relative py-14 sm:py-20 lg:py-24">
+    <section className="relative py-12 sm:py-14 lg:py-16">
       <div className="absolute inset-0 bg-[#030305]" />
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8 text-center sm:mb-12 lg:mb-14">
@@ -697,7 +697,7 @@ function FAQSection() {
   const [openId, setOpenId] = useState<number | null>(null);
 
   return (
-    <section className="relative py-24">
+    <section className="relative py-14 sm:py-16">
       <div className="absolute inset-0 bg-gradient-to-b from-[#030305] via-[#0b0d14] to-[#030305]" />
       <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">

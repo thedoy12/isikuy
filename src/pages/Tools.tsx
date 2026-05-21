@@ -122,7 +122,7 @@ export default function Tools() {
         </main>
       ) : (
       <main>
-        <section className="relative overflow-hidden bg-[#050307] pt-24 pb-8 sm:pt-32 sm:pb-12">
+        <section className="relative overflow-hidden bg-[#050307] pt-24 pb-6 sm:pt-28 sm:pb-8">
           <div className="relative mx-auto w-full max-w-[22rem] min-w-0 px-4 sm:max-w-7xl sm:px-6 lg:px-8">
             <div className="max-w-3xl min-w-0">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ff003c]/20 bg-[#ff003c]/10 px-3 py-1.5 text-[11px] font-semibold text-white/75 sm:mb-5 sm:px-4 sm:py-2 sm:text-xs">
@@ -140,7 +140,7 @@ export default function Tools() {
                   Beberapa tools random bisa dicoba gratis. Login dulu untuk membuka semua AI tools, calculator, dan fitur fun lainnya.
                 </p>
               )}
-              <div className="mt-6 grid max-w-full grid-cols-2 gap-3 sm:mt-8 sm:flex sm:max-w-none sm:flex-row">
+              <div className="mt-5 grid max-w-full grid-cols-2 gap-3 sm:mt-6 sm:flex sm:max-w-none sm:flex-row">
                 <a href="#tools-list" className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ff003c] to-[#b30029] px-3 py-3 text-sm font-semibold text-white shadow-[0_14px_35px_rgba(255,0,60,0.22)] sm:flex-none sm:px-6 sm:text-base">
                   <Gamepad2 className="h-5 w-5" />
                   <span className="truncate">Mulai Main</span>
@@ -175,9 +175,9 @@ export default function Tools() {
           </div>
         </section>
 
-        <section id="tools-list" className="mx-auto w-full max-w-[22rem] min-w-0 px-4 pb-24 sm:max-w-7xl sm:px-6 lg:px-8">
+        <section id="tools-list" className="mx-auto w-full max-w-[22rem] min-w-0 px-4 pb-14 sm:max-w-7xl sm:px-6 lg:px-8">
           {Object.entries(grouped).map(([category, items]) => (
-            <div key={category} className="mb-10 sm:mb-12">
+            <div key={category} className="mb-7 sm:mb-8">
               <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5">
                 <div className="min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ff4967]">Kategori</p>
