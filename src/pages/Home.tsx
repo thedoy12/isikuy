@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { optimizedImagePath } from "@/lib/images";
@@ -19,12 +19,57 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-const HERO_PARTICLES = Array.from({ length: 20 }, (_, i) => ({
+const HERO_PARTICLES = Array.from({ length: 8 }, (_, i) => ({
   left: `${(i * 37) % 100}%`,
   top: `${(i * 53) % 100}%`,
   animationDelay: `${(i % 5) * 0.8}s`,
   animationDuration: `${3 + (i % 4)}s`,
 }));
+
+function DeferredSection({
+  children,
+  className = "",
+  minHeight = 320,
+}: {
+  children: ReactNode;
+  className?: string;
+  minHeight?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (visible) return;
+
+    const node = ref.current;
+    if (!node || !("IntersectionObserver" in window)) {
+      setVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setVisible(true);
+        observer.disconnect();
+      },
+      { rootMargin: "720px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [visible]);
+
+  return (
+    <div
+      ref={ref}
+      className={`render-contained ${className}`}
+      style={visible ? undefined : { minHeight }}
+    >
+      {visible ? children : null}
+    </div>
+  );
+}
 
 /* ─── Hero Section ─── */
 function HeroSection() {
@@ -158,12 +203,12 @@ function HeroSection() {
           </div>
 
           <div className="relative hidden min-h-[520px] lg:-mt-16 lg:block">
-            <div className="absolute inset-x-2 -top-8 h-[500px] overflow-hidden rounded-[1.35rem] border border-[#ff4967]/20 bg-[#080407]/88 shadow-[0_30px_90px_rgba(0,0,0,0.58),0_0_70px_rgba(255,0,60,0.14)] backdrop-blur-xl">
+            <div className="absolute inset-x-2 -top-8 h-[500px] overflow-hidden rounded-[1.35rem] border border-[#ff4967]/20 bg-[#080407]/92 shadow-[0_24px_70px_rgba(0,0,0,0.5),0_0_44px_rgba(255,0,60,0.1)]">
               <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_22%_8%,rgba(255,0,60,0.32),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(0,240,255,0.12),transparent_24%)]" />
               <img
                 src={optimizedImagePath("/aset/valorant.png")}
                 alt=""
-                loading="eager"
+                loading="lazy"
                 decoding="async"
                 className="absolute inset-y-0 right-0 h-full w-[54%] object-cover opacity-20 mix-blend-screen"
               />
@@ -201,7 +246,7 @@ function HeroSection() {
                   <img
                     src={optimizedImagePath(product.image)}
                     alt={product.name}
-                    loading="eager"
+                    loading="lazy"
                     decoding="async"
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
@@ -729,13 +774,27 @@ export default function Home() {
       <main>
         <HeroSection />
         <MarqueeSection />
-        <TrendingSection />
-        <PopularSection />
-        <PromoSection />
-        <WhyChooseSection />
-        <PaymentSection />
-        <TestimonialsSection />
-        <FAQSection />
+        <DeferredSection minHeight={620}>
+          <TrendingSection />
+        </DeferredSection>
+        <DeferredSection minHeight={520}>
+          <PopularSection />
+        </DeferredSection>
+        <DeferredSection minHeight={260}>
+          <PromoSection />
+        </DeferredSection>
+        <DeferredSection minHeight={420}>
+          <WhyChooseSection />
+        </DeferredSection>
+        <DeferredSection minHeight={420}>
+          <PaymentSection />
+        </DeferredSection>
+        <DeferredSection minHeight={420}>
+          <TestimonialsSection />
+        </DeferredSection>
+        <DeferredSection minHeight={420}>
+          <FAQSection />
+        </DeferredSection>
       </main>
       <Footer />
     </div>

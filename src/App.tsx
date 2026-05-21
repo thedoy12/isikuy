@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { Routes, Route } from 'react-router'
 import SiteMeta from './components/SiteMeta'
 import SitePopup from './components/SitePopup'
@@ -29,6 +29,30 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 
 function PageFallback() {
   return <div className="min-h-[100dvh] site-bg" />
+}
+
+function DeferredSiteOverlays() {
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    const show = () => setReady(true)
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(show, { timeout: 2000 })
+      return () => window.cancelIdleCallback(idleId)
+    }
+
+    const timer = setTimeout(show, 1200)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (!ready) return null
+
+  return (
+    <>
+      <SitePopup />
+      <ToolsPromoPopup />
+    </>
+  )
 }
 
 export default function App() {
@@ -66,8 +90,7 @@ export default function App() {
         </Routes>
       </Suspense>
       <PendingPaymentResume />
-      <SitePopup />
-      <ToolsPromoPopup />
+      <DeferredSiteOverlays />
     </>
   )
 }
