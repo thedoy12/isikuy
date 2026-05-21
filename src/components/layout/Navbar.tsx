@@ -69,7 +69,7 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      className={`fixed top-0 left-0 right-0 z-[200] transition-all duration-500 ${
         scrolled || mobileOpen
           ? "glass-strong py-3"
           : "border-b border-white/5 bg-[#050307]/96 py-4 shadow-[0_10px_30px_rgba(0,0,0,0.22)]"
@@ -141,7 +141,7 @@ export default function Navbar() {
                 </button>
 
                 {profileOpen && (
-                  <div className="absolute right-0 mt-2 w-56 glass-strong rounded-xl overflow-hidden shadow-2xl">
+                  <div className="absolute right-0 z-[220] mt-2 w-56 glass-strong rounded-xl overflow-hidden shadow-2xl">
                     <div className="p-3 border-b border-white/5">
                       <p className="text-sm font-medium text-white truncate">
                         {user?.name}

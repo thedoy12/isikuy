@@ -97,7 +97,7 @@ export default function Tools() {
   }, {});
 
   return (
-    <div className="min-h-[100dvh] overflow-x-hidden site-bg text-white">
+    <div className="min-h-[100dvh] overflow-x-hidden bg-[#030305] text-white">
       <Navbar />
       {status?.enabled ? (
         <main className="flex min-h-[calc(100dvh-120px)] items-center justify-center px-4 pt-28">
@@ -114,9 +114,7 @@ export default function Tools() {
         </main>
       ) : (
       <main>
-        <section className="relative overflow-hidden pt-24 pb-8 sm:pt-32 sm:pb-12">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_8%,rgba(255,0,60,0.25),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(0,240,255,0.12),transparent_24%)]" />
-          <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "linear-gradient(rgba(255,45,77,0.32) 1px, transparent 1px), linear-gradient(90deg, rgba(255,45,77,0.24) 1px, transparent 1px)", backgroundSize: "58px 58px" }} />
+        <section className="relative overflow-hidden bg-[#050307] pt-24 pb-8 sm:pt-32 sm:pb-12">
           <div className="relative mx-auto w-full max-w-[22rem] min-w-0 px-4 sm:max-w-7xl sm:px-6 lg:px-8">
             <div className="max-w-3xl min-w-0">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ff003c]/20 bg-[#ff003c]/10 px-3 py-1.5 text-[11px] font-semibold text-white/75 sm:mb-5 sm:px-4 sm:py-2 sm:text-xs">
