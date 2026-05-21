@@ -22,7 +22,15 @@ const imageExtensions = new Set([".png", ".jpg", ".jpeg"]);
 
 async function optimizeDirectory({ input, output, width, quality }) {
   await fs.mkdir(output, { recursive: true });
-  const entries = await fs.readdir(input, { withFileTypes: true });
+  let entries = [];
+  try {
+    entries = await fs.readdir(input, { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      return { input, output, count: 0, originalBytes: 0, optimizedBytes: 0, skipped: true };
+    }
+    throw error;
+  }
   let originalBytes = 0;
   let optimizedBytes = 0;
   let count = 0;
@@ -63,6 +71,7 @@ for (const job of jobs) {
 for (const result of results) {
   console.log(
     `${path.relative(root, result.input)} -> ${path.relative(root, result.output)}: ` +
+      `${result.skipped ? "skipped missing source, " : ""}` +
       `${result.count} images, ${formatMb(result.originalBytes)} -> ${formatMb(result.optimizedBytes)}`,
   );
 }
