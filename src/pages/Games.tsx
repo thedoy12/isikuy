@@ -26,11 +26,13 @@ const productFilters: Array<{
   label: string;
   icon: ComponentType<{ className?: string }>;
   slugs: string[];
+  colorClass: string;
+  activeClass: string;
 }> = [
-  { value: "game", label: "Game", icon: Gamepad2, slugs: ["game", "games", "game-online", "top-up-game", "topup-game", "voucher-game"] },
-  { value: "pulsa", label: "Pulsa", icon: Smartphone, slugs: ["pulsa", "pulsa-reguler", "pulsa-transfer"] },
-  { value: "ewallet", label: "E-Wallet", icon: Wallet, slugs: ["ewallet", "e-wallet", "e-walet", "e-money", "emoney", "dompet-digital"] },
-  { value: "digital", label: "Digital", icon: Boxes, slugs: ["data", "paket-data", "data-internet", "internet", "voucher", "premium", "pln", "token-pln", "listrik", "tagihan", "produk"] },
+  { value: "game", label: "Game", icon: Gamepad2, colorClass: "text-[#00f0ff]", activeClass: "bg-[#00f0ff] text-black", slugs: ["game", "games", "game-online", "top-up-game", "topup-game", "voucher-game"] },
+  { value: "pulsa", label: "Pulsa", icon: Smartphone, colorClass: "text-[#ffb800]", activeClass: "bg-[#ffb800] text-black", slugs: ["pulsa", "pulsa-reguler", "pulsa-transfer"] },
+  { value: "ewallet", label: "E-Wallet", icon: Wallet, colorClass: "text-[#0aff00]", activeClass: "bg-[#0aff00] text-black", slugs: ["ewallet", "e-wallet", "e-walet", "e-money", "emoney", "dompet-digital"] },
+  { value: "digital", label: "Digital", icon: Boxes, colorClass: "text-[#ff4967]", activeClass: "bg-[#ff003c] text-white", slugs: ["data", "paket-data", "data-internet", "internet", "voucher", "premium", "pln", "token-pln", "listrik", "tagihan", "produk"] },
 ];
 
 export default function Games() {
@@ -94,9 +96,9 @@ export default function Games() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 {trendingParam ? (
-                  <TrendingUp className="w-5 h-5 text-[#ff003c]" />
+                  <TrendingUp className="w-5 h-5 text-[#ffb800] animate-soft-bob" />
                 ) : (
-                  <Gamepad2 className="w-5 h-5 text-[#00f0ff]" />
+                  <Gamepad2 className="w-5 h-5 text-[#00f0ff] animate-soft-bob" />
                 )}
                 <span
                   className={`text-xs font-medium tracking-wider uppercase ${
@@ -171,11 +173,11 @@ export default function Games() {
                   }}
                   className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold transition-colors ${
                     selectedType === filter.value
-                      ? "bg-[#ff003c] text-white"
+                      ? filter.activeClass
                       : "glass text-white/60 hover:bg-white/10"
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className={`w-4 h-4 ${selectedType === filter.value ? "text-current" : filter.colorClass}`} />
                   {filter.label}
                 </button>
               );
@@ -240,7 +242,7 @@ export default function Games() {
               <Link
                 key={game.id}
                 to={`/games/${game.slug}`}
-                className="group relative aspect-[3/4] rounded-2xl overflow-hidden"
+                className="group relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/5 transition-transform duration-200 hover:-translate-y-1 hover:border-[#00f0ff]/25"
               >
                 <img
                   src={optimizedImagePath(game.coverImage || game.cardImage) || fallbackCover(game.name)}

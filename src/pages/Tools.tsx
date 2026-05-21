@@ -27,8 +27,16 @@ const categoryIcons: Record<ToolDefinition["category"], React.ElementType> = {
   Calculator,
 };
 
+const categoryColors: Record<ToolDefinition["category"], string> = {
+  "AI Text": "border-[#00f0ff]/25 bg-[#00f0ff]/10 text-[#00f0ff]",
+  "Spin Random": "border-[#ffb800]/25 bg-[#ffb800]/10 text-[#ffb800]",
+  "Fun Viral": "border-[#ff4967]/25 bg-[#ff003c]/12 text-[#ff4967]",
+  Calculator: "border-[#0aff00]/25 bg-[#0aff00]/10 text-[#0aff00]",
+};
+
 function ToolCard({ tool, isAuthenticated }: { tool: ToolDefinition; isAuthenticated: boolean }) {
   const Icon = categoryIcons[tool.category] || Wand2;
+  const iconColor = categoryColors[tool.category] || "border-[#ff4967]/25 bg-[#ff003c]/12 text-[#ff4967]";
   const isLocked = !isAuthenticated && !tool.publicAccess;
   return (
     <Link
@@ -38,7 +46,7 @@ function ToolCard({ tool, isAuthenticated }: { tool: ToolDefinition; isAuthentic
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#ff4967] to-transparent opacity-70 transition-opacity group-hover:opacity-100" />
       <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-[#00f0ff]/10 blur-3xl" />
       <div className="relative flex gap-3 sm:block">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#ff4967]/25 bg-[#ff003c]/12 text-[#ff4967] shadow-[0_0_24px_rgba(255,0,60,0.12)] sm:mb-4 sm:h-11 sm:w-11 sm:rounded-xl">
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-[0_0_24px_rgba(255,0,60,0.12)] transition-transform duration-200 group-hover:-translate-y-0.5 sm:mb-4 sm:h-11 sm:w-11 sm:rounded-xl ${iconColor}`}>
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
@@ -118,7 +126,7 @@ export default function Tools() {
           <div className="relative mx-auto w-full max-w-[22rem] min-w-0 px-4 sm:max-w-7xl sm:px-6 lg:px-8">
             <div className="max-w-3xl min-w-0">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ff003c]/20 bg-[#ff003c]/10 px-3 py-1.5 text-[11px] font-semibold text-white/75 sm:mb-5 sm:px-4 sm:py-2 sm:text-xs">
-                <Sparkles className="h-4 w-4 text-[#ff4967]" />
+                <Sparkles className="h-4 w-4 text-[#ffb800] animate-soft-pulse" />
                 Mini Gaming Fun Tools
               </div>
               <h1 className="max-w-[11ch] font-display text-[2.45rem] font-bold leading-[0.94] sm:max-w-none sm:text-6xl sm:leading-tight">

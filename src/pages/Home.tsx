@@ -73,10 +73,11 @@ function HeroSection() {
       name: "Mobile Legends",
       image: "/aset/mobile-legends.png",
       tag: "Most Played",
+      tagClass: "bg-[#ff003c]/20 text-white",
       className: "sm:row-span-2",
     },
-    { name: "Free Fire", image: "/aset/free-fire.png", tag: "Fast" },
-    { name: "Valorant", image: "/aset/valorant.png", tag: "New" },
+    { name: "Free Fire", image: "/aset/free-fire.png", tag: "Fast", tagClass: "bg-[#ffb800]/18 text-[#ffe39b]" },
+    { name: "Valorant", image: "/aset/valorant.png", tag: "New", tagClass: "bg-[#00f0ff]/14 text-[#7ff8ff]" },
   ];
 
   return (
@@ -89,7 +90,7 @@ function HeroSection() {
           <div className="text-center lg:text-left">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-[#ff003c]/20 bg-[#ff003c]/10 px-4 py-2 mb-6">
-              <Sparkles className="w-4 h-4 text-[#ff003c]" />
+              <Sparkles className="w-4 h-4 text-[#ffb800] animate-soft-pulse" />
               <span className="text-xs font-medium text-[#e1f5fe]">
                 {heroBanner?.subtitle || "Platform Top-Up Game Cepat dan Praktis"}
               </span>
@@ -110,12 +111,14 @@ function HeroSection() {
 
             <div className="mb-9 grid grid-cols-1 gap-2 sm:grid-cols-3">
               {[
-                { icon: Shield, title: "Pembayaran Aman", desc: "QRIS otomatis" },
-                { icon: Clock, title: "Proses Cepat", desc: "Tanpa antri" },
-                { icon: Headphones, title: "Bantuan Siaga", desc: "Admin online" },
+                { icon: Shield, title: "Pembayaran Aman", desc: "QRIS otomatis", iconClass: "text-[#00f0ff]", bgClass: "bg-[#00f0ff]/8" },
+                { icon: Clock, title: "Proses Cepat", desc: "Tanpa antri", iconClass: "text-[#ffb800]", bgClass: "bg-[#ffb800]/8" },
+                { icon: Headphones, title: "Bantuan Siaga", desc: "Admin online", iconClass: "text-[#ff4967]", bgClass: "bg-[#ff003c]/8" },
               ].map((item) => (
-                <div key={item.title} className="flex items-center gap-3 rounded-lg border border-[#ff003c]/20 bg-[#13060b]/70 px-4 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                  <item.icon className="h-4 w-4 shrink-0 text-[#ff4967]" />
+                <div key={item.title} className="flex items-center gap-3 rounded-lg border border-white/10 bg-[#13060b]/70 px-4 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-transform duration-200 hover:-translate-y-0.5">
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${item.bgClass}`}>
+                    <item.icon className={`h-4 w-4 ${item.iconClass}`} />
+                  </span>
                   <div>
                     <p className="text-xs font-semibold text-white">{item.title}</p>
                     <p className="text-[11px] text-white/40">{item.desc}</p>
@@ -191,7 +194,7 @@ function HeroSection() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/18 to-transparent" />
                     <div className="absolute inset-0 opacity-0 ring-1 ring-inset ring-[#ff4967]/60 transition-opacity group-hover:opacity-100" />
                     <div className="absolute left-3 right-3 top-3 flex justify-end">
-                      <span className="rounded bg-[#ff003c]/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/80">
+                      <span className={`rounded px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${product.tagClass}`}>
                         {product.tag}
                       </span>
                     </div>
@@ -219,15 +222,15 @@ function HeroSection() {
                   </div>
                   <div className="grid w-[300px] shrink-0 grid-cols-3 gap-2">
                     {[
-                      { icon: Gamepad2, label: "60+ Game" },
-                      { icon: QrCode, label: "QRIS" },
-                      { icon: Zap, label: "Instant" },
+                      { icon: Gamepad2, label: "60+ Game", color: "text-[#ff4967]" },
+                      { icon: QrCode, label: "QRIS", color: "text-[#00f0ff]" },
+                      { icon: Zap, label: "Instant", color: "text-[#ffb800]" },
                     ].map((item) => (
                       <div
                         key={item.label}
                         className="rounded-lg border border-white/10 bg-black/30 px-3 py-3 text-center"
                       >
-                        <item.icon className="mx-auto mb-2 h-4 w-4 text-[#ff4967]" />
+                        <item.icon className={`mx-auto mb-2 h-4 w-4 ${item.color}`} />
                         <p className="text-[11px] font-semibold text-white/75">
                           {item.label}
                         </p>
