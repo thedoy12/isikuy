@@ -72,7 +72,7 @@ export default function Navbar() {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled || mobileOpen
           ? "glass-strong py-3"
-          : "bg-transparent py-5"
+          : "border-b border-white/5 bg-[#050307]/96 py-4 shadow-[0_10px_30px_rgba(0,0,0,0.22)]"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
