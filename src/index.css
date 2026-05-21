@@ -172,8 +172,8 @@
   .page-aura {
     background-color: #030305;
     background-image:
-      radial-gradient(circle at 16% 6%, rgba(255, 0, 60, 0.16), transparent 24rem),
-      radial-gradient(circle at 82% 14%, rgba(0, 240, 255, 0.08), transparent 22rem),
+      radial-gradient(circle at 16% 4%, rgba(255, 0, 60, 0.08), transparent 26rem),
+      radial-gradient(circle at 84% 10%, rgba(0, 240, 255, 0.04), transparent 24rem),
       linear-gradient(180deg, #050307 0%, #030305 42rem, #040306 100%);
     background-repeat: no-repeat;
     background-size: 100% 620px, 100% 560px, 100% 100%;
@@ -182,8 +182,8 @@
     position: relative;
     isolation: isolate;
     background:
-      radial-gradient(circle at 12% 0%, rgba(255, 0, 60, 0.14), transparent 26rem),
-      radial-gradient(circle at 86% 18%, rgba(0, 240, 255, 0.075), transparent 24rem),
+      radial-gradient(circle at 12% 0%, rgba(255, 0, 60, 0.075), transparent 28rem),
+      radial-gradient(circle at 86% 18%, rgba(0, 240, 255, 0.035), transparent 26rem),
       linear-gradient(180deg, #060408 0%, #030305 100%);
   }
   .section-aura > * {
@@ -191,17 +191,7 @@
     z-index: 1;
   }
   .section-aura::before {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    opacity: 0.12;
-    background-image:
-      radial-gradient(circle at 18% 26%, rgba(255, 255, 255, 0.6) 0 1px, transparent 1.7px),
-      radial-gradient(circle at 54% 16%, rgba(255, 73, 103, 0.62) 0 1px, transparent 1.7px),
-      radial-gradient(circle at 78% 58%, rgba(0, 240, 255, 0.58) 0 1px, transparent 1.7px);
-    background-size: 340px 340px, 470px 470px, 560px 560px;
+    display: none;
   }
   .render-contained {
     content-visibility: auto;
