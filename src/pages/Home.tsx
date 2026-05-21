@@ -17,6 +17,10 @@ import {
   Sparkles,
   Gamepad2,
   ChevronDown,
+  Smartphone,
+  Wallet,
+  Gift,
+  BadgePercent,
 } from "lucide-react";
 
 function DeferredSection({
@@ -78,6 +82,41 @@ function HeroSection() {
     },
     { name: "Free Fire", image: "/aset/free-fire.png", tag: "Fast", tagClass: "bg-[#ffb800]/18 text-[#ffe39b]" },
     { name: "Valorant", image: "/aset/valorant.png", tag: "New", tagClass: "bg-[#00f0ff]/14 text-[#7ff8ff]" },
+  ];
+  const quickCategories = [
+    {
+      icon: Gamepad2,
+      label: "Game",
+      desc: "ML, FF, Valorant",
+      to: "/games",
+      className: "border-[#00f0ff]/22 bg-[#00f0ff]/8 text-[#00f0ff] hover:border-[#00f0ff]/45",
+    },
+    {
+      icon: Smartphone,
+      label: "Pulsa",
+      desc: "Operator aktif",
+      to: "/games",
+      className: "border-[#ffb800]/22 bg-[#ffb800]/8 text-[#ffb800] hover:border-[#ffb800]/45",
+    },
+    {
+      icon: Wallet,
+      label: "E-Wallet",
+      desc: "Dana, OVO, Gopay",
+      to: "/games",
+      className: "border-[#0aff00]/18 bg-[#0aff00]/8 text-[#73ff6d] hover:border-[#0aff00]/38",
+    },
+    {
+      icon: Gift,
+      label: "Voucher",
+      desc: "Digital & premium",
+      to: "/games",
+      className: "border-[#ff4967]/28 bg-[#ff003c]/10 text-[#ff6a82] hover:border-[#ff4967]/55",
+    },
+  ];
+  const catalogBadges = [
+    { icon: BadgePercent, label: "Promo", color: "text-[#ffb800]", className: "border-[#ffb800]/20 bg-[#ffb800]/8" },
+    { icon: QrCode, label: "QRIS", color: "text-[#00f0ff]", className: "border-[#00f0ff]/20 bg-[#00f0ff]/8" },
+    { icon: Zap, label: "Instan", color: "text-[#ff4967]", className: "border-[#ff4967]/25 bg-[#ff003c]/10" },
   ];
 
   return (
@@ -161,6 +200,20 @@ function HeroSection() {
                 </div>
               ))}
             </div>
+
+            <div className="mx-auto mt-4 grid max-w-[21rem] grid-cols-2 gap-2 sm:max-w-lg sm:grid-cols-4 lg:mx-0">
+              {quickCategories.map((item, index) => (
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  className={`group min-w-0 rounded-lg border px-3 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 hover:-translate-y-0.5 ${item.className}`}
+                >
+                  <item.icon className={`mb-2 h-4 w-4 ${index === 0 ? "animate-soft-bob" : ""}`} />
+                  <p className="truncate text-xs font-bold text-white">{item.label}</p>
+                  <p className="mt-0.5 truncate text-[10px] text-white/45">{item.desc}</p>
+                </Link>
+              ))}
+            </div>
           </div>
 
           <div className="hidden lg:block">
@@ -173,6 +226,18 @@ function HeroSection() {
                 <span className="rounded-full border border-[#0aff00]/20 bg-[#0aff00]/10 px-3 py-1 text-xs font-semibold text-[#0aff00]">
                   Online
                 </span>
+              </div>
+
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {catalogBadges.map((item) => (
+                  <div
+                    key={item.label}
+                    className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 ${item.className}`}
+                  >
+                    <item.icon className={`h-4 w-4 ${item.color}`} />
+                    <span className="text-[11px] font-semibold text-white/80">{item.label}</span>
+                  </div>
+                ))}
               </div>
 
               <div className="mt-4 grid h-[260px] grid-cols-[1.18fr_0.82fr] grid-rows-2 gap-4">
