@@ -95,11 +95,13 @@
     background-clip: text;
   }
   .glass {
-    background: rgba(16, 18, 26, 0.82);
+    background: rgba(255, 255, 255, 0.045);
+    backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
   .glass-strong {
-    background: rgba(17, 19, 26, 0.96);
+    background: rgba(17, 19, 26, 0.92);
+    backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
   .site-bg {
@@ -120,7 +122,7 @@
   }
   .site-bg::before,
   .site-bg::after {
-    content: none;
+    content: "";
     pointer-events: none;
     position: absolute;
     inset: 0;
@@ -162,7 +164,7 @@
     z-index: 1;
   }
   .site-bg-soft::before {
-    content: none;
+    content: "";
     pointer-events: none;
     position: absolute;
     inset: 0;

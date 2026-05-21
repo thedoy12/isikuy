@@ -19,6 +19,13 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+const HERO_PARTICLES = Array.from({ length: 8 }, (_, i) => ({
+  left: `${(i * 37) % 100}%`,
+  top: `${(i * 53) % 100}%`,
+  animationDelay: `${(i % 5) * 0.8}s`,
+  animationDuration: `${3 + (i % 4)}s`,
+}));
+
 function DeferredSection({
   children,
   className = "",
@@ -105,6 +112,17 @@ function HeroSection() {
         <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-[#050307] to-transparent" />
       </div>
 
+      {/* Floating particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {HERO_PARTICLES.map((particle, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-[#ff003c]/30 rounded-full animate-float"
+            style={particle}
+          />
+        ))}
+      </div>
+
       <div className="absolute inset-0 z-[2] bg-[linear-gradient(110deg,rgba(5,3,7,0.2)_0%,rgba(5,3,7,0.08)_42%,rgba(5,3,7,0.54)_100%)]" />
 
       {/* Content */}
@@ -184,8 +202,8 @@ function HeroSection() {
             </div>
           </div>
 
-          <div className="relative hidden min-h-[520px] lg:block">
-            <div className="absolute inset-x-2 top-0 h-[500px] overflow-hidden rounded-[1.35rem] border border-[#ff4967]/20 bg-[#080407]/92 shadow-[0_20px_54px_rgba(0,0,0,0.42)]">
+          <div className="relative hidden min-h-[520px] lg:-mt-16 lg:block">
+            <div className="absolute inset-x-2 -top-8 h-[500px] overflow-hidden rounded-[1.35rem] border border-[#ff4967]/20 bg-[#080407]/92 shadow-[0_24px_70px_rgba(0,0,0,0.5),0_0_44px_rgba(255,0,60,0.1)]">
               <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_22%_8%,rgba(255,0,60,0.32),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(0,240,255,0.12),transparent_24%)]" />
               <img
                 src={optimizedImagePath("/aset/valorant.png")}
@@ -734,11 +752,11 @@ function MarqueeSection() {
 
   return (
     <section className="py-8 overflow-hidden border-y border-white/5">
-      <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 whitespace-normal">
-        {items.map((item) => (
+      <div className="flex animate-marquee-left whitespace-nowrap">
+        {[...items, ...items, ...items, ...items].map((item, i) => (
           <span
-            key={item}
-            className="font-display text-2xl font-bold text-white/10 tracking-wider"
+            key={i}
+            className="mx-8 font-display text-2xl font-bold text-white/10 tracking-wider"
           >
             {item}
           </span>
