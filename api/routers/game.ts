@@ -30,6 +30,11 @@ const DIGIFLAZZ_PUBLISHER = "Digiflazz";
 const CATALOG_PUBLISHERS = [FLOWIX_PUBLISHER, DIGIFLAZZ_PUBLISHER];
 const FLOWIX_ONLY_GAME_FILTER = eq(games.publisher, FLOWIX_PUBLISHER);
 const CATALOG_GAME_FILTER = inArray(games.publisher, CATALOG_PUBLISHERS);
+const MAX_PAGE_SIZE = 15;
+
+function pageLimit(value: number | null | undefined) {
+  return Math.min(MAX_PAGE_SIZE, Math.max(1, Math.floor(value || MAX_PAGE_SIZE)));
+}
 
 const categoryGroupSlugs: Record<string, string[]> = {
   game: ["game", "games", "game-online", "top-up-game", "topup-game", "voucher-game"],
@@ -897,12 +902,13 @@ export const gameRouter = createRouter({
         categoryGroup: z.enum(["game", "pulsa", "ewallet", "digital"]).optional(),
         trending: z.boolean().optional(),
         popular: z.boolean().optional(),
-        limit: z.number().default(50),
+        limit: z.number().default(MAX_PAGE_SIZE),
         offset: z.number().default(0),
       }).optional(),
     )
     .query(async ({ input }) => {
       const db = getDb();
+      const limit = pageLimit(input?.limit);
       const filters = [eq(games.isActive, true), CATALOG_GAME_FILTER];
       if (input?.categoryId) filters.push(eq(games.categoryId, input.categoryId));
       if (input?.categoryGroup) {
@@ -941,14 +947,14 @@ export const gameRouter = createRouter({
           .leftJoin(categories, eq(games.categoryId, categories.id))
           .where(and(...filters))
           .orderBy(categoryRankSql, asc(games.sortOrder), asc(games.name))
-          .limit((input?.limit || 50) * 3)
+          .limit(limit * 3)
           .offset(input?.offset || 0);
 
       const rows = await loadRows();
       const route = await getSupplierRouting();
       const visibleRows = await filterGamesForRoute(uniqueGamesByName(rows), route.mode);
 
-      return visibleRows.slice(0, input?.limit || 50).map((game) => ({
+      return visibleRows.slice(0, limit).map((game) => ({
         ...game,
         description: sanitizePublicText(game.description),
         publisher: publicProviderLabel,

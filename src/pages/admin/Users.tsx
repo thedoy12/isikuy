@@ -76,7 +76,7 @@ export default function AdminUsers() {
   const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
   const [page, setPage] = useState(0);
-  const pageSize = 25;
+  const pageSize = 15;
 
   const { data: userList } = trpc.admin.users.useQuery(
     { limit: pageSize, offset: page * pageSize },

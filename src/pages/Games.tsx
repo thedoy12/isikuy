@@ -60,7 +60,7 @@ export default function Games() {
     categoryGroup: selectedType,
     search: search || undefined,
     trending: trendingParam || undefined,
-    limit: 40,
+    limit: 15,
   });
 
   useEffect(() => {

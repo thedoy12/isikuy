@@ -38,6 +38,12 @@ import { isActiveDigiflazzProduct, listDigiflazzProducts, type DigiflazzProduct 
 import { getFlowixProfile, isFlowixConfigured } from "../flowix/client";
 import { getCommerceSettings, setCommerceSettings } from "../lib/commerceSettings";
 
+const MAX_PAGE_SIZE = 15;
+
+function pageLimit(value: number | null | undefined) {
+  return Math.min(MAX_PAGE_SIZE, Math.max(1, Math.floor(value || MAX_PAGE_SIZE)));
+}
+
 function adminMatchKey(value: string | null | undefined) {
   return (value || "")
     .toLowerCase()
@@ -612,13 +618,13 @@ export const adminRouter = createRouter({
   vouchers: adminQuery
     .input(
       z.object({
-        limit: z.number().default(25),
+        limit: z.number().default(MAX_PAGE_SIZE),
         offset: z.number().default(0),
       }).optional(),
     )
     .query(async ({ input }) => {
     const db = getDb();
-      const limit = input?.limit || 25;
+      const limit = pageLimit(input?.limit);
       const offset = input?.offset || 0;
       const [totalRow] = await db.select({ count: count() }).from(vouchers);
       const [activeRow] = await db
@@ -827,13 +833,13 @@ export const adminRouter = createRouter({
     .input(
       z.object({
         status: z.string().optional(),
-        limit: z.number().default(50),
+        limit: z.number().default(MAX_PAGE_SIZE),
         offset: z.number().default(0),
       }).optional()
     )
     .query(async ({ input }) => {
       const db = getDb();
-      const limit = input?.limit || 50;
+      const limit = pageLimit(input?.limit);
       const offset = input?.offset || 0;
       const filters = [];
 
@@ -923,13 +929,13 @@ export const adminRouter = createRouter({
       z.object({
         search: z.string().optional(),
         role: z.string().optional(),
-        limit: z.number().default(50),
+        limit: z.number().default(MAX_PAGE_SIZE),
         offset: z.number().default(0),
       }).optional()
     )
     .query(async ({ input }) => {
       const db = getDb();
-      const limit = input?.limit || 50;
+      const limit = pageLimit(input?.limit);
       const offset = input?.offset || 0;
       const filters = [];
 
@@ -1059,13 +1065,13 @@ export const adminRouter = createRouter({
       z.object({
         search: z.string().optional(),
         categoryId: z.number().optional(),
-        limit: z.number().default(50),
+        limit: z.number().default(MAX_PAGE_SIZE),
         offset: z.number().default(0),
       }).optional(),
     )
     .query(async ({ input }) => {
       const db = getDb();
-      const limit = input?.limit || 50;
+      const limit = pageLimit(input?.limit);
       const offset = input?.offset || 0;
       const filters = [inArray(games.publisher, ["Flowix", "Digiflazz"])];
       if (input?.search) {
@@ -1159,13 +1165,13 @@ export const adminRouter = createRouter({
         categoryId: z.number().optional(),
         search: z.string().optional(),
         supplier: z.enum(["all", "flowix", "digiflazz", "unmapped", "inactive", "manualPrice"]).optional(),
-        limit: z.number().default(50),
+        limit: z.number().default(MAX_PAGE_SIZE),
         offset: z.number().default(0),
       }).optional(),
     )
     .query(async ({ input }) => {
       const db = getDb();
-      const limit = input?.limit || 50;
+      const limit = pageLimit(input?.limit);
       const offset = input?.offset || 0;
       const filters = [];
       if (input?.gameId) filters.push(eq(products.gameId, input.gameId));
@@ -1495,13 +1501,13 @@ export const adminRouter = createRouter({
     }),
 
   logs: adminQuery
-    .input(z.object({ limit: z.number().default(50) }).optional())
+    .input(z.object({ limit: z.number().default(MAX_PAGE_SIZE) }).optional())
     .query(async ({ input }) => {
       const db = getDb();
       return db
         .select()
         .from(activityLogs)
         .orderBy(desc(activityLogs.createdAt))
-        .limit(input?.limit || 50);
+        .limit(pageLimit(input?.limit));
     }),
 });

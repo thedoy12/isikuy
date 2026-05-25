@@ -97,7 +97,7 @@ export default function AdminTransactions() {
   const utils = trpc.useUtils();
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [page, setPage] = useState(0);
-  const pageSize = 25;
+  const pageSize = 15;
 
   const { data: txList } = trpc.admin.transactions.useQuery(
     {

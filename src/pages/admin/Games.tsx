@@ -92,7 +92,7 @@ export default function AdminGames() {
   });
   const [productGameId, setProductGameId] = useState<number | undefined>();
   const [productPage, setProductPage] = useState(0);
-  const [productPageSize, setProductPageSize] = useState(100);
+  const [productPageSize, setProductPageSize] = useState(15);
   const [productSearch, setProductSearch] = useState("");
   const [supplierFilter, setSupplierFilter] = useState<"all" | "flowix" | "digiflazz" | "unmapped" | "inactive" | "manualPrice">("all");
   const [syncMessage, setSyncMessage] = useState("");
@@ -656,7 +656,7 @@ export default function AdminGames() {
                   onChange={(event) => setProductPageSize(Number(event.target.value))}
                   className="w-full border border-[#222] bg-[#0b0d14] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
                 >
-                  {[25, 50, 100, 250].map((size) => (
+                  {[15].map((size) => (
                     <option key={size} value={size}>
                       {size}/PAGE
                     </option>
