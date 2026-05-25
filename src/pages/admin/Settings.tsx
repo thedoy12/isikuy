@@ -570,19 +570,43 @@ export default function AdminSettings() {
                 <p className="mb-3 text-xs font-bold text-[#00f0ff]">
                   {(supplierRouting?.mode || "manual").toUpperCase()}
                 </p>
+                <div className="mb-3 grid gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSupplierMode("flowix");
+                      setSupplierRouting.mutate({ mode: "flowix" });
+                    }}
+                    disabled={setSupplierRouting.isPending || applySupplierRouting.isPending}
+                    className="bg-[#00f0ff] px-4 py-2 text-xs font-bold text-black disabled:opacity-60"
+                  >
+                    PAKAI_PRODUK_FLOWIX
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSupplierMode("digiflazz");
+                      setSupplierRouting.mutate({ mode: "digiflazz" });
+                    }}
+                    disabled={setSupplierRouting.isPending || applySupplierRouting.isPending}
+                    className="bg-[#0aff00] px-4 py-2 text-xs font-bold text-black disabled:opacity-60"
+                  >
+                    PAKAI_PRODUK_DIGIFLAZZ
+                  </button>
+                </div>
                 <select
                   value={supplierMode}
                   onChange={(event) => setSupplierMode(event.target.value as typeof supplierMode)}
                   className="w-full border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
                 >
                   <option value="manual">MANUAL_PER_PRODUCT</option>
-                  <option value="flowix">ALL_FLOWIX</option>
-                  <option value="digiflazz">DIGIFLAZZ_STRICT_HIDE_UNMAPPED</option>
-                  <option value="digiflazz_fallback_flowix">DIGIFLAZZ_PRIORITY_FLOWIX_FALLBACK_RECOMMENDED</option>
+                  <option value="flowix">SOURCE_FLOWIX_ONLY</option>
+                  <option value="digiflazz">SOURCE_DIGIFLAZZ_ONLY</option>
+                  <option value="digiflazz_fallback_flowix">SOURCE_DIGIFLAZZ_PRIORITY_FLOWIX_FALLBACK</option>
                 </select>
                 <p className="mt-2 text-[10px] leading-relaxed text-white/35">
-                  STRICT hanya menampilkan produk yang aktif/termapping Digiflazz. Fallback membuat katalog tetap penuh:
-                  Digiflazz dipakai saat ada, Flowix dipakai saat Digiflazz belum ada.
+                  Tombol pakai produk hanya mengganti jalur katalog dan order produk. Payment gateway QRIS tetap Flowix.
+                  Flowix only menampilkan produk Flowix saja; Digiflazz only menampilkan produk Digiflazz saja.
                 </p>
                 <div className="mt-3 grid gap-2">
                   <button

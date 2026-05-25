@@ -20,7 +20,12 @@ import { safeDiscountAmount } from "../lib/pricing";
 import { checkRateLimit, rateLimitKey } from "../lib/rateLimit";
 import { withTransactionLock } from "../lib/transactionLock";
 import { checkoutAmounts } from "../lib/checkout";
-import { getSupplierMaintenance, getSupplierRouting, resolveProductSupplier } from "../lib/supplierRouting";
+import {
+  getSupplierMaintenance,
+  getSupplierRouting,
+  isProductAvailableForSupplierRoute,
+  resolveProductSupplier,
+} from "../lib/supplierRouting";
 import { getCommerceSettings } from "../lib/commerceSettings";
 
 function generateInvoice(): string {
@@ -495,6 +500,9 @@ export const transactionRouter = createRouter({
       const productCost = Number(product.basePrice || product.salePrice || baseAmount);
       const commerceSettings = await getCommerceSettings();
       const supplierRoute = await getSupplierRouting();
+      if (!isProductAvailableForSupplierRoute(product, supplierRoute.mode)) {
+        throw new Error("Produk ini tidak tersedia pada jalur API yang sedang aktif.");
+      }
       const supplier = resolveProductSupplier({
         product,
         mode: supplierRoute.mode,

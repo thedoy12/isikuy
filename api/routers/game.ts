@@ -14,7 +14,11 @@ import {
   type FlowixProduct,
 } from "../flowix/client";
 import { isActiveDigiflazzProduct, isDigiflazzConfigured, listDigiflazzProducts, type DigiflazzProduct } from "../digiflazz/client";
-import { getSupplierRouting, type SupplierRouteMode } from "../lib/supplierRouting";
+import {
+  getSupplierRouting,
+  isProductAvailableForSupplierRoute,
+  type SupplierRouteMode,
+} from "../lib/supplierRouting";
 
 type GameRow = typeof games.$inferSelect;
 type ProductRow = typeof products.$inferSelect;
@@ -422,12 +426,11 @@ function isVisibleProductForRoute(
   product: Pick<ProductRow, "supplierProvider" | "supplierProductCode">,
   mode: SupplierRouteMode,
 ) {
-  if (mode !== "digiflazz") return true;
-  return product.supplierProvider === "digiflazz" && !!product.supplierProductCode;
+  return isProductAvailableForSupplierRoute(product, mode);
 }
 
 async function filterGamesForRoute<T extends { id: number }>(items: T[], mode: SupplierRouteMode) {
-  if (mode !== "digiflazz" || items.length === 0) return items;
+  if (!["flowix", "digiflazz"].includes(mode) || items.length === 0) return items;
   const productRows = await getDb()
     .select({
       gameId: products.gameId,

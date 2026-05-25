@@ -81,6 +81,17 @@ export async function setSupplierMaintenance(input: {
   return getSupplierMaintenance();
 }
 
+export function isProductAvailableForSupplierRoute(
+  product: Pick<Product, "supplierProvider" | "supplierProductCode">,
+  mode: SupplierRouteMode,
+) {
+  if (mode === "flowix") return product.supplierProvider === "flowix";
+  if (mode === "digiflazz") {
+    return product.supplierProvider === "digiflazz" && !!product.supplierProductCode;
+  }
+  return true;
+}
+
 export function resolveProductSupplier(input: {
   product: Pick<
     Product,

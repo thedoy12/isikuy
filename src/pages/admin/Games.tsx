@@ -280,12 +280,17 @@ export default function AdminGames() {
               <p className="text-[10px] text-[#00f0ff] tracking-wider">ARSENAL // CATALOG_MANAGEMENT</p>
               {supplierRouting?.mode === "digiflazz" && (
                 <p className="mt-1 text-[9px] text-[#ffb800]">
-                  ROUTE_STRICT_DIGIFLAZZ: produk yang belum aktif di Digiflazz disembunyikan.
+                  SOURCE_DIGIFLAZZ: katalog dan order produk memakai Digiflazz. Payment QRIS tetap Flowix.
+                </p>
+              )}
+              {supplierRouting?.mode === "flowix" && (
+                <p className="mt-1 text-[9px] text-[#00f0ff]">
+                  SOURCE_FLOWIX: katalog dan order produk memakai Flowix. Payment QRIS tetap Flowix.
                 </p>
               )}
               {supplierRouting?.mode === "digiflazz_fallback_flowix" && (
                 <p className="mt-1 text-[9px] text-[#0aff00]">
-                  ROUTE_RECOMMENDED: Digiflazz prioritas, Flowix fallback untuk katalog penuh.
+                  SOURCE_FALLBACK: Digiflazz prioritas, Flowix fallback. Payment QRIS tetap Flowix.
                 </p>
               )}
               {syncMessage && <p className="mt-1 text-[9px] text-[#0aff00]">{syncMessage}</p>}
