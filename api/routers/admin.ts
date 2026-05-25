@@ -681,6 +681,7 @@ export const adminRouter = createRouter({
     .input(
       z.object({
         search: z.string().optional(),
+        categoryId: z.number().optional(),
         limit: z.number().default(50),
         offset: z.number().default(0),
       }).optional(),
@@ -692,6 +693,9 @@ export const adminRouter = createRouter({
       const filters = [eq(games.publisher, "Flowix")];
       if (input?.search) {
         filters.push(ilike(games.name, `%${input.search}%`));
+      }
+      if (input?.categoryId) {
+        filters.push(eq(games.categoryId, input.categoryId));
       }
       const flowixFilter = and(...filters);
       const items = await db
@@ -775,6 +779,7 @@ export const adminRouter = createRouter({
     .input(
       z.object({
         gameId: z.number().optional(),
+        categoryId: z.number().optional(),
         limit: z.number().default(50),
         offset: z.number().default(0),
       }).optional(),
@@ -785,6 +790,7 @@ export const adminRouter = createRouter({
       const offset = input?.offset || 0;
       const filters = [];
       if (input?.gameId) filters.push(eq(products.gameId, input.gameId));
+      if (input?.categoryId) filters.push(eq(games.categoryId, input.categoryId));
       filters.push(eq(games.publisher, "Flowix"));
       filters.push(eq(games.isActive, true));
 
@@ -796,6 +802,10 @@ export const adminRouter = createRouter({
           name: products.name,
           description: products.description,
           nominalAmount: products.nominalAmount,
+          supplierProvider: products.supplierProvider,
+          supplierProductCode: products.supplierProductCode,
+          supplierProductName: products.supplierProductName,
+          supplierTargetFormat: products.supplierTargetFormat,
           basePrice: products.basePrice,
           salePrice: products.salePrice,
           isPriceManual: products.isPriceManual,
@@ -836,6 +846,10 @@ export const adminRouter = createRouter({
         isPromo: z.boolean().optional(),
         stock: z.number().optional(),
         isActive: z.boolean().optional(),
+        supplierProvider: z.enum(["flowix", "digiflazz"]).optional(),
+        supplierProductCode: z.string().max(100).nullable().optional(),
+        supplierProductName: z.string().max(255).nullable().optional(),
+        supplierTargetFormat: z.enum(["auto", "player", "pipe", "dash", "space", "comma"]).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -858,6 +872,10 @@ export const adminRouter = createRouter({
       if (data.discountPercent !== undefined) updateData.discountPercent = data.discountPercent;
       if (data.isPromo !== undefined) updateData.isPromo = data.isPromo;
       if (data.stock !== undefined) updateData.stock = data.stock;
+      if (data.supplierProvider !== undefined) updateData.supplierProvider = data.supplierProvider;
+      if (data.supplierProductCode !== undefined) updateData.supplierProductCode = data.supplierProductCode?.trim() || null;
+      if (data.supplierProductName !== undefined) updateData.supplierProductName = data.supplierProductName?.trim() || null;
+      if (data.supplierTargetFormat !== undefined) updateData.supplierTargetFormat = data.supplierTargetFormat;
       if (data.isActive !== undefined) {
         updateData.isActive = data.isActive;
         updateData.isManuallyHidden = !data.isActive;

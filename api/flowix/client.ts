@@ -39,6 +39,10 @@ export type FlowixProduct = {
   name: string;
   brand: string;
   status: string;
+  raw_status?: string;
+  availability_label?: string;
+  is_available?: boolean;
+  stock?: number | null;
   price: number;
   category?: string;
   sourceCategory?: string;
@@ -232,6 +236,45 @@ export async function listFlowixProducts(category?: string) {
     ...product,
     sourceCategory: normalizeFlowixCategory(product.category || category || "produk"),
   }));
+}
+
+export function isActiveFlowixProduct(product: FlowixProduct | undefined) {
+  if (!product) return false;
+  if (product.is_available === false) return false;
+  if (product.stock === 0) return false;
+
+  const status = product.status.toLowerCase().trim();
+  const rawStatus = product.raw_status?.toLowerCase().trim();
+  const availability = product.availability_label?.toLowerCase().trim();
+
+  if (["empty", "inactive", "disabled", "unavailable"].includes(rawStatus || "")) return false;
+  if (availability && !["tersedia", "available"].includes(availability)) return false;
+
+  return status === "aktif" || status === "active" || rawStatus === "available";
+}
+
+export function isFlowixProductUnavailableError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /product.*unavailable|unavailable|tidak tersedia|not available|nonaktif|inactive/i.test(
+    message,
+  );
+}
+
+export async function ensureFlowixProductAvailable(serviceCode: string | null | undefined) {
+  if (!serviceCode) {
+    throw new Error("Kode produk Flowix kosong.");
+  }
+
+  const products = await listFlowixCatalog();
+  const product = products.find(
+    (item) => item.code.toLowerCase() === serviceCode.toLowerCase(),
+  );
+
+  if (!isActiveFlowixProduct(product)) {
+    throw new Error("Produk sedang tidak tersedia di Flowix. Silakan pilih produk lain.");
+  }
+
+  return product;
 }
 
 export async function listFlowixCatalog() {

@@ -6,13 +6,13 @@ import { getDb } from "../queries/connection";
 import { transactions, games, products, paymentMethods, vouchers } from "@db/schema";
 import {
   checkFlowixDeposit,
-  checkFlowixTransaction,
   createFlowixDeposit,
-  createFlowixTransaction,
+  ensureFlowixProductAvailable,
   getFlowixProfile,
+  isFlowixProductUnavailableError,
   isFlowixConfigured,
-  type FlowixTransaction,
 } from "../flowix/client";
+import { checkSupplierOrder, submitSupplierOrder, type SupplierOrder } from "../suppliers/orders";
 import { env } from "../lib/env";
 import { failExpiredUnpaidTransactions, qrisExpiryDate } from "../lib/transactionExpiry";
 import { getPaymentMaintenance } from "../lib/paymentMaintenance";
@@ -166,47 +166,55 @@ function getTransactionIssue(raw: string | null) {
   return state.paymentHoldReason || state.orderSubmitError || state.voucherUsageError || null;
 }
 
-function productTransactionStatus(status: string) {
-  const normalized = status.toLowerCase();
-  if (["paid", "success", "settlement", "settled", "completed", "capture"].includes(normalized)) {
-    return "success" as const;
-  }
-  if (["failed", "failure", "deny", "denied"].includes(normalized)) {
-    return "failed" as const;
-  }
-  if (["expired", "expire", "cancelled", "canceled"].includes(normalized)) {
-    return "cancelled" as const;
-  }
-  if (["refund", "refunded"].includes(normalized)) {
-    return "refunded" as const;
-  }
-  return "processing" as const;
-}
-
-async function submitFlowixProductOrder(transaction: {
+async function submitProductOrder(transaction: {
+  invoiceNumber: string;
+  supplierProvider: string | null;
   providerProductCode: string | null;
+  productCost?: number;
   playerId: string;
   serverId: string | null;
   providerReference: string | null;
   providerResponse: string | null;
+  supplierTargetFormat?: string | null;
 }) {
   const state = parseProviderState(transaction.providerResponse) as {
-    productOrder?: FlowixTransaction;
+    productOrder?: SupplierOrder;
   };
-  const existingOrderRef = state.productOrder?.reff_id;
+  const existingOrderRef = state.productOrder?.reference;
   if (existingOrderRef) {
-    return checkFlowixTransaction(existingOrderRef).catch(() => state.productOrder);
+    return checkSupplierOrder({
+      provider: transaction.supplierProvider,
+      productCode: transaction.providerProductCode,
+      productCost: transaction.productCost,
+      playerId: transaction.playerId,
+      serverId: transaction.serverId,
+      invoiceNumber: transaction.invoiceNumber,
+      targetFormat: transaction.supplierTargetFormat,
+      reference: existingOrderRef,
+    }).catch(() => state.productOrder);
   }
 
-  if (!transaction.providerProductCode) {
-    throw new Error("Kode produk Flowix kosong, order tidak bisa dikirim.");
-  }
-
-  return createFlowixTransaction({
-    serviceCode: transaction.providerProductCode,
-    target: transaction.playerId,
-    zone: transaction.serverId,
+  return submitSupplierOrder({
+    provider: transaction.supplierProvider,
+    productCode: transaction.providerProductCode,
+    productCost: transaction.productCost,
+    playerId: transaction.playerId,
+    serverId: transaction.serverId,
+    invoiceNumber: transaction.invoiceNumber,
+    targetFormat: transaction.supplierTargetFormat,
   });
+}
+
+async function deactivateUnavailableProduct(input: {
+  productId: number | null;
+  error: unknown;
+}) {
+  if (!input.productId || !isFlowixProductUnavailableError(input.error)) return;
+
+  await getDb()
+    .update(products)
+    .set({ isActive: false })
+    .where(eq(products.id, input.productId));
 }
 
 async function countVoucherUsageOnce(raw: string | null) {
@@ -261,10 +269,15 @@ async function syncFlowixDepositPayment(invoiceNumber: string) {
       status: transactions.status,
       paymentStatus: transactions.paymentStatus,
       providerProductCode: transactions.providerProductCode,
+      supplierProvider: transactions.supplierProvider,
+      productId: transactions.productId,
       providerReference: transactions.providerReference,
       providerResponse: transactions.providerResponse,
+      productCost: products.basePrice,
+      supplierTargetFormat: products.supplierTargetFormat,
     })
     .from(transactions)
+    .leftJoin(products, eq(transactions.productId, products.id))
     .where(eq(transactions.invoiceNumber, invoiceNumber))
     .limit(1);
 
@@ -293,14 +306,18 @@ async function syncFlowixDepositPayment(invoiceNumber: string) {
   let nextStatus: "processing" | "success" | "failed" | "cancelled" | "refunded" = "processing";
   let completedAt: Date | undefined;
   try {
-    const productOrder = await submitFlowixProductOrder({
+    const productOrder = await submitProductOrder({
+      invoiceNumber: transaction.invoiceNumber,
+      supplierProvider: transaction.supplierProvider,
       providerProductCode: transaction.providerProductCode,
+      productCost: Number(transaction.productCost || 0),
       playerId: transaction.playerId,
       serverId: transaction.serverId,
       providerReference: transaction.providerReference,
       providerResponse,
+      supplierTargetFormat: transaction.supplierTargetFormat,
     });
-    nextStatus = productTransactionStatus(productOrder?.status || "processing");
+    nextStatus = productOrder?.status || "processing";
     completedAt = nextStatus === "success" ? new Date() : undefined;
     providerResponse = stringifyProviderState(providerResponse, {
       productOrder,
@@ -310,6 +327,10 @@ async function syncFlowixDepositPayment(invoiceNumber: string) {
       providerResponse = await countVoucherUsageOnce(providerResponse) ?? providerResponse;
     }
   } catch (error) {
+    await deactivateUnavailableProduct({
+      productId: transaction.productId,
+      error,
+    });
     nextStatus = "failed";
     providerResponse = stringifyProviderState(providerResponse, {
       orderSubmitError: error instanceof Error ? error.message : "Gagal mengirim order produk Flowix.",
@@ -336,11 +357,20 @@ async function syncFlowixProductOrderStatus(invoiceNumber: string) {
   const [transaction] = await db
     .select({
       id: transactions.id,
+      invoiceNumber: transactions.invoiceNumber,
       status: transactions.status,
       paymentStatus: transactions.paymentStatus,
+      providerProductCode: transactions.providerProductCode,
+      supplierProvider: transactions.supplierProvider,
+      playerId: transactions.playerId,
+      serverId: transactions.serverId,
+      productId: transactions.productId,
       providerResponse: transactions.providerResponse,
+      productCost: products.basePrice,
+      supplierTargetFormat: products.supplierTargetFormat,
     })
     .from(transactions)
+    .leftJoin(products, eq(transactions.productId, products.id))
     .where(eq(transactions.invoiceNumber, invoiceNumber))
     .limit(1);
 
@@ -353,13 +383,31 @@ async function syncFlowixProductOrderStatus(invoiceNumber: string) {
   }
 
   const state = parseProviderState(transaction.providerResponse) as {
-    productOrder?: FlowixTransaction;
+    productOrder?: SupplierOrder;
   };
-  const orderRef = state.productOrder?.reff_id;
+  const orderRef = state.productOrder?.reference;
   if (!orderRef) return;
 
-  const productOrder = await checkFlowixTransaction(orderRef);
-  const nextStatus = productTransactionStatus(productOrder?.status || transaction.status);
+  const productOrder = await checkSupplierOrder({
+    provider: transaction.supplierProvider,
+    productCode: transaction.providerProductCode,
+    productCost: Number(transaction.productCost || 0),
+    playerId: transaction.playerId,
+    serverId: transaction.serverId,
+    invoiceNumber: transaction.invoiceNumber,
+    targetFormat: transaction.supplierTargetFormat,
+    reference: orderRef,
+  });
+  const nextStatus = productOrder?.status || transaction.status;
+  if (nextStatus === "failed") {
+    await deactivateUnavailableProduct({
+      productId: transaction.productId,
+      error:
+        productOrder?.provider === "flowix"
+          ? productOrder.raw.note || ""
+          : productOrder?.raw.message || "",
+    });
+  }
   const providerResponse = stringifyProviderState(transaction.providerResponse, {
     productOrder,
     productSyncedAt: new Date().toISOString(),
@@ -444,6 +492,8 @@ export const transactionRouter = createRouter({
 
       const baseAmount = parseFloat(product.salePrice || product.basePrice);
       const productCost = Number(product.basePrice || product.salePrice || baseAmount);
+      const supplierProvider = product.supplierProvider || "flowix";
+      const supplierProductCode = product.supplierProductCode || product.nominalAmount || null;
       const voucher = await validateVoucher({
         code: input.voucherCode,
         amount: baseAmount,
@@ -463,10 +513,22 @@ export const transactionRouter = createRouter({
       const expiryAt = qrisExpiryDate();
 
       if (method.code === "qris" && isFlowixConfigured()) {
-        await ensureFlowixBalanceCanFulfill({
-          productCost,
-          paymentReceivedEstimate: Math.round(totalAmount),
-        });
+        if (supplierProvider === "flowix") {
+          try {
+            await ensureFlowixProductAvailable(supplierProductCode);
+          } catch (error) {
+            await deactivateUnavailableProduct({
+              productId: product.id,
+              error,
+            });
+            throw error;
+          }
+
+          await ensureFlowixBalanceCanFulfill({
+            productCost,
+            paymentReceivedEstimate: Math.round(totalAmount),
+          });
+        }
         const flowixDeposit = await createFlowixDeposit({
           amount: Math.round(totalAmount),
           methodCode: "QRIS",
@@ -502,8 +564,9 @@ export const transactionRouter = createRouter({
         invoiceNumber,
         gameId: game.id,
         productId: product.id,
-        providerProductCode: product.nominalAmount || null,
-        providerProductName: product.name,
+        providerProductCode: supplierProductCode,
+        providerProductName: product.supplierProductName || product.name,
+        supplierProvider,
         playerId: input.playerId,
         serverId: input.serverId || null,
         paymentMethodId: input.paymentMethodId,

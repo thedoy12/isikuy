@@ -3,13 +3,14 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { and, eq, gte, lte, or, sql } from "drizzle-orm";
 import { env } from "../lib/env";
 import { getDb } from "../queries/connection";
-import { activityLogs, transactions, vouchers } from "@db/schema";
+import { activityLogs, products, transactions, vouchers } from "@db/schema";
 import {
   checkFlowixTransaction,
-  createFlowixTransaction,
+  isFlowixProductUnavailableError,
   type FlowixTransaction,
 } from "./client";
 import { withTransactionLock } from "../lib/transactionLock";
+import { checkSupplierOrder, submitSupplierOrder, type SupplierOrder } from "../suppliers/orders";
 
 type TransactionStatus =
   | "pending"
@@ -36,7 +37,7 @@ type ProviderState = {
   };
   deposit?: unknown;
   depositCallback?: unknown;
-  productOrder?: FlowixTransaction;
+  productOrder?: FlowixTransaction | SupplierOrder;
   productCallback?: unknown;
   orderSubmitError?: string;
   paymentHoldReason?: string;
@@ -250,27 +251,59 @@ async function countVoucherUsageOnce(state: ProviderState) {
 }
 
 async function submitFlowixProductOrder(transaction: {
+  invoiceNumber: string;
+  supplierProvider: string | null;
   providerProductCode: string | null;
+  productCost?: number;
   playerId: string;
   serverId: string | null;
   providerReference: string | null;
   providerResponse: string | null;
+  supplierTargetFormat?: string | null;
 }) {
   const state = parseProviderState(transaction.providerResponse);
-  const existingOrderRef = state.productOrder?.reff_id;
+  const existingOrder = state.productOrder as SupplierOrder | FlowixTransaction | undefined;
+  const existingOrderRef =
+    "reference" in (existingOrder || {})
+      ? (existingOrder as SupplierOrder).reference
+      : (existingOrder as FlowixTransaction | undefined)?.reff_id;
   if (existingOrderRef) {
+    if (transaction.supplierProvider === "digiflazz") {
+      return checkSupplierOrder({
+        provider: transaction.supplierProvider,
+        productCode: transaction.providerProductCode,
+        productCost: transaction.productCost,
+        playerId: transaction.playerId,
+        serverId: transaction.serverId,
+        invoiceNumber: transaction.invoiceNumber,
+        targetFormat: transaction.supplierTargetFormat,
+        reference: existingOrderRef,
+      }).catch(() => state.productOrder as SupplierOrder);
+    }
     return checkFlowixTransaction(existingOrderRef).catch(() => state.productOrder);
   }
 
-  if (!transaction.providerProductCode) {
-    throw new Error("Kode produk Flowix kosong, order tidak bisa dikirim.");
-  }
-
-  return createFlowixTransaction({
-    serviceCode: transaction.providerProductCode,
-    target: transaction.playerId,
-    zone: transaction.serverId,
+  return submitSupplierOrder({
+    provider: transaction.supplierProvider,
+    productCode: transaction.providerProductCode,
+    productCost: transaction.productCost,
+    playerId: transaction.playerId,
+    serverId: transaction.serverId,
+    invoiceNumber: transaction.invoiceNumber,
+    targetFormat: transaction.supplierTargetFormat,
   });
+}
+
+async function deactivateUnavailableProduct(input: {
+  productId: number | null;
+  error: unknown;
+}) {
+  if (!input.productId || !isFlowixProductUnavailableError(input.error)) return;
+
+  await getDb()
+    .update(products)
+    .set({ isActive: false })
+    .where(eq(products.id, input.productId));
 }
 
 function verifySignature(rawBody: string, signature: string | undefined) {
@@ -361,10 +394,14 @@ export async function handleFlowixCallback(c: Context) {
         status: TransactionStatus;
         paymentStatus: PaymentStatus;
         providerProductCode: string | null;
+        supplierProvider: string | null;
+        productId: number | null;
         providerReference: string | null;
         providerPaymentId: string | null;
         providerResponse: string | null;
         totalAmount: string;
+        productCost: string | null;
+        supplierTargetFormat: string | null;
       }
     | undefined;
   try {
@@ -377,12 +414,17 @@ export async function handleFlowixCallback(c: Context) {
         status: transactions.status,
         paymentStatus: transactions.paymentStatus,
         providerProductCode: transactions.providerProductCode,
+        supplierProvider: transactions.supplierProvider,
+        productId: transactions.productId,
         providerReference: transactions.providerReference,
         providerPaymentId: transactions.providerPaymentId,
         providerResponse: transactions.providerResponse,
         totalAmount: transactions.totalAmount,
+        productCost: products.basePrice,
+        supplierTargetFormat: products.supplierTargetFormat,
       })
       .from(transactions)
+      .leftJoin(products, eq(transactions.productId, products.id))
       .where(
         or(
           eq(transactions.invoiceNumber, lookup),
@@ -491,6 +533,12 @@ export async function handleFlowixCallback(c: Context) {
         productCallback: payload,
         lastCallback: payload,
       });
+      if (nextStatus === "failed") {
+        await deactivateUnavailableProduct({
+          productId: matched.productId,
+          error: JSON.stringify(payload),
+        });
+      }
       completedAt = nextStatus === "success" ? now : undefined;
     }
   } else if (status.paid) {
@@ -508,10 +556,19 @@ export async function handleFlowixCallback(c: Context) {
       nextStatus = "processing";
       completedAt = undefined;
       try {
-        const productOrder = await submitFlowixProductOrder(matched);
-        const orderStatus = productTransactionStatus(productOrder?.status || "processing");
+        const productOrder = await submitFlowixProductOrder({
+          ...matched,
+          productCost: Number(matched.productCost || 0),
+        });
+        const orderStatus =
+          "provider" in (productOrder || {})
+            ? (productOrder as SupplierOrder).status
+            : productTransactionStatus((productOrder as FlowixTransaction | undefined)?.status || "processing");
         nextStatus = orderStatus;
-        nextProviderReference = productOrder?.reff_id || matched.providerReference;
+        nextProviderReference =
+          ("provider" in (productOrder || {})
+            ? (productOrder as SupplierOrder).reference
+            : (productOrder as FlowixTransaction | undefined)?.reff_id) || matched.providerReference;
         completedAt = orderStatus === "success" ? now : undefined;
         providerResponse = stringifyProviderState(matched.providerResponse, {
           depositCallback: payload,
@@ -521,6 +578,10 @@ export async function handleFlowixCallback(c: Context) {
           paymentHoldReason: undefined,
         });
       } catch (error) {
+        await deactivateUnavailableProduct({
+          productId: matched.productId,
+          error,
+        });
         nextStatus = "failed";
         providerResponse = stringifyProviderState(matched.providerResponse, {
           depositCallback: payload,

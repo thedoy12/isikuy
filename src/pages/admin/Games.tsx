@@ -83,6 +83,7 @@ export default function AdminGames() {
   const utils = trpc.useUtils();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState<number | undefined>();
   const [editingGameId, setEditingGameId] = useState<number | null>(null);
   const [imageDraft, setImageDraft] = useState({
     coverImage: "",
@@ -92,11 +93,22 @@ export default function AdminGames() {
   const [productGameId, setProductGameId] = useState<number | undefined>();
   const [productPage, setProductPage] = useState(0);
   const [productDrafts, setProductDrafts] = useState<Record<number, string>>({});
+  const [supplierDrafts, setSupplierDrafts] = useState<
+    Record<number, { provider: "flowix" | "digiflazz"; code: string; targetFormat: "auto" | "player" | "pipe" | "dash" | "space" | "comma" }>
+  >({});
   const pageSize = 10;
   const productPageSize = 25;
 
+  const { data: categories } = trpc.game.categories.useQuery(undefined, {
+    enabled: isAdmin,
+  });
   const { data: gamesList } = trpc.admin.games.useQuery(
-    { search: search.trim() || undefined, limit: pageSize, offset: page * pageSize },
+    {
+      search: search.trim() || undefined,
+      categoryId,
+      limit: pageSize,
+      offset: page * pageSize,
+    },
     { enabled: isAdmin },
   );
   const updateGame = trpc.admin.updateGame.useMutation({
@@ -118,7 +130,12 @@ export default function AdminGames() {
     },
   });
   const { data: productsList } = trpc.admin.products.useQuery(
-    { gameId: productGameId, limit: productPageSize, offset: productPage * productPageSize },
+    {
+      gameId: productGameId,
+      categoryId: productGameId ? undefined : categoryId,
+      limit: productPageSize,
+      offset: productPage * productPageSize,
+    },
     { enabled: isAdmin },
   );
   const updateProduct = trpc.admin.updateProduct.useMutation({
@@ -134,7 +151,8 @@ export default function AdminGames() {
 
   useEffect(() => {
     setPage(0);
-  }, [search]);
+    setProductGameId(undefined);
+  }, [search, categoryId]);
 
   useEffect(() => {
     setProductPage(0);
@@ -142,10 +160,17 @@ export default function AdminGames() {
 
   useEffect(() => {
     const next: Record<number, string> = {};
+    const nextSuppliers: typeof supplierDrafts = {};
     productsList?.items.forEach((product: any) => {
       next[product.id] = String(Math.round(Number(product.salePrice || product.basePrice || 0)));
+      nextSuppliers[product.id] = {
+        provider: product.supplierProvider === "digiflazz" ? "digiflazz" : "flowix",
+        code: product.supplierProductCode || product.nominalAmount || "",
+        targetFormat: product.supplierTargetFormat || "auto",
+      };
     });
     setProductDrafts(next);
+    setSupplierDrafts(nextSuppliers);
   }, [productsList?.items]);
 
   if (authLoading) {
@@ -181,6 +206,17 @@ export default function AdminGames() {
 
   const resetProductPrice = (productId: number) => {
     updateProduct.mutate({ id: productId, resetAutoPrice: true });
+  };
+
+  const saveSupplier = (productId: number) => {
+    const draft = supplierDrafts[productId];
+    if (!draft?.code.trim()) return;
+    updateProduct.mutate({
+      id: productId,
+      supplierProvider: draft.provider,
+      supplierProductCode: draft.code.trim(),
+      supplierTargetFormat: draft.targetFormat,
+    });
   };
 
   return (
@@ -219,12 +255,26 @@ export default function AdminGames() {
                 CARI GAME FLOWIX LALU EDIT GAMBAR DARI KOLOM IMAGES
               </p>
             </div>
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="SEARCH_GAME"
-              className="w-full lg:w-72 bg-[#0b0d14] border border-[#222] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
-            />
+            <div className="grid w-full gap-2 sm:grid-cols-2 lg:w-auto">
+              <select
+                value={categoryId ?? ""}
+                onChange={(event) => setCategoryId(event.target.value ? Number(event.target.value) : undefined)}
+                className="w-full bg-[#0b0d14] border border-[#222] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50 lg:w-56"
+              >
+                <option value="">ALL_CATEGORY</option>
+                {categories?.map((category: any) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="SEARCH_GAME"
+                className="w-full lg:w-72 bg-[#0b0d14] border border-[#222] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+              />
+            </div>
           </div>
           <div className="border border-[#222] bg-[#11131a]">
             <div className="grid gap-3 p-3 xl:hidden">
@@ -568,6 +618,68 @@ export default function AdminGames() {
                         AUTO
                       </button>
                     </div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-[130px_1fr_120px_auto]">
+                      <select
+                        value={supplierDrafts[product.id]?.provider || "flowix"}
+                        onChange={(event) =>
+                          setSupplierDrafts((current) => ({
+                            ...current,
+                            [product.id]: {
+                              provider: event.target.value === "digiflazz" ? "digiflazz" : "flowix",
+                              code: current[product.id]?.code || product.supplierProductCode || product.nominalAmount || "",
+                              targetFormat: current[product.id]?.targetFormat || "auto",
+                            },
+                          }))
+                        }
+                        className="border border-[#222] bg-[#050609] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                      >
+                        <option value="flowix">FLOWIX</option>
+                        <option value="digiflazz">DIGIFLAZZ</option>
+                      </select>
+                      <input
+                        value={supplierDrafts[product.id]?.code ?? ""}
+                        onChange={(event) =>
+                          setSupplierDrafts((current) => ({
+                            ...current,
+                            [product.id]: {
+                              provider: current[product.id]?.provider || "flowix",
+                              code: event.target.value,
+                              targetFormat: current[product.id]?.targetFormat || "auto",
+                            },
+                          }))
+                        }
+                        placeholder="SUPPLIER_CODE"
+                        className="min-w-0 border border-[#222] bg-[#050609] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                      />
+                      <select
+                        value={supplierDrafts[product.id]?.targetFormat || "auto"}
+                        onChange={(event) =>
+                          setSupplierDrafts((current) => ({
+                            ...current,
+                            [product.id]: {
+                              provider: current[product.id]?.provider || "flowix",
+                              code: current[product.id]?.code || "",
+                              targetFormat: event.target.value as any,
+                            },
+                          }))
+                        }
+                        className="border border-[#222] bg-[#050609] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                      >
+                        <option value="auto">AUTO</option>
+                        <option value="player">PLAYER</option>
+                        <option value="pipe">ID|SERVER</option>
+                        <option value="dash">ID-SERVER</option>
+                        <option value="space">ID SERVER</option>
+                        <option value="comma">ID,SERVER</option>
+                      </select>
+                      <button
+                        onClick={() => saveSupplier(product.id)}
+                        disabled={updateProduct.isPending}
+                        className="border border-[#00f0ff]/30 px-3 py-2 text-[10px] text-[#00f0ff] disabled:opacity-50"
+                      >
+                        SAVE_API
+                      </button>
+                    </div>
                   </article>
                 );
               })}
@@ -583,6 +695,7 @@ export default function AdminGames() {
                     <th className="px-4 py-3 text-right text-[10px] font-normal tracking-wider text-[#e1f5fe]/40">SALE</th>
                     <th className="px-4 py-3 text-right text-[10px] font-normal tracking-wider text-[#e1f5fe]/40">MARGIN</th>
                     <th className="px-4 py-3 text-center text-[10px] font-normal tracking-wider text-[#e1f5fe]/40">MODE</th>
+                    <th className="px-4 py-3 text-left text-[10px] font-normal tracking-wider text-[#e1f5fe]/40">SUPPLIER</th>
                     <th className="px-4 py-3 text-left text-[10px] font-normal tracking-wider text-[#e1f5fe]/40">ACTIONS</th>
                   </tr>
                 </thead>
@@ -618,6 +731,62 @@ export default function AdminGames() {
                           </span>
                         </td>
                         <td className="px-4 py-3">
+                          <div className="grid w-[360px] grid-cols-[105px_1fr_95px] gap-2">
+                            <select
+                              value={supplierDrafts[product.id]?.provider || "flowix"}
+                              onChange={(event) =>
+                                setSupplierDrafts((current) => ({
+                                  ...current,
+                                  [product.id]: {
+                                    provider: event.target.value === "digiflazz" ? "digiflazz" : "flowix",
+                                    code: current[product.id]?.code || product.supplierProductCode || product.nominalAmount || "",
+                                    targetFormat: current[product.id]?.targetFormat || "auto",
+                                  },
+                                }))
+                              }
+                              className="border border-[#222] bg-[#050609] px-2 py-2 text-[10px] text-white outline-none focus:border-[#00f0ff]/50"
+                            >
+                              <option value="flowix">FLOWIX</option>
+                              <option value="digiflazz">DIGIFLAZZ</option>
+                            </select>
+                            <input
+                              value={supplierDrafts[product.id]?.code ?? ""}
+                              onChange={(event) =>
+                                setSupplierDrafts((current) => ({
+                                  ...current,
+                                  [product.id]: {
+                                    provider: current[product.id]?.provider || "flowix",
+                                    code: event.target.value,
+                                    targetFormat: current[product.id]?.targetFormat || "auto",
+                                  },
+                                }))
+                              }
+                              className="min-w-0 border border-[#222] bg-[#050609] px-2 py-2 text-[10px] text-white outline-none focus:border-[#00f0ff]/50"
+                            />
+                            <select
+                              value={supplierDrafts[product.id]?.targetFormat || "auto"}
+                              onChange={(event) =>
+                                setSupplierDrafts((current) => ({
+                                  ...current,
+                                  [product.id]: {
+                                    provider: current[product.id]?.provider || "flowix",
+                                    code: current[product.id]?.code || "",
+                                    targetFormat: event.target.value as any,
+                                  },
+                                }))
+                              }
+                              className="border border-[#222] bg-[#050609] px-2 py-2 text-[10px] text-white outline-none focus:border-[#00f0ff]/50"
+                            >
+                              <option value="auto">AUTO</option>
+                              <option value="player">PLAYER</option>
+                              <option value="pipe">ID|SV</option>
+                              <option value="dash">ID-SV</option>
+                              <option value="space">ID SV</option>
+                              <option value="comma">ID,SV</option>
+                            </select>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => saveProductPrice(product.id)}
@@ -632,6 +801,13 @@ export default function AdminGames() {
                               className="border border-[#ffb800]/25 px-3 py-2 text-[10px] text-[#ffb800] disabled:opacity-50"
                             >
                               AUTO
+                            </button>
+                            <button
+                              onClick={() => saveSupplier(product.id)}
+                              disabled={updateProduct.isPending}
+                              className="border border-[#00f0ff]/25 px-3 py-2 text-[10px] text-[#00f0ff] disabled:opacity-50"
+                            >
+                              API
                             </button>
                             <button
                               onClick={() => updateProduct.mutate({ id: product.id, isActive: !product.isActive })}

@@ -7,6 +7,7 @@ import { publicProviderLabel, sanitizePublicText } from "../lib/publicText";
 import { gameAssetPath } from "../lib/gameAssets";
 import { priceWithMarkup } from "../lib/pricing";
 import {
+  isActiveFlowixProduct,
   isFlowixConfigured,
   listFlowixCatalog,
   type FlowixProduct,
@@ -395,7 +396,7 @@ export async function syncFlowixCatalog() {
 
   const db = getDb();
   const flowixProducts = (await listFlowixCatalog())
-    .filter((product) => product.status.toLowerCase() === "aktif")
+    .filter(isActiveFlowixProduct)
     .filter(isAllowedFlowixProduct);
 
   if (flowixProducts.length === 0) {
@@ -545,6 +546,10 @@ export async function syncFlowixCatalog() {
       name: existing?.name ?? providerName,
       description: `${cleanFlowixName(product.brand)} - ${product.code}`,
       nominalAmount: product.code,
+      supplierProvider: "flowix",
+      supplierProductCode: product.code,
+      supplierProductName: providerName,
+      supplierTargetFormat: existing?.supplierTargetFormat ?? "auto",
       basePrice: String(product.price),
       salePrice: existing?.isPriceManual ? existing.salePrice ?? providerSalePrice : providerSalePrice,
       isPriceManual: existing?.isPriceManual ?? false,
@@ -747,8 +752,8 @@ export const gameRouter = createRouter({
           return {
             ...product,
             name: displayName,
-            provider: "flowix" as const,
-            providerProductCode: product.nominalAmount,
+            provider: (product.supplierProvider || "flowix") as "flowix" | "digiflazz",
+            providerProductCode: product.supplierProductCode || product.nominalAmount,
             providerProductName: displayName,
           };
         }),

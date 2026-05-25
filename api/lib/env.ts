@@ -47,6 +47,15 @@ export const env = {
   flowixApiKey: process.env.FLOWIX_API_KEY ?? "",
   flowixMerchantId: process.env.FLOWIX_MERCHANT_ID ?? "",
   flowixWebhookSecret: process.env.FLOWIX_WEBHOOK_SECRET ?? "",
+  digiflazzBaseUrl: process.env.DIGIFLAZZ_BASE_URL || "https://api.digiflazz.com/v1",
+  digiflazzUsername: process.env.DIGIFLAZZ_USERNAME ?? "",
+  digiflazzApiKey:
+    process.env.DIGIFLAZZ_API_KEY ??
+    (process.env.NODE_ENV === "production"
+      ? process.env.DIGIFLAZZ_PRODUCTION_KEY
+      : process.env.DIGIFLAZZ_DEVELOPMENT_KEY) ??
+    "",
+  digiflazzTesting: process.env.DIGIFLAZZ_TESTING === "true",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   geminiModel: process.env.GEMINI_MODEL || "gemini-2.0-flash",
   flowixProductCategories: listEnv("FLOWIX_PRODUCT_CATEGORIES", [
