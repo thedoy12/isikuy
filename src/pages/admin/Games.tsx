@@ -92,12 +92,14 @@ export default function AdminGames() {
   });
   const [productGameId, setProductGameId] = useState<number | undefined>();
   const [productPage, setProductPage] = useState(0);
+  const [productPageSize, setProductPageSize] = useState(100);
+  const [productSearch, setProductSearch] = useState("");
+  const [supplierFilter, setSupplierFilter] = useState<"all" | "flowix" | "digiflazz" | "unmapped" | "inactive" | "manualPrice">("all");
   const [productDrafts, setProductDrafts] = useState<Record<number, string>>({});
   const [supplierDrafts, setSupplierDrafts] = useState<
     Record<number, { provider: "flowix" | "digiflazz"; code: string; targetFormat: "auto" | "player" | "pipe" | "dash" | "space" | "comma" }>
   >({});
   const pageSize = 10;
-  const productPageSize = 25;
 
   const { data: categories } = trpc.game.categories.useQuery(undefined, {
     enabled: isAdmin,
@@ -133,6 +135,8 @@ export default function AdminGames() {
     {
       gameId: productGameId,
       categoryId: productGameId ? undefined : categoryId,
+      search: productSearch.trim() || undefined,
+      supplier: supplierFilter,
       limit: productPageSize,
       offset: productPage * productPageSize,
     },
@@ -142,6 +146,14 @@ export default function AdminGames() {
     onSuccess: () => {
       utils.admin.products.invalidate();
       utils.game.list.invalidate();
+    },
+  });
+  const bulkUpdateProducts = trpc.admin.bulkUpdateProducts.useMutation({
+    onSuccess: () => {
+      utils.admin.products.invalidate();
+      utils.game.list.invalidate();
+      utils.game.trending.invalidate();
+      utils.game.popular.invalidate();
     },
   });
 
@@ -156,7 +168,7 @@ export default function AdminGames() {
 
   useEffect(() => {
     setProductPage(0);
-  }, [productGameId]);
+  }, [productGameId, productSearch, supplierFilter, productPageSize]);
 
   useEffect(() => {
     const next: Record<number, string> = {};
@@ -217,6 +229,12 @@ export default function AdminGames() {
       supplierProductCode: draft.code.trim(),
       supplierTargetFormat: draft.targetFormat,
     });
+  };
+
+  const runBulkForVisibleProducts = (action: "activate" | "deactivate" | "supplierFlowix" | "supplierDigiflazz" | "resetAutoPrice") => {
+    const ids = productsList?.items.map((product: any) => product.id) ?? [];
+    if (ids.length === 0) return;
+    bulkUpdateProducts.mutate({ ids, action });
   };
 
   return (
@@ -537,25 +555,79 @@ export default function AdminGames() {
           </div>
 
           <section className="mt-6 border border-[#222] bg-[#11131a]">
-            <div className="flex flex-col gap-3 border-b border-[#222] p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-3 border-b border-[#222] p-4">
               <div>
                 <p className="text-[10px] tracking-wider text-[#00f0ff]">PRODUCT_PRICING</p>
                 <p className="mt-1 text-[10px] tracking-wider text-white/35">
-                  BASE = MODAL FLOWIX, SALE = HARGA JUAL USER
+                  BASE = MODAL SUPPLIER, SALE = HARGA JUAL USER
                 </p>
               </div>
-              <select
-                value={productGameId ?? ""}
-                onChange={(event) => setProductGameId(event.target.value ? Number(event.target.value) : undefined)}
-                className="w-full border border-[#222] bg-[#0b0d14] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50 lg:w-72"
-              >
-                <option value="">ALL_ACTIVE_PRODUCTS</option>
-                {gamesList?.items.map((game: any) => (
-                  <option key={game.id} value={game.id}>
-                    {game.name}
-                  </option>
-                ))}
-              </select>
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-[1fr_220px_180px_120px]">
+                <input
+                  value={productSearch}
+                  onChange={(event) => setProductSearch(event.target.value)}
+                  placeholder="SEARCH_PRODUCT_OR_CODE"
+                  className="w-full border border-[#222] bg-[#0b0d14] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                />
+                <select
+                  value={productGameId ?? ""}
+                  onChange={(event) => setProductGameId(event.target.value ? Number(event.target.value) : undefined)}
+                  className="w-full border border-[#222] bg-[#0b0d14] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                >
+                  <option value="">ALL_PRODUCTS</option>
+                  {gamesList?.items.map((game: any) => (
+                    <option key={game.id} value={game.id}>
+                      {game.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={supplierFilter}
+                  onChange={(event) => setSupplierFilter(event.target.value as typeof supplierFilter)}
+                  className="w-full border border-[#222] bg-[#0b0d14] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                >
+                  <option value="all">ALL_SUPPLIER</option>
+                  <option value="digiflazz">DIGIFLAZZ</option>
+                  <option value="flowix">FLOWIX</option>
+                  <option value="unmapped">UNMAPPED</option>
+                  <option value="inactive">INACTIVE</option>
+                  <option value="manualPrice">MANUAL_PRICE</option>
+                </select>
+                <select
+                  value={productPageSize}
+                  onChange={(event) => setProductPageSize(Number(event.target.value))}
+                  className="w-full border border-[#222] bg-[#0b0d14] px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                >
+                  {[25, 50, 100, 250].map((size) => (
+                    <option key={size} value={size}>
+                      {size}/PAGE
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 border border-white/10 bg-black/20 p-3">
+                <span className="text-[10px] text-white/35">BULK_CURRENT_PAGE</span>
+                <button onClick={() => runBulkForVisibleProducts("supplierDigiflazz")} disabled={bulkUpdateProducts.isPending}
+                  className="border border-[#00f0ff]/25 px-3 py-2 text-[10px] text-[#00f0ff] disabled:opacity-50">
+                  SET_DIGIFLAZZ
+                </button>
+                <button onClick={() => runBulkForVisibleProducts("supplierFlowix")} disabled={bulkUpdateProducts.isPending}
+                  className="border border-[#ffb800]/25 px-3 py-2 text-[10px] text-[#ffb800] disabled:opacity-50">
+                  SET_FLOWIX
+                </button>
+                <button onClick={() => runBulkForVisibleProducts("resetAutoPrice")} disabled={bulkUpdateProducts.isPending}
+                  className="border border-[#0aff00]/25 px-3 py-2 text-[10px] text-[#0aff00] disabled:opacity-50">
+                  AUTO_PRICE
+                </button>
+                <button onClick={() => runBulkForVisibleProducts("activate")} disabled={bulkUpdateProducts.isPending}
+                  className="border border-[#0aff00]/25 px-3 py-2 text-[10px] text-[#0aff00] disabled:opacity-50">
+                  ON
+                </button>
+                <button onClick={() => runBulkForVisibleProducts("deactivate")} disabled={bulkUpdateProducts.isPending}
+                  className="border border-[#ff003c]/25 px-3 py-2 text-[10px] text-[#ff003c] disabled:opacity-50">
+                  OFF
+                </button>
+              </div>
             </div>
 
             <div className="grid gap-3 p-3 xl:hidden">

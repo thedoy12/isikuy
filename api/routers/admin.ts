@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, desc, sql, gte, count, ilike, or, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, gte, count, ilike, or, inArray, isNull } from "drizzle-orm";
 import { createRouter, adminQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import {
@@ -1083,6 +1083,8 @@ export const adminRouter = createRouter({
       z.object({
         gameId: z.number().optional(),
         categoryId: z.number().optional(),
+        search: z.string().optional(),
+        supplier: z.enum(["all", "flowix", "digiflazz", "unmapped", "inactive", "manualPrice"]).optional(),
         limit: z.number().default(50),
         offset: z.number().default(0),
       }).optional(),
@@ -1094,8 +1096,29 @@ export const adminRouter = createRouter({
       const filters = [];
       if (input?.gameId) filters.push(eq(products.gameId, input.gameId));
       if (input?.categoryId) filters.push(eq(games.categoryId, input.categoryId));
+      if (input?.search) {
+        const search = `%${input.search}%`;
+        filters.push(or(
+          ilike(products.name, search),
+          ilike(products.nominalAmount, search),
+          ilike(products.supplierProductCode, search),
+          ilike(products.supplierProductName, search),
+          ilike(games.name, search),
+        ));
+      }
+      if (input?.supplier === "flowix") filters.push(eq(products.supplierProvider, "flowix"));
+      if (input?.supplier === "digiflazz") filters.push(eq(products.supplierProvider, "digiflazz"));
+      if (input?.supplier === "unmapped") {
+        filters.push(or(
+          isNull(products.supplierProductCode),
+          eq(products.supplierProductCode, ""),
+          eq(products.supplierProvider, "flowix"),
+        ));
+      }
+      if (input?.supplier === "inactive") filters.push(eq(products.isActive, false));
+      if (input?.supplier === "manualPrice") filters.push(eq(products.isPriceManual, true));
       filters.push(eq(games.publisher, "Flowix"));
-      filters.push(eq(games.isActive, true));
+      if (input?.supplier !== "inactive") filters.push(eq(games.isActive, true));
 
       const where = and(...filters);
 
@@ -1135,6 +1158,58 @@ export const adminRouter = createRouter({
       });
 
       return { items: uniqueItems.slice(offset, offset + limit), total: uniqueItems.length, limit, offset };
+    }),
+
+  bulkUpdateProducts: adminQuery
+    .input(
+      z.object({
+        ids: z.array(z.number()).min(1).max(500),
+        action: z.enum(["activate", "deactivate", "supplierFlowix", "supplierDigiflazz", "resetAutoPrice"]),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      const updateData: any = {};
+      if (input.action === "activate") {
+        updateData.isActive = true;
+        updateData.isManuallyHidden = false;
+      }
+      if (input.action === "deactivate") {
+        updateData.isActive = false;
+        updateData.isManuallyHidden = true;
+      }
+      if (input.action === "supplierFlowix") {
+        updateData.supplierProvider = "flowix";
+        updateData.supplierTargetFormat = "auto";
+      }
+      if (input.action === "supplierDigiflazz") {
+        updateData.supplierProvider = "digiflazz";
+      }
+      if (input.action === "resetAutoPrice") {
+        const rows = await db
+          .select({ id: products.id, basePrice: products.basePrice })
+          .from(products)
+          .where(inArray(products.id, input.ids));
+        for (const row of rows) {
+          await db
+            .update(products)
+            .set({
+              salePrice: priceWithMarkup(parseMoney(row.basePrice)).toString(),
+              isPriceManual: false,
+            })
+            .where(eq(products.id, row.id));
+        }
+      } else {
+        await db.update(products).set(updateData).where(inArray(products.id, input.ids));
+      }
+
+      await logAdminAction({
+        ctx,
+        action: "product.bulk_update",
+        entityType: "product",
+        details: { action: input.action, count: input.ids.length },
+      });
+      return { success: true, count: input.ids.length };
     }),
 
   updateProduct: adminQuery
