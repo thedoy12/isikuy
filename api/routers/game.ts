@@ -363,7 +363,13 @@ function cleanProductDisplayName(name: string, brand?: string | null, code?: str
     value = cleanMobileLegendsDisplayName(value);
   }
 
-  return value || cleanFlowixName(name);
+  value = value
+    .replace(/^\s*[-:|/]+\s*/g, "")
+    .replace(/\s*[-:|/]+\s*$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return value || cleanFlowixName(name).replace(/^\s*[-:|/]+\s*/g, "").trim();
 }
 
 function productBrandFromDescription(description: string | null) {
