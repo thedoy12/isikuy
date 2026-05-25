@@ -1331,10 +1331,44 @@ export const adminRouter = createRouter({
     return db.select().from(banners).orderBy(banners.sortOrder);
   }),
 
+  createBanner: adminQuery
+    .input(
+      z.object({
+        title: z.string().min(1).max(255),
+        subtitle: z.string().max(500).nullable().optional(),
+        image: z.string().max(500).nullable().optional(),
+        link: z.string().max(500).nullable().optional(),
+        position: z.enum(["hero", "promo", "sidebar"]),
+        bgColor: z.string().max(20).nullable().optional(),
+        textColor: z.string().max(20).nullable().optional(),
+        sortOrder: z.number().int().default(0),
+        isActive: z.boolean().default(true),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      const [banner] = await db.insert(banners).values(input).returning();
+      await logAdminAction({
+        ctx,
+        action: "banner.create",
+        entityType: "banner",
+        entityId: banner.id,
+        details: input,
+      });
+      return banner;
+    }),
+
   updateBanner: adminQuery
     .input(
       z.object({
         id: z.number(),
+        title: z.string().min(1).max(255).optional(),
+        subtitle: z.string().max(500).nullable().optional(),
+        image: z.string().max(500).nullable().optional(),
+        link: z.string().max(500).nullable().optional(),
+        position: z.enum(["hero", "promo", "sidebar"]).optional(),
+        bgColor: z.string().max(20).nullable().optional(),
+        textColor: z.string().max(20).nullable().optional(),
         isActive: z.boolean().optional(),
         sortOrder: z.number().optional(),
       })
@@ -1353,10 +1387,86 @@ export const adminRouter = createRouter({
       return { success: true };
     }),
 
+  deleteBanner: adminQuery
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      await db.delete(banners).where(eq(banners.id, input.id));
+      await logAdminAction({
+        ctx,
+        action: "banner.delete",
+        entityType: "banner",
+        entityId: input.id,
+      });
+      return { success: true };
+    }),
+
   faqs: adminQuery.query(async () => {
     const db = getDb();
     return db.select().from(faqs).orderBy(faqs.sortOrder);
   }),
+
+  createFaq: adminQuery
+    .input(
+      z.object({
+        question: z.string().min(1).max(500),
+        answer: z.string().min(1).max(3000),
+        category: z.string().min(1).max(100).default("general"),
+        sortOrder: z.number().int().default(0),
+        isActive: z.boolean().default(true),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      const [faq] = await db.insert(faqs).values(input).returning();
+      await logAdminAction({
+        ctx,
+        action: "faq.create",
+        entityType: "faq",
+        entityId: faq.id,
+        details: input,
+      });
+      return faq;
+    }),
+
+  updateFaq: adminQuery
+    .input(
+      z.object({
+        id: z.number(),
+        question: z.string().min(1).max(500).optional(),
+        answer: z.string().min(1).max(3000).optional(),
+        category: z.string().min(1).max(100).optional(),
+        sortOrder: z.number().int().optional(),
+        isActive: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      const { id, ...data } = input;
+      await db.update(faqs).set(data).where(eq(faqs.id, id));
+      await logAdminAction({
+        ctx,
+        action: "faq.update",
+        entityType: "faq",
+        entityId: id,
+        details: data,
+      });
+      return { success: true };
+    }),
+
+  deleteFaq: adminQuery
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      await db.delete(faqs).where(eq(faqs.id, input.id));
+      await logAdminAction({
+        ctx,
+        action: "faq.delete",
+        entityType: "faq",
+        entityId: input.id,
+      });
+      return { success: true };
+    }),
 
   logs: adminQuery
     .input(z.object({ limit: z.number().default(50) }).optional())

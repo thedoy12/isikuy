@@ -22,6 +22,7 @@ const AdminTransactions = lazy(() => import('./pages/admin/Transactions'))
 const AdminUsers = lazy(() => import('./pages/admin/Users'))
 const AdminUserEdit = lazy(() => import('./pages/admin/UserEdit'))
 const AdminVouchers = lazy(() => import('./pages/admin/Vouchers'))
+const AdminContent = lazy(() => import('./pages/admin/Content'))
 const AdminSettings = lazy(() => import('./pages/admin/Settings'))
 const AdminTools = lazy(() => import('./pages/admin/ToolsAdmin'))
 const AdminToolsMonitor = lazy(() => import('./pages/admin/ToolsMonitor'))
@@ -83,6 +84,7 @@ export default function App() {
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/users/:id" element={<AdminUserEdit />} />
           <Route path="/admin/vouchers" element={<AdminVouchers />} />
+          <Route path="/admin/content" element={<AdminContent />} />
           <Route path="/admin/tools" element={<AdminTools />} />
           <Route path="/admin/tools-monitor" element={<AdminToolsMonitor />} />
           <Route path="/admin/settings" element={<AdminSettings />} />

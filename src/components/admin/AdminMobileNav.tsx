@@ -8,6 +8,7 @@ import {
   Tags,
   Users,
   Bell,
+  FileText,
   Wand2,
   Zap,
 } from "lucide-react";
@@ -19,6 +20,7 @@ const navItems = [
   { id: "transactions", label: "Tx", icon: Receipt, href: "/admin/transactions" },
   { id: "users", label: "Users", icon: Users, href: "/admin/users" },
   { id: "vouchers", label: "Voucher", icon: Tags, href: "/admin/vouchers" },
+  { id: "content", label: "Content", icon: FileText, href: "/admin/content" },
   { id: "tools", label: "Tools", icon: Wand2, href: "/admin/tools" },
   { id: "tools-monitor", label: "AI", icon: Bell, href: "/admin/tools-monitor" },
   { id: "settings", label: "Set", icon: Settings, href: "/admin/settings" },
