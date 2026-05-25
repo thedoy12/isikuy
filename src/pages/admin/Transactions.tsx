@@ -159,6 +159,9 @@ export default function AdminTransactions() {
                         <p className="mt-1 text-[10px] uppercase tracking-wider text-white/35">
                           PAYMENT: {tx.paymentStatus || "-"}
                         </p>
+                        <p className="mt-1 text-[10px] uppercase tracking-wider text-white/35">
+                          SUPPLIER: {tx.supplierProvider || "-"}
+                        </p>
                       </div>
                       <span className={`flex shrink-0 items-center gap-1 text-[10px] ${sc.color}`}>
                         <StatusIcon className="h-3 w-3" />
@@ -169,6 +172,7 @@ export default function AdminTransactions() {
                       <div>
                         <p className="text-[9px] text-white/30">PRODUCT</p>
                         <p className="mt-1 text-white/65">{tx.productName || "-"}</p>
+                        <p className="mt-1 break-all text-[10px] text-white/30">{tx.providerProductCode || "-"}</p>
                       </div>
                       <div>
                         <p className="text-[9px] text-white/30">PLAYER</p>
@@ -221,6 +225,7 @@ export default function AdminTransactions() {
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">AMOUNT</th>
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">STATUS</th>
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">PAYMENT</th>
+                  <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">SUPPLIER</th>
                   <th className="text-left px-4 py-3 text-[10px] text-[#e1f5fe]/40 tracking-wider font-normal">ACTIONS</th>
                 </tr>
               </thead>
@@ -232,7 +237,10 @@ export default function AdminTransactions() {
                     <tr key={tx.id} className="border-b border-[#222] hover:bg-white/[0.02]">
                       <td className="px-4 py-3 text-[10px] text-[#00f0ff]">{tx.invoiceNumber}</td>
                       <td className="px-4 py-3 text-xs text-white">{tx.gameName}</td>
-                      <td className="px-4 py-3 text-[10px] text-white/50">{tx.productName}</td>
+                      <td className="px-4 py-3 text-[10px] text-white/50">
+                        <p>{tx.productName}</p>
+                        <p className="mt-1 break-all text-white/25">{tx.providerProductCode || "-"}</p>
+                      </td>
                       <td className="px-4 py-3 text-[10px] text-white/50">{tx.playerId}</td>
                       <td className="px-4 py-3 text-xs text-[#ff003c]">Rp{parseFloat(tx.totalAmount).toLocaleString()}</td>
                       <td className="px-4 py-3">
@@ -250,6 +258,10 @@ export default function AdminTransactions() {
                       </td>
                       <td className="px-4 py-3 text-[10px] uppercase text-white/45">
                         {tx.paymentStatus || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-[10px] uppercase text-white/45">
+                        <p>{tx.supplierProvider || "-"}</p>
+                        <p className="mt-1 break-all text-white/25">{tx.providerReference || "-"}</p>
                       </td>
                       <td className="px-4 py-3">
                         {tx.status === "pending" && (

@@ -12,6 +12,7 @@ import {
   listFlowixCatalog,
   type FlowixProduct,
 } from "../flowix/client";
+import { getSupplierRouting, type SupplierRouteMode } from "../lib/supplierRouting";
 
 type GameRow = typeof games.$inferSelect;
 type ProductRow = typeof products.$inferSelect;
@@ -391,6 +392,32 @@ function uniqueGamesByName<T extends Pick<GameRow, "slug" | "name" | "categoryId
   });
 }
 
+function isVisibleProductForRoute(
+  product: Pick<ProductRow, "supplierProvider" | "supplierProductCode">,
+  mode: SupplierRouteMode,
+) {
+  if (mode !== "digiflazz") return true;
+  return product.supplierProvider === "digiflazz" && !!product.supplierProductCode;
+}
+
+async function filterGamesForRoute<T extends { id: number }>(items: T[], mode: SupplierRouteMode) {
+  if (mode !== "digiflazz" || items.length === 0) return items;
+  const productRows = await getDb()
+    .select({
+      gameId: products.gameId,
+      supplierProvider: products.supplierProvider,
+      supplierProductCode: products.supplierProductCode,
+    })
+    .from(products)
+    .where(and(eq(products.isActive, true), inArray(products.gameId, items.map((item) => item.id))));
+  const visibleGameIds = new Set(
+    productRows
+      .filter((product) => isVisibleProductForRoute(product, mode))
+      .map((product) => product.gameId),
+  );
+  return items.filter((item) => visibleGameIds.has(item.id));
+}
+
 export async function syncFlowixCatalog() {
   if (!isFlowixConfigured()) return { games: [], productCodes: [] };
 
@@ -698,8 +725,10 @@ export const gameRouter = createRouter({
           .offset(input?.offset || 0);
 
       const rows = await loadRows();
+      const route = await getSupplierRouting();
+      const visibleRows = await filterGamesForRoute(uniqueGamesByName(rows), route.mode);
 
-      return uniqueGamesByName(rows).slice(0, input?.limit || 50).map((game) => ({
+      return visibleRows.slice(0, input?.limit || 50).map((game) => ({
         ...game,
         description: sanitizePublicText(game.description),
         publisher: publicProviderLabel,
@@ -736,13 +765,19 @@ export const gameRouter = createRouter({
           asc(products.sortOrder),
           asc(products.id),
         );
+      const route = await getSupplierRouting();
+      const visibleProducts = uniqueProductsByName(localProducts).filter((product) =>
+        isVisibleProductForRoute(product, route.mode),
+      );
+
+      if (visibleProducts.length === 0) return null;
 
       return {
         ...game,
         description: sanitizePublicText(game.description),
         publisher: publicProviderLabel,
         category,
-        products: uniqueProductsByName(localProducts).map((product) => {
+        products: visibleProducts.map((product) => {
           const displayName = cleanProductDisplayName(
             product.name,
             productBrandFromDescription(product.description),
@@ -783,7 +818,9 @@ export const gameRouter = createRouter({
       .where(and(eq(games.isTrending, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
       .orderBy(categoryRankSql, asc(games.sortOrder), asc(games.name))
       .limit(24);
-    return uniqueGamesByName(rows).slice(0, 8).map((game) => ({
+    const route = await getSupplierRouting();
+    const visibleRows = await filterGamesForRoute(uniqueGamesByName(rows), route.mode);
+    return visibleRows.slice(0, 8).map((game) => ({
       ...game,
       description: sanitizePublicText(game.description),
       publisher: publicProviderLabel,
@@ -813,7 +850,9 @@ export const gameRouter = createRouter({
       .where(and(eq(games.isPopular, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
       .orderBy(categoryRankSql, asc(games.sortOrder), asc(games.name))
       .limit(36);
-    return uniqueGamesByName(rows).slice(0, 12).map((game) => ({
+    const route = await getSupplierRouting();
+    const visibleRows = await filterGamesForRoute(uniqueGamesByName(rows), route.mode);
+    return visibleRows.slice(0, 12).map((game) => ({
       ...game,
       description: sanitizePublicText(game.description),
       publisher: publicProviderLabel,

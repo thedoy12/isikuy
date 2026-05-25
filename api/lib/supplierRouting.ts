@@ -12,6 +12,8 @@ export const SUPPLIER_ROUTE_MODES = [
 export type SupplierRouteMode = (typeof SUPPLIER_ROUTE_MODES)[number];
 
 const SUPPLIER_ROUTE_MODE_KEY = "supplierRouteMode";
+const SUPPLIER_FLOWIX_MAINTENANCE_KEY = "supplierFlowixMaintenance";
+const SUPPLIER_DIGIFLAZZ_MAINTENANCE_KEY = "supplierDigiflazzMaintenance";
 const DEFAULT_SUPPLIER_ROUTE_MODE: SupplierRouteMode = "manual";
 
 function isSupplierRouteMode(value: string | null | undefined): value is SupplierRouteMode {
@@ -37,6 +39,16 @@ async function setSetting(key: string, value: string) {
     });
 }
 
+async function setBooleanSetting(key: string, value: boolean) {
+  await getDb()
+    .insert(siteSettings)
+    .values({ key, value: String(value), type: "boolean" })
+    .onConflictDoUpdate({
+      target: siteSettings.key,
+      set: { value: String(value), type: "boolean", updatedAt: new Date() },
+    });
+}
+
 export async function getSupplierRouting() {
   const stored = await getSetting(SUPPLIER_ROUTE_MODE_KEY);
   return {
@@ -47,6 +59,26 @@ export async function getSupplierRouting() {
 export async function setSupplierRouting(input: { mode: SupplierRouteMode }) {
   await setSetting(SUPPLIER_ROUTE_MODE_KEY, input.mode);
   return { success: true, mode: input.mode };
+}
+
+export async function getSupplierMaintenance() {
+  return {
+    flowix: (await getSetting(SUPPLIER_FLOWIX_MAINTENANCE_KEY)) === "true",
+    digiflazz: (await getSetting(SUPPLIER_DIGIFLAZZ_MAINTENANCE_KEY)) === "true",
+  };
+}
+
+export async function setSupplierMaintenance(input: {
+  flowix?: boolean;
+  digiflazz?: boolean;
+}) {
+  if (input.flowix !== undefined) {
+    await setBooleanSetting(SUPPLIER_FLOWIX_MAINTENANCE_KEY, input.flowix);
+  }
+  if (input.digiflazz !== undefined) {
+    await setBooleanSetting(SUPPLIER_DIGIFLAZZ_MAINTENANCE_KEY, input.digiflazz);
+  }
+  return getSupplierMaintenance();
 }
 
 export function resolveProductSupplier(input: {

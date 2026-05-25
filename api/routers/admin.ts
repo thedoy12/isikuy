@@ -29,10 +29,13 @@ import { getPaymentMaintenance, setPaymentMaintenance } from "../lib/paymentMain
 import { logAdminAction } from "../lib/adminAudit";
 import {
   getSupplierRouting,
+  getSupplierMaintenance,
   setSupplierRouting,
+  setSupplierMaintenance,
   SUPPLIER_ROUTE_MODES,
 } from "../lib/supplierRouting";
 import { isActiveDigiflazzProduct, listDigiflazzProducts, type DigiflazzProduct } from "../digiflazz/client";
+import { getFlowixProfile, isFlowixConfigured } from "../flowix/client";
 
 function adminMatchKey(value: string | null | undefined) {
   return (value || "")
@@ -213,6 +216,112 @@ export const adminRouter = createRouter({
   paymentStatus: adminQuery.query(async () => getPaymentMaintenance()),
 
   supplierRouting: adminQuery.query(async () => getSupplierRouting()),
+
+  supplierMaintenance: adminQuery.query(async () => getSupplierMaintenance()),
+
+  setSupplierMaintenance: adminQuery
+    .input(z.object({ flowix: z.boolean().optional(), digiflazz: z.boolean().optional() }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await setSupplierMaintenance(input);
+      await logAdminAction({
+        ctx,
+        action: "supplier.maintenance.set",
+        entityType: "supplier",
+        details: input,
+      });
+      return result;
+    }),
+
+  supplierHealth: adminQuery.query(async () => {
+    const startedAt = Date.now();
+    const flowix = await getFlowixProfile()
+      .then((profile) => ({
+        ok: true,
+        username: profile.username,
+        balance: Number(profile.financials?.balance ?? 0),
+        message: "OK",
+      }))
+      .catch((error) => ({
+        ok: false,
+        username: null,
+        balance: null,
+        message: isFlowixConfigured()
+          ? error instanceof Error ? error.message : String(error)
+          : "Flowix belum dikonfigurasi",
+      }));
+
+    const digiflazz = await listDigiflazzProducts()
+      .then((items) => ({
+        ok: true,
+        count: items.filter(isActiveDigiflazzProduct).length,
+        message: "OK",
+      }))
+      .catch((error) => ({
+        ok: false,
+        count: 0,
+        message: error instanceof Error ? error.message : String(error),
+      }));
+
+    return {
+      flowix,
+      digiflazz,
+      checkedAt: new Date().toISOString(),
+      responseMs: Date.now() - startedAt,
+    };
+  }),
+
+  scanSupplierMapping: adminQuery.query(async () => {
+    const db = getDb();
+    const digiflazzProducts = (await listDigiflazzProducts()).filter(isActiveDigiflazzProduct);
+    const localProducts = await db
+      .select({
+        id: products.id,
+        name: products.name,
+        nominalAmount: products.nominalAmount,
+        supplierProvider: products.supplierProvider,
+        supplierProductCode: products.supplierProductCode,
+        gameName: games.name,
+      })
+      .from(products)
+      .innerJoin(games, eq(products.gameId, games.id))
+      .where(and(eq(games.publisher, "Flowix"), eq(games.isActive, true), eq(products.isActive, true)));
+
+    const mapped = localProducts.filter(
+      (product) => product.supplierProvider === "digiflazz" && !!product.supplierProductCode,
+    ).length;
+    const matches = [];
+    const unmatched = [];
+    for (const product of localProducts) {
+      const best = bestDigiflazzMatch({
+        gameName: product.gameName,
+        productName: product.name,
+        productCode: product.nominalAmount,
+        suppliers: digiflazzProducts,
+      });
+      if (!best) {
+        unmatched.push({ id: product.id, name: product.name, gameName: product.gameName });
+        continue;
+      }
+      matches.push({
+        id: product.id,
+        name: product.name,
+        gameName: product.gameName,
+        currentCode: product.supplierProductCode,
+        suggestedCode: best.supplier.buyer_sku_code,
+        suggestedName: best.supplier.product_name,
+        score: best.score,
+      });
+    }
+
+    return {
+      total: localProducts.length,
+      mapped,
+      matched: matches.length,
+      unmatched: unmatched.length,
+      matches: matches.slice(0, 20),
+      samples: unmatched.slice(0, 20),
+    };
+  }),
 
   setSupplierRouting: adminQuery
     .input(z.object({ mode: z.enum(SUPPLIER_ROUTE_MODES) }))
@@ -683,6 +792,9 @@ export const adminRouter = createRouter({
           gameName: games.name,
           productName: products.name,
           methodName: paymentMethods.name,
+          supplierProvider: transactions.supplierProvider,
+          providerProductCode: transactions.providerProductCode,
+          providerReference: transactions.providerReference,
         })
         .from(transactions)
         .leftJoin(games, eq(transactions.gameId, games.id))

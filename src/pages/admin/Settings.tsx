@@ -150,6 +150,17 @@ export default function AdminSettings() {
   const { data: supplierRouting } = trpc.admin.supplierRouting.useQuery(undefined, {
     enabled: isAdmin,
   });
+  const { data: supplierMaintenance } = trpc.admin.supplierMaintenance.useQuery(undefined, {
+    enabled: isAdmin,
+  });
+  const { data: supplierHealth, refetch: refetchSupplierHealth } = trpc.admin.supplierHealth.useQuery(undefined, {
+    enabled: isAdmin,
+    retry: false,
+  });
+  const { data: supplierScan, refetch: refetchSupplierScan } = trpc.admin.scanSupplierMapping.useQuery(undefined, {
+    enabled: false,
+    retry: false,
+  });
   const updatePassword = trpc.admin.updateAdminPassword.useMutation({
     onSuccess: async () => {
       setCurrentPassword("");
@@ -214,6 +225,11 @@ export default function AdminSettings() {
     onError: (err) => {
       setSupplierMessage("");
       setSupplierError(err.message);
+    },
+  });
+  const setSupplierMaintenance = trpc.admin.setSupplierMaintenance.useMutation({
+    onSuccess: async () => {
+      await utils.admin.supplierMaintenance.invalidate();
     },
   });
 
@@ -501,6 +517,71 @@ export default function AdminSettings() {
                     APPLY_TO_ALL_PRODUCTS
                   </button>
                 </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => refetchSupplierScan()}
+                    disabled={applySupplierRouting.isPending}
+                    className="border border-[#ffb800]/30 px-4 py-2 text-xs font-bold text-[#ffb800] disabled:opacity-60"
+                  >
+                    SCAN_MAPPING
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => refetchSupplierHealth()}
+                    className="border border-white/15 px-4 py-2 text-xs font-bold text-white/50"
+                  >
+                    CHECK_HEALTH
+                  </button>
+                </div>
+                <div className="mt-4 grid gap-2 text-[10px]">
+                  <div className="flex items-center justify-between border border-white/10 bg-black/20 px-3 py-2">
+                    <span className="text-white/40">FLOWIX</span>
+                    <span className={supplierHealth?.flowix.ok ? "text-[#0aff00]" : "text-[#ff003c]"}>
+                      {supplierHealth?.flowix.ok ? "ONLINE" : "OFFLINE"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border border-white/10 bg-black/20 px-3 py-2">
+                    <span className="text-white/40">DIGIFLAZZ</span>
+                    <span className={supplierHealth?.digiflazz.ok ? "text-[#0aff00]" : "text-[#ff003c]"}>
+                      {supplierHealth?.digiflazz.ok ? `${supplierHealth.digiflazz.count} ACTIVE` : "OFFLINE"}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSupplierMaintenance.mutate({ flowix: !supplierMaintenance?.flowix })}
+                    disabled={setSupplierMaintenance.isPending}
+                    className={supplierMaintenance?.flowix ? "bg-[#0aff00] px-3 py-2 text-[10px] font-bold text-black" : "bg-[#ffb800] px-3 py-2 text-[10px] font-bold text-black"}
+                  >
+                    {supplierMaintenance?.flowix ? "OPEN_FLOWIX" : "CLOSE_FLOWIX"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSupplierMaintenance.mutate({ digiflazz: !supplierMaintenance?.digiflazz })}
+                    disabled={setSupplierMaintenance.isPending}
+                    className={supplierMaintenance?.digiflazz ? "bg-[#0aff00] px-3 py-2 text-[10px] font-bold text-black" : "bg-[#ffb800] px-3 py-2 text-[10px] font-bold text-black"}
+                  >
+                    {supplierMaintenance?.digiflazz ? "OPEN_DIGIFLAZZ" : "CLOSE_DIGIFLAZZ"}
+                  </button>
+                </div>
+                {supplierScan && (
+                  <div className="mt-4 border border-white/10 bg-black/20 p-3 text-[10px] text-white/50">
+                    <p className="text-[#00f0ff]">
+                      TOTAL {supplierScan.total} / MAPPED {supplierScan.mapped} / MATCH {supplierScan.matched} / UNMAPPED {supplierScan.unmatched}
+                    </p>
+                    {supplierScan.samples.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {supplierScan.samples.slice(0, 5).map((item: any) => (
+                          <p key={item.id} className="truncate">
+                            {item.gameName} - {item.name}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {supplierMessage && (
                   <p className="mt-3 text-xs text-[#0aff00]">{supplierMessage}</p>
                 )}

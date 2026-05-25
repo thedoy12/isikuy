@@ -20,7 +20,7 @@ import { safeDiscountAmount } from "../lib/pricing";
 import { checkRateLimit, rateLimitKey } from "../lib/rateLimit";
 import { withTransactionLock } from "../lib/transactionLock";
 import { checkoutAmounts } from "../lib/checkout";
-import { getSupplierRouting, resolveProductSupplier } from "../lib/supplierRouting";
+import { getSupplierMaintenance, getSupplierRouting, resolveProductSupplier } from "../lib/supplierRouting";
 
 function generateInvoice(): string {
   const date = new Date();
@@ -500,6 +500,13 @@ export const transactionRouter = createRouter({
       });
       const supplierProvider = supplier.supplierProvider;
       const supplierProductCode = supplier.supplierProductCode;
+      const supplierMaintenance = await getSupplierMaintenance();
+      if (supplierProvider === "flowix" && supplierMaintenance.flowix) {
+        throw new Error("Supplier Flowix sedang maintenance. Silakan coba lagi nanti.");
+      }
+      if (supplierProvider === "digiflazz" && supplierMaintenance.digiflazz) {
+        throw new Error("Supplier Digiflazz sedang maintenance. Silakan coba lagi nanti.");
+      }
       const voucher = await validateVoucher({
         code: input.voucherCode,
         amount: baseAmount,
