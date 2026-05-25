@@ -20,6 +20,7 @@ import { safeDiscountAmount } from "../lib/pricing";
 import { checkRateLimit, rateLimitKey } from "../lib/rateLimit";
 import { withTransactionLock } from "../lib/transactionLock";
 import { checkoutAmounts } from "../lib/checkout";
+import { getSupplierRouting, resolveProductSupplier } from "../lib/supplierRouting";
 
 function generateInvoice(): string {
   const date = new Date();
@@ -492,8 +493,13 @@ export const transactionRouter = createRouter({
 
       const baseAmount = parseFloat(product.salePrice || product.basePrice);
       const productCost = Number(product.basePrice || product.salePrice || baseAmount);
-      const supplierProvider = product.supplierProvider || "flowix";
-      const supplierProductCode = product.supplierProductCode || product.nominalAmount || null;
+      const supplierRoute = await getSupplierRouting();
+      const supplier = resolveProductSupplier({
+        product,
+        mode: supplierRoute.mode,
+      });
+      const supplierProvider = supplier.supplierProvider;
+      const supplierProductCode = supplier.supplierProductCode;
       const voucher = await validateVoucher({
         code: input.voucherCode,
         amount: baseAmount,
@@ -565,7 +571,7 @@ export const transactionRouter = createRouter({
         gameId: game.id,
         productId: product.id,
         providerProductCode: supplierProductCode,
-        providerProductName: product.supplierProductName || product.name,
+        providerProductName: supplier.supplierProductName,
         supplierProvider,
         playerId: input.playerId,
         serverId: input.serverId || null,

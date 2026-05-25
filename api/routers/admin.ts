@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, desc, sql, gte, count, ilike, or } from "drizzle-orm";
+import { eq, and, desc, sql, gte, count, ilike, or, inArray } from "drizzle-orm";
 import { createRouter, adminQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import {
@@ -27,6 +27,12 @@ import { getPublicSiteSettings } from "./site";
 import { normalizePhone } from "../queries/users";
 import { getPaymentMaintenance, setPaymentMaintenance } from "../lib/paymentMaintenance";
 import { logAdminAction } from "../lib/adminAudit";
+import {
+  getSupplierRouting,
+  setSupplierRouting,
+  SUPPLIER_ROUTE_MODES,
+} from "../lib/supplierRouting";
+import { isActiveDigiflazzProduct, listDigiflazzProducts, type DigiflazzProduct } from "../digiflazz/client";
 
 function adminMatchKey(value: string | null | undefined) {
   return (value || "")
@@ -52,6 +58,75 @@ function adminProductKey(input: {
     .trim();
 
   return adminMatchKey(displayName) || adminMatchKey(input.nominalAmount) || adminMatchKey(input.name);
+}
+
+function adminTokens(value: string | null | undefined) {
+  return (value || "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((part) => part.length > 1);
+}
+
+function adminNumbers(value: string | null | undefined) {
+  return adminTokens(value)
+    .filter((part) => /^\d+$/.test(part))
+    .filter((part) => part !== "0");
+}
+
+function adminSupplierMatchScore(input: {
+  gameName: string | null;
+  productName: string;
+  productCode: string | null;
+  supplier: DigiflazzProduct;
+}) {
+  const sourceText = `${input.gameName || ""} ${input.productName} ${input.productCode || ""}`;
+  const supplierText = `${input.supplier.brand} ${input.supplier.product_name} ${input.supplier.buyer_sku_code}`;
+  const gameKey = adminMatchKey(input.gameName);
+  const supplierBrandKey = adminMatchKey(input.supplier.brand);
+  const sourceKey = adminMatchKey(sourceText);
+  const supplierKey = adminMatchKey(supplierText);
+  let score = 0;
+
+  if (gameKey && supplierKey.includes(gameKey)) score += 5;
+  if (supplierBrandKey && sourceKey.includes(supplierBrandKey)) score += 4;
+
+  const sourceNumbers = adminNumbers(sourceText);
+  const supplierNumbers = adminNumbers(supplierText);
+  const numberHits = sourceNumbers.filter((item) => supplierNumbers.includes(item));
+  score += Math.min(numberHits.length, 3) * 2;
+
+  const productTokens = adminTokens(input.productName).filter(
+    (token) => !["top", "up", "voucher", "digital", "produk"].includes(token),
+  );
+  const supplierTokenSet = new Set(adminTokens(supplierText));
+  score += Math.min(
+    productTokens.filter((token) => supplierTokenSet.has(token)).length,
+    4,
+  );
+
+  if (adminMatchKey(input.productName) && supplierKey.includes(adminMatchKey(input.productName))) {
+    score += 3;
+  }
+
+  return score;
+}
+
+function bestDigiflazzMatch(input: {
+  gameName: string | null;
+  productName: string;
+  productCode: string | null;
+  suppliers: DigiflazzProduct[];
+}) {
+  const ranked = input.suppliers
+    .map((supplier) => ({
+      supplier,
+      score: adminSupplierMatchScore({ ...input, supplier }),
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  const best = ranked[0];
+  if (!best || best.score < 7) return null;
+  return best;
 }
 
 function transactionNetRevenue(row: {
@@ -136,6 +211,122 @@ export const adminRouter = createRouter({
     }),
 
   paymentStatus: adminQuery.query(async () => getPaymentMaintenance()),
+
+  supplierRouting: adminQuery.query(async () => getSupplierRouting()),
+
+  setSupplierRouting: adminQuery
+    .input(z.object({ mode: z.enum(SUPPLIER_ROUTE_MODES) }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await setSupplierRouting(input);
+      await logAdminAction({
+        ctx,
+        action: "supplier.routing.set",
+        entityType: "supplierRouting",
+        details: input,
+      });
+      return result;
+    }),
+
+  applySupplierRouting: adminQuery
+    .input(z.object({ mode: z.enum(SUPPLIER_ROUTE_MODES) }))
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      await setSupplierRouting({ mode: input.mode });
+
+      if (input.mode === "manual") {
+        await logAdminAction({
+          ctx,
+          action: "supplier.routing.apply",
+          entityType: "supplierRouting",
+          details: { mode: input.mode, matched: 0, unmatched: 0 },
+        });
+        return { success: true, mode: input.mode, matched: 0, unmatched: 0, samples: [] };
+      }
+
+      if (input.mode === "flowix") {
+        const rows = await db
+          .select({ id: products.id })
+          .from(products)
+          .innerJoin(games, eq(products.gameId, games.id))
+          .where(and(eq(games.publisher, "Flowix"), eq(games.isActive, true), eq(products.isActive, true)));
+        const ids = rows.map((row) => row.id);
+        if (ids.length > 0) {
+          await db
+            .update(products)
+            .set({
+              supplierProvider: "flowix",
+              supplierProductName: null,
+              supplierTargetFormat: "auto",
+            })
+            .where(inArray(products.id, ids));
+        }
+        await logAdminAction({
+          ctx,
+          action: "supplier.routing.apply",
+          entityType: "supplierRouting",
+          details: { mode: input.mode, matched: ids.length, unmatched: 0 },
+        });
+        return { success: true, mode: input.mode, matched: ids.length, unmatched: 0, samples: [] };
+      }
+
+      const digiflazzProducts = (await listDigiflazzProducts()).filter(isActiveDigiflazzProduct);
+      const localProducts = await db
+        .select({
+          id: products.id,
+          name: products.name,
+          nominalAmount: products.nominalAmount,
+          basePrice: products.basePrice,
+          isPriceManual: products.isPriceManual,
+          gameName: games.name,
+        })
+        .from(products)
+        .innerJoin(games, eq(products.gameId, games.id))
+        .where(and(eq(games.publisher, "Flowix"), eq(games.isActive, true), eq(products.isActive, true)));
+
+      let matched = 0;
+      const unmatched: Array<{ id: number; name: string; gameName: string | null }> = [];
+      for (const product of localProducts) {
+        const best = bestDigiflazzMatch({
+          gameName: product.gameName,
+          productName: product.name,
+          productCode: product.nominalAmount,
+          suppliers: digiflazzProducts,
+        });
+
+        if (!best) {
+          unmatched.push({ id: product.id, name: product.name, gameName: product.gameName });
+          continue;
+        }
+
+        const updateData: Record<string, unknown> = {
+          supplierProvider: "digiflazz",
+          supplierProductCode: best.supplier.buyer_sku_code,
+          supplierProductName: best.supplier.product_name,
+          basePrice: String(best.supplier.price),
+          supplierTargetFormat: "auto",
+        };
+        if (!product.isPriceManual) {
+          updateData.salePrice = priceWithMarkup(best.supplier.price).toString();
+        }
+
+        await db.update(products).set(updateData).where(eq(products.id, product.id));
+        matched += 1;
+      }
+
+      await logAdminAction({
+        ctx,
+        action: "supplier.routing.apply",
+        entityType: "supplierRouting",
+        details: { mode: input.mode, matched, unmatched: unmatched.length },
+      });
+      return {
+        success: true,
+        mode: input.mode,
+        matched,
+        unmatched: unmatched.length,
+        samples: unmatched.slice(0, 10),
+      };
+    }),
 
   setPaymentMaintenance: adminQuery
     .input(z.object({ enabled: z.boolean(), message: z.string().max(240).optional() }))

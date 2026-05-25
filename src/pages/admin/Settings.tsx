@@ -134,6 +134,9 @@ export default function AdminSettings() {
   const [paymentMessage, setPaymentMessage] = useState(
     "Pembayaran sedang ditutup sementara karena Flowix sedang maintenance. Silakan coba lagi nanti.",
   );
+  const [supplierMode, setSupplierMode] = useState<"manual" | "flowix" | "digiflazz" | "digiflazz_fallback_flowix">("manual");
+  const [supplierMessage, setSupplierMessage] = useState("");
+  const [supplierError, setSupplierError] = useState("");
 
   const { data: settings } = trpc.admin.settings.useQuery(undefined, {
     enabled: isAdmin,
@@ -142,6 +145,9 @@ export default function AdminSettings() {
     enabled: isAdmin,
   });
   const { data: paymentStatus } = trpc.admin.paymentStatus.useQuery(undefined, {
+    enabled: isAdmin,
+  });
+  const { data: supplierRouting } = trpc.admin.supplierRouting.useQuery(undefined, {
     enabled: isAdmin,
   });
   const updatePassword = trpc.admin.updateAdminPassword.useMutation({
@@ -180,6 +186,36 @@ export default function AdminSettings() {
       ]);
     },
   });
+  const setSupplierRouting = trpc.admin.setSupplierRouting.useMutation({
+    onSuccess: async (data) => {
+      setSupplierError("");
+      setSupplierMessage(`Routing supplier aktif: ${data.mode}`);
+      await utils.admin.supplierRouting.invalidate();
+    },
+    onError: (err) => {
+      setSupplierMessage("");
+      setSupplierError(err.message);
+    },
+  });
+  const applySupplierRouting = trpc.admin.applySupplierRouting.useMutation({
+    onSuccess: async (data) => {
+      setSupplierError("");
+      setSupplierMessage(
+        `Routing ${data.mode} diterapkan. Cocok: ${data.matched}, belum cocok: ${data.unmatched}.`,
+      );
+      await Promise.all([
+        utils.admin.supplierRouting.invalidate(),
+        utils.admin.products.invalidate(),
+        utils.game.list.invalidate(),
+        utils.game.trending.invalidate(),
+        utils.game.popular.invalidate(),
+      ]);
+    },
+    onError: (err) => {
+      setSupplierMessage("");
+      setSupplierError(err.message);
+    },
+  });
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isAdmin)) navigate("/");
@@ -194,6 +230,10 @@ export default function AdminSettings() {
   useEffect(() => {
     if (paymentStatus?.message) setPaymentMessage(paymentStatus.message);
   }, [paymentStatus?.message]);
+
+  useEffect(() => {
+    if (supplierRouting?.mode) setSupplierMode(supplierRouting.mode);
+  }, [supplierRouting?.mode]);
 
   const submitPassword = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -423,6 +463,50 @@ export default function AdminSettings() {
                     BUKA_PAYMENT
                   </button>
                 </div>
+              </div>
+
+              <div className="mt-6 border-t border-[#222] pt-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <Settings className="h-4 w-4 text-[#00f0ff]" />
+                  <p className="text-[10px] tracking-wider text-white/30">SUPPLIER_ROUTING</p>
+                </div>
+                <p className="mb-3 text-xs font-bold text-[#00f0ff]">
+                  {(supplierRouting?.mode || "manual").toUpperCase()}
+                </p>
+                <select
+                  value={supplierMode}
+                  onChange={(event) => setSupplierMode(event.target.value as typeof supplierMode)}
+                  className="w-full border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none focus:border-[#00f0ff]/50"
+                >
+                  <option value="manual">MANUAL_PER_PRODUCT</option>
+                  <option value="flowix">ALL_FLOWIX</option>
+                  <option value="digiflazz">ALL_DIGIFLAZZ_STRICT</option>
+                  <option value="digiflazz_fallback_flowix">DIGIFLAZZ_WITH_FLOWIX_FALLBACK</option>
+                </select>
+                <div className="mt-3 grid gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSupplierRouting.mutate({ mode: supplierMode })}
+                    disabled={setSupplierRouting.isPending || applySupplierRouting.isPending}
+                    className="border border-[#00f0ff]/30 px-4 py-2 text-xs font-bold text-[#00f0ff] disabled:opacity-60"
+                  >
+                    SET_ROUTE_ONLY
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applySupplierRouting.mutate({ mode: supplierMode })}
+                    disabled={setSupplierRouting.isPending || applySupplierRouting.isPending}
+                    className="bg-[#00f0ff] px-4 py-2 text-xs font-bold text-black disabled:opacity-60"
+                  >
+                    APPLY_TO_ALL_PRODUCTS
+                  </button>
+                </div>
+                {supplierMessage && (
+                  <p className="mt-3 text-xs text-[#0aff00]">{supplierMessage}</p>
+                )}
+                {supplierError && (
+                  <p className="mt-3 text-xs text-[#ffb8c7]">{supplierError}</p>
+                )}
               </div>
             </aside>
           </div>
