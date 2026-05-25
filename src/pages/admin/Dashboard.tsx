@@ -80,6 +80,56 @@ function StatCard({
 }
 
 // ─── Sidebar ───
+function formatCurrency(value: number | undefined) {
+  return `Rp${Math.round(value || 0).toLocaleString("id-ID")}`;
+}
+
+function SalesSummaryCard({
+  title,
+  summary,
+  accent,
+}: {
+  title: string;
+  summary?: {
+    revenue: number;
+    cost: number;
+    profit: number;
+    transactions: number;
+    success: number;
+    paidFailed: number;
+  };
+  accent: string;
+}) {
+  return (
+    <div className="border border-[#222] bg-[#11131a] p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="text-[10px] tracking-wider text-white/35">{title}</p>
+        <Receipt className="h-4 w-4" style={{ color: accent }} />
+      </div>
+      <p className="text-2xl font-bold text-white">{formatCurrency(summary?.revenue)}</p>
+      <p className="mt-1 text-[10px] text-white/30">GROSS_REVENUE</p>
+      <div className="mt-4 grid grid-cols-2 gap-2 text-[10px] sm:grid-cols-4">
+        <div className="border border-white/10 bg-black/20 p-3">
+          <p className="text-white/30">PROFIT</p>
+          <p className="mt-1 text-[#0aff00]">{formatCurrency(summary?.profit)}</p>
+        </div>
+        <div className="border border-white/10 bg-black/20 p-3">
+          <p className="text-white/30">COST</p>
+          <p className="mt-1 text-white/60">{formatCurrency(summary?.cost)}</p>
+        </div>
+        <div className="border border-white/10 bg-black/20 p-3">
+          <p className="text-white/30">PAID_TX</p>
+          <p className="mt-1 text-[#00f0ff]">{summary?.transactions ?? 0}</p>
+        </div>
+        <div className="border border-white/10 bg-black/20 p-3">
+          <p className="text-white/30">PAID_FAILED</p>
+          <p className="mt-1 text-[#ffb800]">{summary?.paidFailed ?? 0}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AdminSidebar({ active }: { active: string }) {
   const { logout } = useAuth();
   const navItems = [
@@ -206,7 +256,7 @@ export default function AdminDashboard() {
             <StatCard
               icon={Receipt}
               label="TOTAL REVENUE"
-              value={statsLoading ? "..." : `Rp${(stats?.todayRevenue || 0).toLocaleString()}`}
+              value={statsLoading ? "..." : formatCurrency(stats?.todayRevenue)}
               sub="Today"
               color="#ff003c"
             />
@@ -239,6 +289,19 @@ export default function AdminDashboard() {
                     }%`
               }
               color="#0aff00"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <SalesSummaryCard
+              title="SALES_RECAP // THIS_MONTH"
+              summary={stats?.monthlySales}
+              accent="#00f0ff"
+            />
+            <SalesSummaryCard
+              title="SALES_RECAP // THIS_YEAR"
+              summary={stats?.yearlySales}
+              accent="#ff003c"
             />
           </div>
 

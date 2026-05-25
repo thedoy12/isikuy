@@ -181,6 +181,31 @@ function transactionNetRevenue(row: {
   }
 }
 
+function salesSummary(rows: Array<{
+  totalAmount: string;
+  providerResponse: string | null;
+  productCost: string | null;
+  status: string;
+}>) {
+  return rows.reduce(
+    (summary, row) => {
+      const gross = transactionNetRevenue({
+        baseAmount: row.totalAmount,
+        providerResponse: row.providerResponse,
+      });
+      const cost = parseMoney(row.productCost);
+      summary.revenue += gross;
+      summary.cost += cost;
+      summary.profit += gross - cost;
+      summary.transactions += 1;
+      if (row.status === "success") summary.success += 1;
+      if (row.status === "failed") summary.paidFailed += 1;
+      return summary;
+    },
+    { revenue: 0, cost: 0, profit: 0, transactions: 0, success: 0, paidFailed: 0 },
+  );
+}
+
 function transactionIssue(providerResponse: string | null) {
   if (!providerResponse) return null;
 
@@ -847,6 +872,8 @@ export const adminRouter = createRouter({
 
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const yearStart = new Date(today.getFullYear(), 0, 1);
     const recentRevenueRows = await db
       .select({
         baseAmount: transactions.baseAmount,
@@ -858,6 +885,20 @@ export const adminRouter = createRouter({
       .from(transactions)
       .leftJoin(products, eq(transactions.productId, products.id))
       .where(and(gte(transactions.createdAt, sevenDaysAgo), eq(transactions.paymentStatus, "paid")));
+    const periodRows = await db
+      .select({
+        totalAmount: transactions.totalAmount,
+        providerResponse: transactions.providerResponse,
+        productCost: products.basePrice,
+        status: transactions.status,
+        createdAt: transactions.createdAt,
+      })
+      .from(transactions)
+      .leftJoin(products, eq(transactions.productId, products.id))
+      .where(and(gte(transactions.createdAt, yearStart), eq(transactions.paymentStatus, "paid")));
+
+    const monthlySales = salesSummary(periodRows.filter((row) => row.createdAt >= monthStart));
+    const yearlySales = salesSummary(periodRows);
 
     const dailyRevenue = Array.from({ length: 7 }, (_, index) => {
       const date = new Date(sevenDaysAgo);
@@ -885,6 +926,8 @@ export const adminRouter = createRouter({
       pendingTransactions: pendingTransactions.count,
       successTransactions: successTransactions.count,
       dailyRevenue,
+      monthlySales,
+      yearlySales,
     };
   }),
 
