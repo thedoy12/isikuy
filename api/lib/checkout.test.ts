@@ -16,4 +16,18 @@ describe("checkoutAmounts", () => {
     expect(checkoutAmounts({ baseAmount: 10_000, discountAmount: 25_000 }).totalAmount).toBe(1);
     expect(safeDiscountAmount({ amount: 10_000, rawDiscount: 25_000 })).toBe(10_000);
   });
+
+  it("adds configurable checkout fees after discounts", () => {
+    expect(
+      checkoutAmounts({
+        baseAmount: 50_000,
+        discountAmount: 10_000,
+        feePercent: 1.5,
+        feeFixed: 500,
+      }),
+    ).toMatchObject({
+      feeAmount: 1_100,
+      totalAmount: 41_100,
+    });
+  });
 });

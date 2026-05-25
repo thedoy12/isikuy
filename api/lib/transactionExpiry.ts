@@ -4,8 +4,8 @@ import { getDb } from "../queries/connection";
 
 export const QRIS_PAYMENT_TIMEOUT_MS = 60 * 60 * 1000;
 
-export function qrisExpiryDate(from = new Date()) {
-  return new Date(from.getTime() + QRIS_PAYMENT_TIMEOUT_MS);
+export function qrisExpiryDate(from = new Date(), timeoutMs = QRIS_PAYMENT_TIMEOUT_MS) {
+  return new Date(from.getTime() + timeoutMs);
 }
 
 export async function failExpiredUnpaidTransactions(now = new Date()) {
@@ -31,4 +31,3 @@ export async function failExpiredUnpaidTransactions(now = new Date()) {
 
   return result.length;
 }
-

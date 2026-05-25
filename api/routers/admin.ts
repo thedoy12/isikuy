@@ -36,6 +36,7 @@ import {
 } from "../lib/supplierRouting";
 import { isActiveDigiflazzProduct, listDigiflazzProducts, type DigiflazzProduct } from "../digiflazz/client";
 import { getFlowixProfile, isFlowixConfigured } from "../flowix/client";
+import { getCommerceSettings, setCommerceSettings } from "../lib/commerceSettings";
 
 function adminMatchKey(value: string | null | undefined) {
   return (value || "")
@@ -219,6 +220,34 @@ export const adminRouter = createRouter({
 
   supplierMaintenance: adminQuery.query(async () => getSupplierMaintenance()),
 
+  commerceSettings: adminQuery.query(async () => getCommerceSettings()),
+
+  updateCommerceSettings: adminQuery
+    .input(
+      z.object({
+        markupMode: z.enum(["tiered", "percent"]),
+        productMarkupPercent: z.number().min(0).max(50),
+        checkoutFeePercent: z.number().min(0).max(25),
+        checkoutFeeFixed: z.number().min(0).max(100_000),
+        qrisExpiryMinutes: z.number().int().min(5).max(1440),
+        flowixMinimumBalanceReserve: z.number().min(0).max(10_000_000),
+        flowixProductCategories: z.array(z.string().min(1).max(40)).min(1).max(20),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const result = await setCommerceSettings(input);
+      await logAdminAction({
+        ctx,
+        action: "commerce.settings.update",
+        entityType: "commerceSettings",
+        details: {
+          ...input,
+          flowixProductCategories: input.flowixProductCategories.join(","),
+        },
+      });
+      return result;
+    }),
+
   setSupplierMaintenance: adminQuery
     .input(z.object({ flowix: z.boolean().optional(), digiflazz: z.boolean().optional() }))
     .mutation(async ({ input, ctx }) => {
@@ -378,6 +407,7 @@ export const adminRouter = createRouter({
         return { success: true, mode: input.mode, matched: ids.length, unmatched: 0, samples: [] };
       }
 
+      const commerceSettings = await getCommerceSettings();
       const digiflazzProducts = (await listDigiflazzProducts()).filter(isActiveDigiflazzProduct);
       const localProducts = await db
         .select({
@@ -415,7 +445,10 @@ export const adminRouter = createRouter({
           supplierTargetFormat: "auto",
         };
         if (!product.isPriceManual) {
-          updateData.salePrice = priceWithMarkup(best.supplier.price).toString();
+          updateData.salePrice = priceWithMarkup(
+            best.supplier.price,
+            commerceSettings.effectiveProductMarkupPercent,
+          ).toString();
         }
 
         await db.update(products).set(updateData).where(eq(products.id, product.id));
@@ -1186,6 +1219,7 @@ export const adminRouter = createRouter({
         updateData.supplierProvider = "digiflazz";
       }
       if (input.action === "resetAutoPrice") {
+        const commerceSettings = await getCommerceSettings();
         const rows = await db
           .select({ id: products.id, basePrice: products.basePrice })
           .from(products)
@@ -1194,7 +1228,10 @@ export const adminRouter = createRouter({
           await db
             .update(products)
             .set({
-              salePrice: priceWithMarkup(parseMoney(row.basePrice)).toString(),
+              salePrice: priceWithMarkup(
+                parseMoney(row.basePrice),
+                commerceSettings.effectiveProductMarkupPercent,
+              ).toString(),
               isPriceManual: false,
             })
             .where(eq(products.id, row.id));
@@ -1240,8 +1277,12 @@ export const adminRouter = createRouter({
       if (data.name) updateData.name = data.name;
       if (data.basePrice !== undefined) updateData.basePrice = data.basePrice.toString();
       if (data.resetAutoPrice) {
+        const commerceSettings = await getCommerceSettings();
         const providerPrice = data.basePrice !== undefined ? data.basePrice : parseMoney(current.basePrice);
-        updateData.salePrice = priceWithMarkup(providerPrice).toString();
+        updateData.salePrice = priceWithMarkup(
+          providerPrice,
+          commerceSettings.effectiveProductMarkupPercent,
+        ).toString();
         updateData.isPriceManual = false;
       } else if (data.salePrice !== undefined) {
         updateData.salePrice = data.salePrice.toString();

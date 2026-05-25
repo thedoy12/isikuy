@@ -7,6 +7,7 @@ import { getPaymentMaintenance } from "../lib/paymentMaintenance";
 import { safeDiscountAmount } from "../lib/pricing";
 import { checkRateLimit, rateLimitKey } from "../lib/rateLimit";
 import { checkoutAmounts } from "../lib/checkout";
+import { getCommerceSettings } from "../lib/commerceSettings";
 
 async function calculateVoucherDiscount(input: {
   code?: string;
@@ -129,11 +130,17 @@ export const paymentRouter = createRouter({
           code: input.voucherCode,
           amount: basePrice,
         });
-      const amounts = checkoutAmounts({ baseAmount: basePrice, discountAmount });
-      const feePercent = 0;
-      const feeFixed = 0;
-      const servicePercent = 0;
-      const serviceAmount = 0;
+      const commerceSettings = await getCommerceSettings();
+      const amounts = checkoutAmounts({
+        baseAmount: basePrice,
+        discountAmount,
+        feePercent: commerceSettings.checkoutFeePercent,
+        feeFixed: commerceSettings.checkoutFeeFixed,
+      });
+      const feePercent = commerceSettings.checkoutFeePercent;
+      const feeFixed = commerceSettings.checkoutFeeFixed;
+      const servicePercent = commerceSettings.checkoutFeePercent;
+      const serviceAmount = amounts.feeAmount;
       const paymentFeeAmount = 0;
       const feeAmount = amounts.feeAmount;
       const totalAmount = amounts.totalAmount;

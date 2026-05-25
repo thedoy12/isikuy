@@ -6,6 +6,7 @@ import { games, categories, products } from "@db/schema";
 import { publicProviderLabel, sanitizePublicText } from "../lib/publicText";
 import { gameAssetPath } from "../lib/gameAssets";
 import { priceWithMarkup } from "../lib/pricing";
+import { getCommerceSettings } from "../lib/commerceSettings";
 import {
   isActiveFlowixProduct,
   isFlowixConfigured,
@@ -422,7 +423,8 @@ export async function syncFlowixCatalog() {
   if (!isFlowixConfigured()) return { games: [], productCodes: [] };
 
   const db = getDb();
-  const flowixProducts = (await listFlowixCatalog())
+  const commerceSettings = await getCommerceSettings();
+  const flowixProducts = (await listFlowixCatalog({ categories: commerceSettings.flowixProductCategories }))
     .filter(isActiveFlowixProduct)
     .filter(isAllowedFlowixProduct);
 
@@ -567,7 +569,7 @@ export async function syncFlowixCatalog() {
     const [existing] = existingProducts;
 
     const providerName = cleanProductDisplayName(product.name, product.brand, product.code);
-    const providerSalePrice = String(priceWithMarkup(product.price));
+    const providerSalePrice = String(priceWithMarkup(product.price, commerceSettings.effectiveProductMarkupPercent));
     const productData = {
       gameId: game.id,
       name: existing?.name ?? providerName,

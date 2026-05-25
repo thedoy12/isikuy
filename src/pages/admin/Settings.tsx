@@ -61,6 +61,16 @@ const DEFAULT_SITE_FORM = {
   toolsPopupDismissHours: 12,
 };
 
+const DEFAULT_COMMERCE_FORM = {
+  markupMode: "tiered" as "tiered" | "percent",
+  productMarkupPercent: 2,
+  checkoutFeePercent: 0,
+  checkoutFeeFixed: 0,
+  qrisExpiryMinutes: 60,
+  flowixMinimumBalanceReserve: 250,
+  flowixProductCategories: "game,pulsa,data,ewallet,voucher,pln",
+};
+
 function AdminSidebar({ active }: { active: string }) {
   const { logout } = useAuth();
   const navItems = [
@@ -137,6 +147,9 @@ export default function AdminSettings() {
   const [supplierMode, setSupplierMode] = useState<"manual" | "flowix" | "digiflazz" | "digiflazz_fallback_flowix">("manual");
   const [supplierMessage, setSupplierMessage] = useState("");
   const [supplierError, setSupplierError] = useState("");
+  const [commerceForm, setCommerceForm] = useState(DEFAULT_COMMERCE_FORM);
+  const [commerceMessage, setCommerceMessage] = useState("");
+  const [commerceError, setCommerceError] = useState("");
 
   const { data: settings } = trpc.admin.settings.useQuery(undefined, {
     enabled: isAdmin,
@@ -160,6 +173,9 @@ export default function AdminSettings() {
   const { data: supplierScan, refetch: refetchSupplierScan } = trpc.admin.scanSupplierMapping.useQuery(undefined, {
     enabled: false,
     retry: false,
+  });
+  const { data: commerceSettings } = trpc.admin.commerceSettings.useQuery(undefined, {
+    enabled: isAdmin,
   });
   const updatePassword = trpc.admin.updateAdminPassword.useMutation({
     onSuccess: async () => {
@@ -232,6 +248,26 @@ export default function AdminSettings() {
       await utils.admin.supplierMaintenance.invalidate();
     },
   });
+  const updateCommerceSettings = trpc.admin.updateCommerceSettings.useMutation({
+    onSuccess: async (data) => {
+      setCommerceError("");
+      setCommerceMessage("Pengaturan commerce berhasil disimpan");
+      setCommerceForm({
+        markupMode: data.markupMode,
+        productMarkupPercent: data.productMarkupPercent,
+        checkoutFeePercent: data.checkoutFeePercent,
+        checkoutFeeFixed: data.checkoutFeeFixed,
+        qrisExpiryMinutes: data.qrisExpiryMinutes,
+        flowixMinimumBalanceReserve: data.flowixMinimumBalanceReserve,
+        flowixProductCategories: data.flowixProductCategories.join(","),
+      });
+      await utils.admin.commerceSettings.invalidate();
+    },
+    onError: (err) => {
+      setCommerceMessage("");
+      setCommerceError(err.message);
+    },
+  });
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isAdmin)) navigate("/");
@@ -250,6 +286,19 @@ export default function AdminSettings() {
   useEffect(() => {
     if (supplierRouting?.mode) setSupplierMode(supplierRouting.mode);
   }, [supplierRouting?.mode]);
+
+  useEffect(() => {
+    if (!commerceSettings) return;
+    setCommerceForm({
+      markupMode: commerceSettings.markupMode,
+      productMarkupPercent: commerceSettings.productMarkupPercent,
+      checkoutFeePercent: commerceSettings.checkoutFeePercent,
+      checkoutFeeFixed: commerceSettings.checkoutFeeFixed,
+      qrisExpiryMinutes: commerceSettings.qrisExpiryMinutes,
+      flowixMinimumBalanceReserve: commerceSettings.flowixMinimumBalanceReserve,
+      flowixProductCategories: commerceSettings.flowixProductCategories.join(","),
+    });
+  }, [commerceSettings]);
 
   const submitPassword = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -279,6 +328,38 @@ export default function AdminSettings() {
       ...siteForm,
       popupDismissHours: Number(siteForm.popupDismissHours) || 24,
       toolsPopupDismissHours: Number(siteForm.toolsPopupDismissHours) || 12,
+    });
+  };
+
+  const updateCommerceField = <Key extends keyof typeof DEFAULT_COMMERCE_FORM>(
+    key: Key,
+    value: (typeof DEFAULT_COMMERCE_FORM)[Key],
+  ) => {
+    setCommerceForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const submitCommerceSettings = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCommerceMessage("");
+    setCommerceError("");
+    const flowixProductCategories = commerceForm.flowixProductCategories
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (flowixProductCategories.length === 0) {
+      setCommerceError("Kategori Flowix minimal 1 item");
+      return;
+    }
+
+    updateCommerceSettings.mutate({
+      markupMode: commerceForm.markupMode,
+      productMarkupPercent: Number(commerceForm.productMarkupPercent) || 0,
+      checkoutFeePercent: Number(commerceForm.checkoutFeePercent) || 0,
+      checkoutFeeFixed: Number(commerceForm.checkoutFeeFixed) || 0,
+      qrisExpiryMinutes: Number(commerceForm.qrisExpiryMinutes) || 60,
+      flowixMinimumBalanceReserve: Number(commerceForm.flowixMinimumBalanceReserve) || 0,
+      flowixProductCategories,
     });
   };
 
@@ -591,6 +672,142 @@ export default function AdminSettings() {
               </div>
             </aside>
           </div>
+
+          <form onSubmit={submitCommerceSettings} className="mt-6 border border-[#222] bg-[#11131a] p-6">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center bg-[#0aff00]/10">
+                <Receipt className="h-5 w-5 text-[#0aff00]" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold tracking-wider text-white">
+                  COMMERCE_CONTROL
+                </h2>
+                <p className="text-[10px] tracking-wider text-white/35">
+                  Markup, biaya checkout, expiry QRIS, saldo aman Flowix, dan kategori sync
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div>
+                <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                  MARKUP_MODE
+                </label>
+                <select
+                  value={commerceForm.markupMode}
+                  onChange={(event) => updateCommerceField("markupMode", event.target.value as typeof commerceForm.markupMode)}
+                  className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#0aff00]/50"
+                >
+                  <option value="tiered">TIERED_AUTO</option>
+                  <option value="percent">FIXED_PERCENT</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                  PRODUCT_MARKUP_PERCENT
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={50}
+                  step="0.01"
+                  value={commerceForm.productMarkupPercent}
+                  onChange={(event) => updateCommerceField("productMarkupPercent", Number(event.target.value))}
+                  disabled={commerceForm.markupMode === "tiered"}
+                  className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#0aff00]/50 disabled:opacity-45"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                  QRIS_EXPIRY_MINUTES
+                </label>
+                <input
+                  type="number"
+                  min={5}
+                  max={1440}
+                  value={commerceForm.qrisExpiryMinutes}
+                  onChange={(event) => updateCommerceField("qrisExpiryMinutes", Number(event.target.value))}
+                  className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#0aff00]/50"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                  CHECKOUT_FEE_PERCENT
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={25}
+                  step="0.01"
+                  value={commerceForm.checkoutFeePercent}
+                  onChange={(event) => updateCommerceField("checkoutFeePercent", Number(event.target.value))}
+                  className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#0aff00]/50"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                  CHECKOUT_FEE_FIXED
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100000}
+                  value={commerceForm.checkoutFeeFixed}
+                  onChange={(event) => updateCommerceField("checkoutFeeFixed", Number(event.target.value))}
+                  className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#0aff00]/50"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                  FLOWIX_MIN_BALANCE_RESERVE
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={10000000}
+                  value={commerceForm.flowixMinimumBalanceReserve}
+                  onChange={(event) => updateCommerceField("flowixMinimumBalanceReserve", Number(event.target.value))}
+                  className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#0aff00]/50"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="mb-2 block text-[10px] tracking-wider text-white/40">
+                FLOWIX_PRODUCT_CATEGORIES
+              </label>
+              <input
+                value={commerceForm.flowixProductCategories}
+                onChange={(event) => updateCommerceField("flowixProductCategories", event.target.value)}
+                className="w-full border border-[#222] bg-[#0b0d14] px-4 py-3 text-sm text-white outline-none focus:border-[#0aff00]/50"
+              />
+            </div>
+
+            {commerceMessage && (
+              <div className="mt-4 flex items-center gap-2 border border-[#0aff00]/20 bg-[#0aff00]/10 px-4 py-3 text-xs text-[#0aff00]">
+                <CheckCircle2 className="h-4 w-4" />
+                {commerceMessage}
+              </div>
+            )}
+            {commerceError && (
+              <div className="mt-4 border border-[#ff003c]/20 bg-[#ff003c]/10 px-4 py-3 text-xs text-[#ffb8c7]">
+                {commerceError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={updateCommerceSettings.isPending}
+              className="mt-5 inline-flex items-center gap-2 bg-[#0aff00] px-5 py-3 text-sm font-bold text-black transition-colors hover:bg-[#08c900] disabled:opacity-50"
+            >
+              {updateCommerceSettings.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              SAVE_COMMERCE_SETTINGS
+            </button>
+          </form>
 
           <form onSubmit={submitSiteSettings} className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
             <section className="space-y-6">

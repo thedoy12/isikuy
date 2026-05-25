@@ -1,4 +1,5 @@
 import { env } from "../lib/env";
+import { getCommerceSettings } from "../lib/commerceSettings";
 
 type FlowixResponse<T> = {
   success: boolean;
@@ -277,8 +278,13 @@ export async function ensureFlowixProductAvailable(serviceCode: string | null | 
   return product;
 }
 
-export async function listFlowixCatalog() {
-  const categories = Array.from(new Set(env.flowixProductCategories));
+export async function listFlowixCatalog(input?: { categories?: string[] }) {
+  const commerceSettings = input?.categories
+    ? null
+    : await getCommerceSettings().catch(() => null);
+  const categories = Array.from(
+    new Set(input?.categories || commerceSettings?.flowixProductCategories || env.flowixProductCategories),
+  );
   const requests = [undefined, ...categories].map((category) =>
     listFlowixProducts(category).catch((error) => {
       console.warn(

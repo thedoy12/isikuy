@@ -21,6 +21,7 @@ import { checkRateLimit, rateLimitKey } from "../lib/rateLimit";
 import { withTransactionLock } from "../lib/transactionLock";
 import { checkoutAmounts } from "../lib/checkout";
 import { getSupplierMaintenance, getSupplierRouting, resolveProductSupplier } from "../lib/supplierRouting";
+import { getCommerceSettings } from "../lib/commerceSettings";
 
 function generateInvoice(): string {
   const date = new Date();
@@ -30,19 +31,18 @@ function generateInvoice(): string {
   return `${prefix}-${timestamp}-${random}`;
 }
 
-const FLOWIX_MINIMUM_BALANCE_RESERVE = 250;
-
 async function ensureFlowixBalanceCanFulfill(input: {
   productCost: number;
   paymentReceivedEstimate: number;
+  minimumBalanceReserve: number;
 }) {
   if (!isFlowixConfigured()) return;
   const profile = await getFlowixProfile();
   const balance = Number(profile.financials?.balance ?? 0);
   const projectedBalance = balance + input.paymentReceivedEstimate - input.productCost;
-  if (projectedBalance < FLOWIX_MINIMUM_BALANCE_RESERVE) {
+  if (projectedBalance < input.minimumBalanceReserve) {
     throw new Error(
-      `Saldo Flowix tidak cukup untuk memproses produk ini. Saldo sekarang Rp${balance.toLocaleString("id-ID")}, estimasi saldo setelah transaksi Rp${Math.max(0, Math.round(projectedBalance)).toLocaleString("id-ID")}. Minimal sisa saldo Rp${FLOWIX_MINIMUM_BALANCE_RESERVE.toLocaleString("id-ID")}.`,
+      `Saldo Flowix tidak cukup untuk memproses produk ini. Saldo sekarang Rp${balance.toLocaleString("id-ID")}, estimasi saldo setelah transaksi Rp${Math.max(0, Math.round(projectedBalance)).toLocaleString("id-ID")}. Minimal sisa saldo Rp${input.minimumBalanceReserve.toLocaleString("id-ID")}.`,
     );
   }
 }
@@ -493,6 +493,7 @@ export const transactionRouter = createRouter({
 
       const baseAmount = parseFloat(product.salePrice || product.basePrice);
       const productCost = Number(product.basePrice || product.salePrice || baseAmount);
+      const commerceSettings = await getCommerceSettings();
       const supplierRoute = await getSupplierRouting();
       const supplier = resolveProductSupplier({
         product,
@@ -514,6 +515,8 @@ export const transactionRouter = createRouter({
       const amounts = checkoutAmounts({
         baseAmount,
         discountAmount: voucher?.discountAmount,
+        feePercent: commerceSettings.checkoutFeePercent,
+        feeFixed: commerceSettings.checkoutFeeFixed,
       });
       const totalAmount = amounts.totalAmount;
       const feeAmount = amounts.feeAmount;
@@ -523,7 +526,10 @@ export const transactionRouter = createRouter({
       let providerPaymentId: string | null = null;
       let providerResponse: string | null = voucher ? JSON.stringify({ voucher }) : null;
       let payment = null;
-      const expiryAt = qrisExpiryDate();
+      const expiryAt = qrisExpiryDate(
+        new Date(),
+        commerceSettings.qrisExpiryMinutes * 60 * 1000,
+      );
 
       if (method.code === "qris" && isFlowixConfigured()) {
         if (supplierProvider === "flowix") {
@@ -540,6 +546,7 @@ export const transactionRouter = createRouter({
           await ensureFlowixBalanceCanFulfill({
             productCost,
             paymentReceivedEstimate: Math.round(totalAmount),
+            minimumBalanceReserve: commerceSettings.flowixMinimumBalanceReserve,
           });
         }
         const flowixDeposit = await createFlowixDeposit({
