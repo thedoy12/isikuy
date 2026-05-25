@@ -217,7 +217,13 @@ export default function AdminSettings() {
     onSuccess: async (data) => {
       setSupplierError("");
       setSupplierMessage(`Routing supplier aktif: ${data.mode}`);
-      await utils.admin.supplierRouting.invalidate();
+      await Promise.all([
+        utils.admin.supplierRouting.invalidate(),
+        utils.admin.products.invalidate(),
+        utils.game.list.invalidate(),
+        utils.game.trending.invalidate(),
+        utils.game.popular.invalidate(),
+      ]);
     },
     onError: (err) => {
       setSupplierMessage("");
