@@ -95,6 +95,8 @@ export default function AdminGames() {
   const [productPageSize, setProductPageSize] = useState(100);
   const [productSearch, setProductSearch] = useState("");
   const [supplierFilter, setSupplierFilter] = useState<"all" | "flowix" | "digiflazz" | "unmapped" | "inactive" | "manualPrice">("all");
+  const [syncMessage, setSyncMessage] = useState("");
+  const [syncError, setSyncError] = useState("");
   const [productDrafts, setProductDrafts] = useState<Record<number, string>>({});
   const [supplierDrafts, setSupplierDrafts] = useState<
     Record<number, { provider: "flowix" | "digiflazz"; code: string; targetFormat: "auto" | "player" | "pipe" | "dash" | "space" | "comma" }>
@@ -122,7 +124,9 @@ export default function AdminGames() {
     },
   });
   const syncFlowix = trpc.admin.syncFlowixCatalog.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setSyncMessage(`FLOWIX_SYNCED ${data.games} CATALOGS / ${data.products} PRODUCTS`);
+      setSyncError("");
       utils.admin.games.invalidate();
       utils.admin.products.invalidate();
       utils.game.list.invalidate();
@@ -130,15 +134,30 @@ export default function AdminGames() {
       utils.game.popular.invalidate();
       setPage(0);
     },
+    onError: (err) => {
+      setSyncMessage("");
+      setSyncError(err.message);
+    },
   });
   const syncDigiflazz = trpc.admin.syncDigiflazzCatalog.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.success) {
+        setSyncMessage(`DIGIFLAZZ_SYNCED ${data.games} CATALOGS / ${data.products} PRODUCTS`);
+        setSyncError("");
+      } else {
+        setSyncMessage(`DIGIFLAZZ_CACHE ${data.games} CATALOGS / ${data.products} PRODUCTS`);
+        setSyncError(data.message || "Digiflazz belum bisa disinkronkan sekarang.");
+      }
       utils.admin.games.invalidate();
       utils.admin.products.invalidate();
       utils.game.list.invalidate();
       utils.game.trending.invalidate();
       utils.game.popular.invalidate();
       setPage(0);
+    },
+    onError: (err) => {
+      setSyncMessage("");
+      setSyncError(err.message);
     },
   });
   const { data: productsList } = trpc.admin.products.useQuery(
@@ -256,16 +275,8 @@ export default function AdminGames() {
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <p className="text-[10px] text-[#00f0ff] tracking-wider">ARSENAL // CATALOG_MANAGEMENT</p>
-              {syncFlowix.data && (
-                <p className="text-[9px] text-[#0aff00] mt-1">
-                  FLOWIX_SYNCED {syncFlowix.data.games} CATALOGS / {syncFlowix.data.products} PRODUCTS
-                </p>
-              )}
-              {syncDigiflazz.data && (
-                <p className="text-[9px] text-[#0aff00] mt-1">
-                  DIGIFLAZZ_SYNCED {syncDigiflazz.data.games} CATALOGS / {syncDigiflazz.data.products} PRODUCTS
-                </p>
-              )}
+              {syncMessage && <p className="mt-1 text-[9px] text-[#0aff00]">{syncMessage}</p>}
+              {syncError && <p className="mt-1 text-[9px] text-[#ffb800]">{syncError}</p>}
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               <button

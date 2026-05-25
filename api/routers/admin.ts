@@ -569,18 +569,44 @@ export const adminRouter = createRouter({
   }),
 
   syncDigiflazzCatalog: adminQuery.mutation(async ({ ctx }) => {
-    const result = await syncDigiflazzCatalog();
-    await logAdminAction({
-      ctx,
-      action: "catalog.digiflazz.sync",
-      entityType: "catalog",
-      details: { games: result.games.length, products: result.productCodes.length },
-    });
-    return {
-      success: true,
-      games: result.games.length,
-      products: result.productCodes.length,
-    };
+    try {
+      const result = await syncDigiflazzCatalog();
+      await logAdminAction({
+        ctx,
+        action: "catalog.digiflazz.sync",
+        entityType: "catalog",
+        details: { games: result.games.length, products: result.productCodes.length },
+      });
+      return {
+        success: true,
+        games: result.games.length,
+        products: result.productCodes.length,
+        message: "Digiflazz berhasil disinkronkan.",
+      };
+    } catch (error) {
+      const db = getDb();
+      const [gameCount] = await db
+        .select({ count: count() })
+        .from(games)
+        .where(eq(games.publisher, "Digiflazz"));
+      const [productCount] = await db
+        .select({ count: count() })
+        .from(products)
+        .where(eq(products.supplierProvider, "digiflazz"));
+      const message = error instanceof Error ? error.message : String(error);
+      await logAdminAction({
+        ctx,
+        action: "catalog.digiflazz.sync_failed",
+        entityType: "catalog",
+        details: { message },
+      });
+      return {
+        success: false,
+        games: gameCount.count,
+        products: productCount.count,
+        message,
+      };
+    }
   }),
 
   vouchers: adminQuery
