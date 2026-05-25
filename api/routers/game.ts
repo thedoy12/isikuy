@@ -597,7 +597,13 @@ export async function syncFlowixCatalog() {
     const existingProducts = await db
       .select()
       .from(products)
-      .where(and(eq(products.gameId, game.id), eq(products.nominalAmount, product.code)))
+      .where(
+        and(
+          eq(products.gameId, game.id),
+          eq(products.supplierProvider, "flowix"),
+          eq(products.nominalAmount, product.code),
+        ),
+      )
       .orderBy(asc(products.id));
     const [existing] = existingProducts;
 
@@ -638,7 +644,13 @@ export async function syncFlowixCatalog() {
     await db
       .update(products)
       .set({ isActive: false })
-      .where(and(eq(products.gameId, gameId), notInArray(products.nominalAmount, Array.from(codes))));
+      .where(
+        and(
+          eq(products.gameId, gameId),
+          eq(products.supplierProvider, "flowix"),
+          notInArray(products.nominalAmount, Array.from(codes)),
+        ),
+      );
   }
 
   const syncedGameIds = syncedGames.map((game) => game.id);
@@ -840,7 +852,13 @@ export async function syncDigiflazzCatalog() {
     const existingProducts = await db
       .select()
       .from(products)
-      .where(and(eq(products.gameId, game.id), eq(products.supplierProductCode, product.code)))
+      .where(
+        and(
+          eq(products.gameId, game.id),
+          eq(products.supplierProvider, "digiflazz"),
+          eq(products.supplierProductCode, product.code),
+        ),
+      )
       .orderBy(asc(products.id));
     const [existing] = existingProducts;
     const providerName = cleanProductDisplayName(product.name, product.brand, product.code);
@@ -992,9 +1010,10 @@ export const gameRouter = createRouter({
           asc(products.id),
         );
       const route = await getSupplierRouting();
-      const visibleProducts = uniqueProductsByName(localProducts).filter((product) =>
+      const routeProducts = localProducts.filter((product) =>
         isVisibleProductForRoute(product, route.mode),
       );
+      const visibleProducts = uniqueProductsByName(routeProducts);
 
       if (visibleProducts.length === 0) return null;
 
