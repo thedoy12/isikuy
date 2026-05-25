@@ -13,6 +13,7 @@ import {
   listFlowixCatalog,
   type FlowixProduct,
 } from "../flowix/client";
+import { isActiveDigiflazzProduct, isDigiflazzConfigured, listDigiflazzProducts, type DigiflazzProduct } from "../digiflazz/client";
 import { getSupplierRouting, type SupplierRouteMode } from "../lib/supplierRouting";
 
 type GameRow = typeof games.$inferSelect;
@@ -21,7 +22,10 @@ type ProductDedupeInput = Pick<ProductRow, "nominalAmount" | "name" | "descripti
 type SyncedGame = GameRow & { categoryName: string };
 
 const FLOWIX_PUBLISHER = "Flowix";
+const DIGIFLAZZ_PUBLISHER = "Digiflazz";
+const CATALOG_PUBLISHERS = [FLOWIX_PUBLISHER, DIGIFLAZZ_PUBLISHER];
 const FLOWIX_ONLY_GAME_FILTER = eq(games.publisher, FLOWIX_PUBLISHER);
+const CATALOG_GAME_FILTER = inArray(games.publisher, CATALOG_PUBLISHERS);
 
 const categoryGroupSlugs: Record<string, string[]> = {
   game: ["game", "games", "game-online", "top-up-game", "topup-game", "voucher-game"],
@@ -267,6 +271,21 @@ function productPlatform(categorySlug: string) {
 
 function productGroupName(product: FlowixProduct) {
   return titleCase(productGroupBaseName(product));
+}
+
+function digiflazzCatalogProduct(product: DigiflazzProduct): FlowixProduct {
+  return {
+    code: product.buyer_sku_code,
+    name: product.product_name,
+    brand: product.brand || product.product_name,
+    status: isActiveDigiflazzProduct(product) ? "active" : "inactive",
+    raw_status: product.seller_product_status && product.buyer_product_status ? "active" : "inactive",
+    availability_label: product.unlimited_stock ? "available" : undefined,
+    stock: product.unlimited_stock ? null : product.stock ?? null,
+    price: product.price,
+    category: product.category || product.type || "produk",
+    sourceCategory: product.category || product.type || "produk",
+  };
 }
 
 function targetInputMetadata(slug: string, categorySlug: string) {
@@ -660,10 +679,187 @@ export async function syncFlowixCatalog() {
   const nonFlowixGames = await db
     .select({ id: games.id })
     .from(games)
-    .where(and(eq(games.isActive, true), not(FLOWIX_ONLY_GAME_FILTER)));
+    .where(and(eq(games.isActive, true), not(CATALOG_GAME_FILTER)));
   for (const localGame of nonFlowixGames) {
     await db.update(games).set({ isActive: false }).where(eq(games.id, localGame.id));
     await db.update(products).set({ isActive: false }).where(eq(products.gameId, localGame.id));
+  }
+
+  return { games: syncedGames, productCodes: Array.from(activeCodes) };
+}
+
+export async function syncDigiflazzCatalog() {
+  if (!isDigiflazzConfigured()) return { games: [], productCodes: [] };
+
+  const db = getDb();
+  const commerceSettings = await getCommerceSettings();
+  const digiflazzProducts = (await listDigiflazzProducts())
+    .map(digiflazzCatalogProduct)
+    .filter(isAllowedFlowixProduct);
+
+  if (digiflazzProducts.length === 0) {
+    console.warn("[catalog] Digiflazz sync skipped because provider returned an empty catalog.");
+    return { games: [], productCodes: [] };
+  }
+
+  const categorySlugs = Array.from(new Set(digiflazzProducts.map(productCategorySlug)));
+  const categoryBySlug = new Map<string, typeof categories.$inferSelect>();
+  const sortedCategorySlugs = categorySlugs.sort((a, b) => {
+    const rankA = categoryRank(a);
+    const rankB = categoryRank(b);
+    if (rankA !== rankB) return rankA - rankB;
+    return productCategoryName(a).localeCompare(productCategoryName(b));
+  });
+
+  for (const [index, slug] of sortedCategorySlugs.entries()) {
+    const [existing] = await db.select().from(categories).where(eq(categories.slug, slug)).limit(1);
+    const [category] = existing
+      ? await db
+          .update(categories)
+          .set({
+            name: productCategoryName(slug),
+            isActive: true,
+            sortOrder: existing.sortOrder ?? index + 1,
+          })
+          .where(eq(categories.id, existing.id))
+          .returning()
+      : await db
+          .insert(categories)
+          .values({
+            name: productCategoryName(slug),
+            slug,
+            icon: slug === "game" ? "gamepad-2" : "box",
+            sortOrder: index + 1,
+            isActive: true,
+          })
+          .returning();
+
+    categoryBySlug.set(slug, category);
+  }
+
+  const groups = Array.from(
+    new Map(
+      digiflazzProducts.map((product) => {
+        const categorySlug = productCategorySlug(product);
+        const slug = productGroupSlug(product);
+        return [slug, { slug, name: productGroupName(product), categorySlug }] as const;
+      }),
+    ).values(),
+  ).sort((a, b) => {
+    const categoryRankA = categoryRank(a.categorySlug);
+    const categoryRankB = categoryRank(b.categorySlug);
+    if (categoryRankA !== categoryRankB) return categoryRankA - categoryRankB;
+    const rankA = favoriteRank(a.slug) ?? Number.MAX_SAFE_INTEGER;
+    const rankB = favoriteRank(b.slug) ?? Number.MAX_SAFE_INTEGER;
+    if (rankA !== rankB) return rankA - rankB;
+    return a.name.localeCompare(b.name);
+  });
+
+  const existingGames = await db.select().from(games);
+  const syncedGames: SyncedGame[] = [];
+
+  for (const group of groups) {
+    const category = categoryBySlug.get(group.categorySlug);
+    if (!category) continue;
+
+    const slugKey = matchKey(group.slug);
+    const nameKey = matchKey(group.name);
+    const existing =
+      existingGames.find((game) => matchKey(game.slug) === slugKey) ??
+      existingGames.find((game) => matchKey(game.name) === nameKey);
+    const assetPath = gameAssetPath(group.slug, group.name);
+    const inputMetadata = targetInputMetadata(group.slug, group.categorySlug);
+    const gameData = {
+      categoryId: category.id,
+      name: existing?.name ?? group.name,
+      slug: existing?.slug ?? group.slug,
+      description:
+        existing?.description ?? `${productCategoryName(group.categorySlug)} ${group.name} tersedia instan.`,
+      coverImage: existing?.coverImage ?? assetPath ?? null,
+      cardImage: existing?.cardImage ?? assetPath ?? null,
+      bannerImage: existing?.bannerImage ?? assetPath ?? null,
+      publisher: existing?.publisher === FLOWIX_PUBLISHER ? FLOWIX_PUBLISHER : DIGIFLAZZ_PUBLISHER,
+      platform: productPlatform(group.categorySlug),
+      isActive: existing ? !existing.isManuallyHidden : true,
+      isTrending: existing?.isTrending ?? (syncedGames.length < 8 || favoriteRank(group.slug) !== null),
+      isPopular: existing?.isPopular ?? (syncedGames.length < 12 || favoriteRank(group.slug) !== null),
+      hasServerId: existing?.hasServerId ?? inputMetadata.hasServerId,
+      serverIdLabel: existing?.serverIdLabel ?? inputMetadata.serverIdLabel,
+      serverIdPlaceholder: existing?.serverIdPlaceholder ?? inputMetadata.serverIdPlaceholder,
+      sortOrder: existing?.sortOrder ?? favoriteRank(group.slug) ?? syncedGames.length + favoriteGameOrder.length + 1,
+    };
+
+    const syncedRows: GameRow[] = existing
+      ? await db.update(games).set(gameData).where(eq(games.id, existing.id)).returning()
+      : await db.insert(games).values({ ...gameData, isNew: false }).returning();
+
+    const syncedGame = syncedRows[0];
+    existingGames.push(syncedGame);
+    syncedGames.push({ ...syncedGame, categoryName: category.name });
+  }
+
+  const gamesBySlug = new Map(syncedGames.map((game) => [game.slug, game]));
+  const activeCodes = new Set(digiflazzProducts.map((product) => product.code));
+  const activeCodesByGame = new Map<number, Set<string>>();
+
+  for (const [index, product] of digiflazzProducts.entries()) {
+    const game = gamesBySlug.get(productGroupSlug(product));
+    if (!game) continue;
+
+    const gameCodes = activeCodesByGame.get(game.id) ?? new Set<string>();
+    gameCodes.add(product.code);
+    activeCodesByGame.set(game.id, gameCodes);
+
+    const existingProducts = await db
+      .select()
+      .from(products)
+      .where(and(eq(products.gameId, game.id), eq(products.supplierProductCode, product.code)))
+      .orderBy(asc(products.id));
+    const [existing] = existingProducts;
+    const providerName = cleanProductDisplayName(product.name, product.brand, product.code);
+    const providerSalePrice = String(priceWithMarkup(product.price, commerceSettings.effectiveProductMarkupPercent));
+    const productData = {
+      gameId: game.id,
+      name: existing?.name ?? providerName,
+      description: `${cleanFlowixName(product.brand)} - ${product.code}`,
+      nominalAmount: product.code,
+      supplierProvider: "digiflazz",
+      supplierProductCode: product.code,
+      supplierProductName: providerName,
+      supplierTargetFormat: existing?.supplierTargetFormat ?? "auto",
+      basePrice: String(product.price),
+      salePrice: existing?.isPriceManual ? existing.salePrice ?? providerSalePrice : providerSalePrice,
+      isPriceManual: existing?.isPriceManual ?? false,
+      discountPercent: existing?.discountPercent ?? 0,
+      isPromo: existing?.isPromo ?? false,
+      stock: product.stock ?? existing?.stock ?? 999,
+      isActive: isActiveFlowixProduct(product) && (existing ? !existing.isManuallyHidden : true),
+      sortOrder: existing?.sortOrder ?? index + 1,
+    };
+
+    if (existing) {
+      await db.update(products).set(productData).where(eq(products.id, existing.id));
+      const duplicateIds = existingProducts.slice(1).filter((item) => !item.isManuallyHidden).map((item) => item.id);
+      for (const duplicateId of duplicateIds) {
+        await db.update(products).set({ isActive: false }).where(eq(products.id, duplicateId));
+      }
+    } else {
+      await db.insert(products).values(productData);
+    }
+  }
+
+  for (const [gameId, codes] of activeCodesByGame.entries()) {
+    if (codes.size === 0) continue;
+    await db
+      .update(products)
+      .set({ isActive: false })
+      .where(
+        and(
+          eq(products.gameId, gameId),
+          eq(products.supplierProvider, "digiflazz"),
+          notInArray(products.supplierProductCode, Array.from(codes)),
+        ),
+      );
   }
 
   return { games: syncedGames, productCodes: Array.from(activeCodes) };
@@ -685,7 +881,7 @@ export const gameRouter = createRouter({
     )
     .query(async ({ input }) => {
       const db = getDb();
-      const filters = [eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER];
+      const filters = [eq(games.isActive, true), CATALOG_GAME_FILTER];
       if (input?.categoryId) filters.push(eq(games.categoryId, input.categoryId));
       if (input?.categoryGroup) {
         filters.push(inArray(categories.slug, categoryGroupSlugs[input.categoryGroup]));
@@ -745,7 +941,7 @@ export const gameRouter = createRouter({
         db
           .select()
           .from(games)
-          .where(and(eq(games.slug, input.slug), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
+          .where(and(eq(games.slug, input.slug), eq(games.isActive, true), CATALOG_GAME_FILTER))
           .limit(1);
 
       const [game] = await loadGame();
@@ -817,7 +1013,7 @@ export const gameRouter = createRouter({
       })
       .from(games)
       .leftJoin(categories, eq(games.categoryId, categories.id))
-      .where(and(eq(games.isTrending, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
+      .where(and(eq(games.isTrending, true), eq(games.isActive, true), CATALOG_GAME_FILTER))
       .orderBy(categoryRankSql, asc(games.sortOrder), asc(games.name))
       .limit(24);
     const route = await getSupplierRouting();
@@ -849,7 +1045,7 @@ export const gameRouter = createRouter({
       })
       .from(games)
       .leftJoin(categories, eq(games.categoryId, categories.id))
-      .where(and(eq(games.isPopular, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
+      .where(and(eq(games.isPopular, true), eq(games.isActive, true), CATALOG_GAME_FILTER))
       .orderBy(categoryRankSql, asc(games.sortOrder), asc(games.name))
       .limit(36);
     const route = await getSupplierRouting();
@@ -876,7 +1072,7 @@ export const gameRouter = createRouter({
         })
         .from(categories)
         .innerJoin(games, eq(games.categoryId, categories.id))
-        .where(and(eq(categories.isActive, true), eq(games.isActive, true), FLOWIX_ONLY_GAME_FILTER))
+        .where(and(eq(categories.isActive, true), eq(games.isActive, true), CATALOG_GAME_FILTER))
         .orderBy(categoryRankSql, asc(categories.sortOrder), asc(categories.name));
 
     const rows = await loadCategories();

@@ -131,6 +131,16 @@ export default function AdminGames() {
       setPage(0);
     },
   });
+  const syncDigiflazz = trpc.admin.syncDigiflazzCatalog.useMutation({
+    onSuccess: () => {
+      utils.admin.games.invalidate();
+      utils.admin.products.invalidate();
+      utils.game.list.invalidate();
+      utils.game.trending.invalidate();
+      utils.game.popular.invalidate();
+      setPage(0);
+    },
+  });
   const { data: productsList } = trpc.admin.products.useQuery(
     {
       gameId: productGameId,
@@ -248,29 +258,48 @@ export default function AdminGames() {
               <p className="text-[10px] text-[#00f0ff] tracking-wider">ARSENAL // CATALOG_MANAGEMENT</p>
               {syncFlowix.data && (
                 <p className="text-[9px] text-[#0aff00] mt-1">
-                  SYNCED {syncFlowix.data.games} CATALOGS / {syncFlowix.data.products} PRODUCTS
+                  FLOWIX_SYNCED {syncFlowix.data.games} CATALOGS / {syncFlowix.data.products} PRODUCTS
+                </p>
+              )}
+              {syncDigiflazz.data && (
+                <p className="text-[9px] text-[#0aff00] mt-1">
+                  DIGIFLAZZ_SYNCED {syncDigiflazz.data.games} CATALOGS / {syncDigiflazz.data.products} PRODUCTS
                 </p>
               )}
             </div>
-            <button
-              onClick={() => syncFlowix.mutate()}
-              disabled={syncFlowix.isPending}
-              className="inline-flex items-center gap-2 px-3 py-2 border border-[#00f0ff]/30 text-[#00f0ff] text-[10px] tracking-wider hover:bg-[#00f0ff]/10 disabled:opacity-50"
-            >
-              {syncFlowix.isPending ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <RefreshCw className="w-3 h-3" />
-              )}
-              SYNC_CATALOG
-            </button>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                onClick={() => syncFlowix.mutate()}
+                disabled={syncFlowix.isPending || syncDigiflazz.isPending}
+                className="inline-flex items-center justify-center gap-2 px-3 py-2 border border-[#00f0ff]/30 text-[#00f0ff] text-[10px] tracking-wider hover:bg-[#00f0ff]/10 disabled:opacity-50"
+              >
+                {syncFlowix.isPending ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3 h-3" />
+                )}
+                SYNC_FLOWIX
+              </button>
+              <button
+                onClick={() => syncDigiflazz.mutate()}
+                disabled={syncFlowix.isPending || syncDigiflazz.isPending}
+                className="inline-flex items-center justify-center gap-2 px-3 py-2 border border-[#0aff00]/30 text-[#0aff00] text-[10px] tracking-wider hover:bg-[#0aff00]/10 disabled:opacity-50"
+              >
+                {syncDigiflazz.isPending ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3 h-3" />
+                )}
+                SYNC_DIGIFLAZZ
+              </button>
+            </div>
           </div>
         </header>
         <div className="p-4 pb-24 sm:p-6 lg:pb-6">
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[10px] text-white/50 tracking-wider">
-                CARI GAME FLOWIX LALU EDIT GAMBAR DARI KOLOM IMAGES
+                CARI GAME FLOWIX / DIGIFLAZZ LALU EDIT GAMBAR DARI KOLOM IMAGES
               </p>
             </div>
             <div className="grid w-full gap-2 sm:grid-cols-2 lg:w-auto">

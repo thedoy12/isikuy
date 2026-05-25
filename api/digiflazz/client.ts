@@ -98,6 +98,13 @@ export async function listDigiflazzProducts() {
     sign: sign(`${env.digiflazzUsername}${env.digiflazzApiKey}pricelist`),
   });
 
+  if (!Array.isArray(data)) {
+    const payload = data as { message?: string; rc?: string };
+    throw new Error(
+      payload.message || payload.rc || "Digiflazz tidak mengembalikan daftar produk.",
+    );
+  }
+
   return data;
 }
 

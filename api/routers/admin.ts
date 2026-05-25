@@ -15,7 +15,7 @@ import {
   siteSettings,
   vouchers,
 } from "@db/schema";
-import { syncFlowixCatalog } from "./game";
+import { syncDigiflazzCatalog, syncFlowixCatalog } from "./game";
 import { parseMoney, priceWithMarkup } from "../lib/pricing";
 import {
   getAdminCredentials,
@@ -568,6 +568,21 @@ export const adminRouter = createRouter({
     };
   }),
 
+  syncDigiflazzCatalog: adminQuery.mutation(async ({ ctx }) => {
+    const result = await syncDigiflazzCatalog();
+    await logAdminAction({
+      ctx,
+      action: "catalog.digiflazz.sync",
+      entityType: "catalog",
+      details: { games: result.games.length, products: result.productCodes.length },
+    });
+    return {
+      success: true,
+      games: result.games.length,
+      products: result.productCodes.length,
+    };
+  }),
+
   vouchers: adminQuery
     .input(
       z.object({
@@ -1026,7 +1041,7 @@ export const adminRouter = createRouter({
       const db = getDb();
       const limit = input?.limit || 50;
       const offset = input?.offset || 0;
-      const filters = [eq(games.publisher, "Flowix")];
+      const filters = [inArray(games.publisher, ["Flowix", "Digiflazz"])];
       if (input?.search) {
         filters.push(ilike(games.name, `%${input.search}%`));
       }
@@ -1150,7 +1165,7 @@ export const adminRouter = createRouter({
       }
       if (input?.supplier === "inactive") filters.push(eq(products.isActive, false));
       if (input?.supplier === "manualPrice") filters.push(eq(products.isPriceManual, true));
-      filters.push(eq(games.publisher, "Flowix"));
+      filters.push(inArray(games.publisher, ["Flowix", "Digiflazz"]));
       if (input?.supplier !== "inactive") filters.push(eq(games.isActive, true));
 
       const where = and(...filters);
@@ -1184,7 +1199,7 @@ export const adminRouter = createRouter({
 
       const seen = new Set<string>();
       const uniqueItems = items.filter((item) => {
-        const key = `${item.gameId}:${adminProductKey(item)}`;
+        const key = `${item.gameId}:${item.supplierProvider}:${item.supplierProductCode || item.nominalAmount || adminProductKey(item)}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
