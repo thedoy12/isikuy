@@ -652,10 +652,15 @@ export default function AdminSettings() {
                   </div>
                   <div className="flex items-center justify-between border border-white/10 bg-black/20 px-3 py-2">
                     <span className="text-white/40">DIGIFLAZZ</span>
-                    <span className={supplierHealth?.digiflazz.ok ? "text-[#0aff00]" : "text-[#ff003c]"}>
-                      {supplierHealth?.digiflazz.ok ? `${supplierHealth.digiflazz.count} ACTIVE` : "OFFLINE"}
+                    <span className={supplierHealth?.digiflazz.ok ? "text-[#0aff00]" : "text-[#ffb800]"}>
+                      {supplierHealth?.digiflazz.ok ? `${supplierHealth.digiflazz.count} CACHED` : "NO_CACHE"}
                     </span>
                   </div>
+                  {supplierHealth?.digiflazz.message && (
+                    <p className="text-[9px] leading-relaxed text-white/30">
+                      DIGIFLAZZ_HEALTH: {supplierHealth.digiflazz.message}
+                    </p>
+                  )}
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <button

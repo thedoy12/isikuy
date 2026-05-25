@@ -34,7 +34,12 @@ import {
   setSupplierMaintenance,
   SUPPLIER_ROUTE_MODES,
 } from "../lib/supplierRouting";
-import { isActiveDigiflazzProduct, listDigiflazzProducts, type DigiflazzProduct } from "../digiflazz/client";
+import {
+  isActiveDigiflazzProduct,
+  isDigiflazzConfigured,
+  listDigiflazzProducts,
+  type DigiflazzProduct,
+} from "../digiflazz/client";
 import { getFlowixProfile, isFlowixConfigured } from "../flowix/client";
 import { getCommerceSettings, setCommerceSettings } from "../lib/commerceSettings";
 
@@ -285,17 +290,19 @@ export const adminRouter = createRouter({
           : "Flowix belum dikonfigurasi",
       }));
 
-    const digiflazz = await listDigiflazzProducts()
-      .then((items) => ({
-        ok: true,
-        count: items.filter(isActiveDigiflazzProduct).length,
-        message: "OK",
-      }))
-      .catch((error) => ({
-        ok: false,
-        count: 0,
-        message: error instanceof Error ? error.message : String(error),
-      }));
+    const [digiflazzProductCount] = await getDb()
+      .select({ count: count() })
+      .from(products)
+      .where(and(eq(products.supplierProvider, "digiflazz"), eq(products.isActive, true)));
+    const digiflazzConfigured = isDigiflazzConfigured();
+    const digiflazzCount = digiflazzProductCount?.count ?? 0;
+    const digiflazz = {
+      ok: digiflazzConfigured && digiflazzCount > 0,
+      count: digiflazzCount,
+      message: digiflazzConfigured
+        ? "CACHE_ONLY. Gunakan SYNC_DIGIFLAZZ untuk cek live pricelist."
+        : "Digiflazz belum dikonfigurasi",
+    };
 
     return {
       flowix,
