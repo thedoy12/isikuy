@@ -13,6 +13,7 @@ const ASSET_BY_SLUG: Record<string, string> = {
   bstation: "bstation.jpg",
   byu: "byu.jpg",
   "castle-duels": "castle-duels.png",
+  "cod-mobile": "cod-mobile.webp",
   dana: "dana.jpg",
   "delta-force": "delta-force.png",
   "dragonheir-silent-gods": "dragonheir-silent-gods.png",
@@ -71,6 +72,8 @@ const ASSET_BY_SLUG: Record<string, string> = {
 
 const ASSET_ALIASES: Record<string, string> = {
   "arena-of-valor": "aov",
+  "call-of-duty-mobile": "cod-mobile",
+  codm: "cod-mobile",
   "league-of-legends-wild-rift": "wild-rift",
   "league-of-legends": "wild-rift",
   "mobile-legends-a": "mobile-legends",
@@ -94,6 +97,7 @@ const ASSET_ALIASES: Record<string, string> = {
   "light-of-thel-new-era": "light-of-thel",
   "metal-slug-awakening": "metal-slug",
   "pubg-new-state-mobile": "pubg-new-state",
+  "ragnarok-m-eternal-love": "ragnarok-origin",
   "state-of-survival-zombie-war": "state-of-survival",
 };
 
@@ -133,5 +137,5 @@ export function gameAssetPath(slug: string | null | undefined, name?: string | n
     if (fileName) return `/aset-optimized/${fileName.replace(/\.[^.]+$/, ".webp")}`;
   }
 
-  return null;
+  return "/aset-optimized/logo-isi-kuy.webp";
 }

@@ -632,7 +632,20 @@ export async function syncFlowixCatalog() {
     .select({ id: games.id })
     .from(games)
     .where(FLOWIX_ONLY_GAME_FILTER);
+  const digiflazzBackedRows = await db
+    .select({ gameId: products.gameId })
+    .from(products)
+    .where(and(eq(products.supplierProvider, "digiflazz"), eq(products.isActive, true)));
+  const digiflazzBackedGameIds = new Set(digiflazzBackedRows.map((row) => row.gameId));
   for (const stale of allFlowixGames.filter((game) => !syncedGameIds.includes(game.id))) {
+    if (digiflazzBackedGameIds.has(stale.id)) {
+      await db.update(games).set({ isActive: true }).where(eq(games.id, stale.id));
+      await db
+        .update(products)
+        .set({ isActive: false })
+        .where(and(eq(products.gameId, stale.id), eq(products.supplierProvider, "flowix")));
+      continue;
+    }
     await db.update(games).set({ isActive: false }).where(eq(games.id, stale.id));
     await db.update(products).set({ isActive: false }).where(eq(products.gameId, stale.id));
   }
