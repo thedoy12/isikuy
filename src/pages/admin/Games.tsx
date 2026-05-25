@@ -106,6 +106,9 @@ export default function AdminGames() {
   const { data: categories } = trpc.game.categories.useQuery(undefined, {
     enabled: isAdmin,
   });
+  const { data: supplierRouting } = trpc.admin.supplierRouting.useQuery(undefined, {
+    enabled: isAdmin,
+  });
   const { data: gamesList } = trpc.admin.games.useQuery(
     {
       search: search.trim() || undefined,
@@ -275,6 +278,16 @@ export default function AdminGames() {
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <p className="text-[10px] text-[#00f0ff] tracking-wider">ARSENAL // CATALOG_MANAGEMENT</p>
+              {supplierRouting?.mode === "digiflazz" && (
+                <p className="mt-1 text-[9px] text-[#ffb800]">
+                  ROUTE_STRICT_DIGIFLAZZ: produk yang belum aktif di Digiflazz disembunyikan.
+                </p>
+              )}
+              {supplierRouting?.mode === "digiflazz_fallback_flowix" && (
+                <p className="mt-1 text-[9px] text-[#0aff00]">
+                  ROUTE_RECOMMENDED: Digiflazz prioritas, Flowix fallback untuk katalog penuh.
+                </p>
+              )}
               {syncMessage && <p className="mt-1 text-[9px] text-[#0aff00]">{syncMessage}</p>}
               {syncError && <p className="mt-1 text-[9px] text-[#ffb800]">{syncError}</p>}
             </div>

@@ -577,9 +577,13 @@ export default function AdminSettings() {
                 >
                   <option value="manual">MANUAL_PER_PRODUCT</option>
                   <option value="flowix">ALL_FLOWIX</option>
-                  <option value="digiflazz">ALL_DIGIFLAZZ_STRICT</option>
-                  <option value="digiflazz_fallback_flowix">DIGIFLAZZ_WITH_FLOWIX_FALLBACK</option>
+                  <option value="digiflazz">DIGIFLAZZ_STRICT_HIDE_UNMAPPED</option>
+                  <option value="digiflazz_fallback_flowix">DIGIFLAZZ_PRIORITY_FLOWIX_FALLBACK_RECOMMENDED</option>
                 </select>
+                <p className="mt-2 text-[10px] leading-relaxed text-white/35">
+                  STRICT hanya menampilkan produk yang aktif/termapping Digiflazz. Fallback membuat katalog tetap penuh:
+                  Digiflazz dipakai saat ada, Flowix dipakai saat Digiflazz belum ada.
+                </p>
                 <div className="mt-3 grid gap-2">
                   <button
                     type="button"
