@@ -42,6 +42,8 @@ import {
 } from "../digiflazz/client";
 import { getFlowixProfile, isFlowixConfigured } from "../flowix/client";
 import { getCommerceSettings, setCommerceSettings } from "../lib/commerceSettings";
+import { submitSupplierOrder } from "../suppliers/orders";
+import { withTransactionLock } from "../lib/transactionLock";
 
 const MAX_PAGE_SIZE = 15;
 
@@ -192,6 +194,56 @@ function transactionIssue(providerResponse: string | null) {
   } catch {
     return null;
   }
+}
+
+function parseProviderState(raw: string | null) {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function stringifyProviderState(raw: string | null, patch: Record<string, unknown>) {
+  return JSON.stringify({
+    ...parseProviderState(raw),
+    ...patch,
+  });
+}
+
+async function countVoucherUsageOnce(raw: string | null) {
+  const state = parseProviderState(raw) as {
+    voucher?: { id?: number; usageCounted?: boolean };
+  };
+  const voucher = state.voucher;
+  if (!voucher?.id || voucher.usageCounted) return raw;
+
+  const counted = await getDb()
+    .update(vouchers)
+    .set({ usageCount: sql`${vouchers.usageCount} + 1` })
+    .where(
+      and(
+        eq(vouchers.id, voucher.id),
+        eq(vouchers.isActive, true),
+        sql`${vouchers.usageCount} < ${vouchers.usageLimit}`,
+      ),
+    )
+    .returning({ id: vouchers.id });
+
+  if (counted.length === 0) {
+    return JSON.stringify({
+      ...state,
+      voucherUsageError: "Voucher tidak dihitung karena sudah tidak valid atau limitnya sudah habis saat retry order selesai.",
+    });
+  }
+
+  return JSON.stringify({
+    ...state,
+    voucher: { ...voucher, usageCounted: true },
+    voucherUsageError: undefined,
+  });
 }
 
 export const adminRouter = createRouter({
@@ -929,6 +981,124 @@ export const adminRouter = createRouter({
         details: { status: input.status, paymentStatus: input.paymentStatus },
       });
       return { success: true };
+    }),
+
+  retryTransactionOrder: adminQuery
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await withTransactionLock(`admin-retry-order:${input.id}`, async (db) => {
+        const [transaction] = await db
+          .select({
+            id: transactions.id,
+            invoiceNumber: transactions.invoiceNumber,
+            status: transactions.status,
+            paymentStatus: transactions.paymentStatus,
+            providerProductCode: transactions.providerProductCode,
+            supplierProvider: transactions.supplierProvider,
+            playerId: transactions.playerId,
+            serverId: transactions.serverId,
+            productId: transactions.productId,
+            providerResponse: transactions.providerResponse,
+            productCost: products.basePrice,
+            supplierTargetFormat: products.supplierTargetFormat,
+          })
+          .from(transactions)
+          .leftJoin(products, eq(transactions.productId, products.id))
+          .where(eq(transactions.id, input.id))
+          .limit(1);
+
+        if (!transaction) throw new Error("Transaksi tidak ditemukan.");
+        if (transaction.paymentStatus !== "paid") {
+          throw new Error("Retry hanya bisa untuk transaksi yang pembayarannya sudah paid.");
+        }
+        if (transaction.status !== "failed") {
+          throw new Error("Retry hanya bisa untuk transaksi berstatus failed.");
+        }
+        if (!transaction.providerProductCode) {
+          throw new Error("Kode produk supplier kosong, retry tidak bisa dijalankan.");
+        }
+
+        const state = parseProviderState(transaction.providerResponse) as {
+          retryAttempts?: number;
+        };
+        const retryAttempts = Number(state.retryAttempts || 0) + 1;
+        const retryReference = `${transaction.invoiceNumber}-R${retryAttempts}`;
+
+        let providerResponse = stringifyProviderState(transaction.providerResponse, {
+          retryAttempts,
+          lastRetryAt: new Date().toISOString(),
+          lastRetryReference: retryReference,
+        });
+
+        try {
+          const productOrder = await submitSupplierOrder({
+            provider: transaction.supplierProvider,
+            productCode: transaction.providerProductCode,
+            productCost: Number(transaction.productCost || 0),
+            playerId: transaction.playerId,
+            serverId: transaction.serverId,
+            invoiceNumber: retryReference,
+            targetFormat: transaction.supplierTargetFormat,
+          });
+          const nextStatus = productOrder.status;
+          providerResponse = stringifyProviderState(providerResponse, {
+            productOrder,
+            orderSubmitError: nextStatus === "failed"
+              ? productOrder.provider === "flowix"
+                ? productOrder.raw.note || "Order supplier gagal saat retry."
+                : productOrder.raw.message || "Order supplier gagal saat retry."
+              : undefined,
+          });
+          const finalProviderResponse =
+            nextStatus === "success"
+              ? await countVoucherUsageOnce(providerResponse) ?? providerResponse
+              : providerResponse;
+
+          await db
+            .update(transactions)
+            .set({
+              status: nextStatus,
+              providerResponse: finalProviderResponse,
+              providerReference: productOrder.reference,
+              ...(nextStatus === "success" ? { completedAt: new Date() } : {}),
+            })
+            .where(eq(transactions.id, transaction.id));
+
+          return {
+            success: nextStatus !== "failed",
+            status: nextStatus,
+            reference: productOrder.reference,
+          };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Gagal retry order supplier.";
+          providerResponse = stringifyProviderState(providerResponse, {
+            orderSubmitError: message,
+          });
+          await db
+            .update(transactions)
+            .set({
+              status: "failed",
+              providerResponse,
+            })
+            .where(eq(transactions.id, transaction.id));
+          return {
+            success: false,
+            status: "failed" as const,
+            reference: retryReference,
+            message,
+          };
+        }
+      });
+
+      await logAdminAction({
+        ctx,
+        action: "transaction.retry_order",
+        entityType: "transaction",
+        entityId: input.id,
+        details: result,
+      });
+
+      return result;
     }),
 
   users: adminQuery

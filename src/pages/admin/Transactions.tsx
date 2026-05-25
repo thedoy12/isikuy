@@ -110,6 +110,9 @@ export default function AdminTransactions() {
   const updateTx = trpc.admin.updateTransaction.useMutation({
     onSuccess: () => utils.admin.transactions.invalidate(),
   });
+  const retryOrder = trpc.admin.retryTransactionOrder.useMutation({
+    onSuccess: () => utils.admin.transactions.invalidate(),
+  });
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isAdmin)) navigate("/");
@@ -210,6 +213,17 @@ export default function AdminTransactions() {
                         )}
                       </div>
                     )}
+                    {tx.paymentStatus === "paid" && tx.status === "failed" && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          onClick={() => retryOrder.mutate({ id: tx.id })}
+                          disabled={retryOrder.isPending}
+                          className="px-3 py-2 text-[10px] bg-[#ffb800]/10 text-[#ffb800] rounded hover:bg-[#ffb800]/20 transition-colors disabled:opacity-50"
+                        >
+                          {retryOrder.isPending ? "RETRYING" : "RETRY_ORDER"}
+                        </button>
+                      </div>
+                    )}
                   </article>
                 );
               })}
@@ -280,6 +294,15 @@ export default function AdminTransactions() {
                           <button onClick={() => updateTx.mutate({ id: tx.id, status: "success" })}
                             className="text-[9px] px-2 py-1 bg-[#0aff00]/10 text-[#0aff00] rounded hover:bg-[#0aff00]/20 transition-colors">
                             COMPLETE
+                          </button>
+                        )}
+                        {tx.paymentStatus === "paid" && tx.status === "failed" && (
+                          <button
+                            onClick={() => retryOrder.mutate({ id: tx.id })}
+                            disabled={retryOrder.isPending}
+                            className="text-[9px] px-2 py-1 bg-[#ffb800]/10 text-[#ffb800] rounded hover:bg-[#ffb800]/20 transition-colors disabled:opacity-50"
+                          >
+                            {retryOrder.isPending ? "RETRYING" : "RETRY_ORDER"}
                           </button>
                         )}
                       </td>
