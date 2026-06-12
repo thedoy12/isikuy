@@ -7,10 +7,21 @@ import { createContext } from "./context";
 import { env } from "./lib/env";
 import { handleFlowixCallback } from "./flowix/callback";
 import { failExpiredUnpaidTransactions } from "./lib/transactionExpiry";
+import { buildRobotsTxt, buildSitemapXml } from "./lib/seo";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
 app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
+app.get("/robots.txt", async (c) => {
+  c.header("Content-Type", "text/plain; charset=utf-8");
+  c.header("Cache-Control", "public, max-age=3600");
+  return c.body(await buildRobotsTxt(c.req.url));
+});
+app.get("/sitemap.xml", async (c) => {
+  c.header("Content-Type", "application/xml; charset=utf-8");
+  c.header("Cache-Control", "public, max-age=3600");
+  return c.body(await buildSitemapXml(c.req.url));
+});
 app.post("/api/callback/flowix", handleFlowixCallback);
 app.use("/api/trpc/*", async (c) => {
   return fetchRequestHandler({

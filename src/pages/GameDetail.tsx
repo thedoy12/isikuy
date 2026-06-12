@@ -52,6 +52,38 @@ type CheckoutPayment = {
   expiredAt: string;
 } | null;
 
+function setMeta(selector: string, attribute: "content" | "href", value: string) {
+  if (!value) return;
+  const isLink = selector.startsWith("link");
+  let element = document.head.querySelector(selector);
+  if (!element) {
+    element = document.createElement(isLink ? "link" : "meta");
+    const match = selector.match(/\[(name|property|rel)="([^"]+)"\]/);
+    if (match) element.setAttribute(match[1], match[2]);
+    document.head.appendChild(element);
+  }
+  element.setAttribute(attribute, value);
+}
+
+function setJsonLd(id: string, value: Record<string, unknown>) {
+  let element = document.getElementById(id) as HTMLScriptElement | null;
+  if (!element) {
+    element = document.createElement("script");
+    element.type = "application/ld+json";
+    element.id = id;
+    document.head.appendChild(element);
+  }
+  element.textContent = JSON.stringify(value);
+}
+
+function absoluteUrl(pathOrUrl: string) {
+  try {
+    return new URL(pathOrUrl, window.location.origin).toString();
+  } catch {
+    return pathOrUrl;
+  }
+}
+
 function getTargetGuide(slug: string, targetLabel: string, serverLabel?: string | null) {
   const serverText = serverLabel || "Server ID";
   const guides: Record<string, string[]> = {
@@ -227,6 +259,70 @@ export default function GameDetail() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    if (!game) return;
+
+    const prices = game.products
+      .map((product) => Number(product.salePrice || product.basePrice || 0))
+      .filter((price) => Number.isFinite(price) && price > 0);
+    const lowPrice = prices.length ? Math.min(...prices) : 0;
+    const highPrice = prices.length ? Math.max(...prices) : lowPrice;
+    const canonicalUrl = `${window.location.origin}/games/${game.slug}`;
+    const title = `Top Up ${game.name} Murah via QRIS | ISIKUY TOPUP`;
+    const description = lowPrice
+      ? `Top up ${game.name} cepat dan praktis di ISIKUY. Pilih nominal, bayar QRIS, harga mulai Rp${Math.round(lowPrice).toLocaleString("id-ID")}.`
+      : `Top up ${game.name} cepat dan praktis di ISIKUY. Pilih nominal favorit, bayar QRIS, lalu pesanan diproses otomatis.`;
+    const image = absoluteUrl(optimizedImagePath(game.bannerImage || game.coverImage || game.cardImage || "/aset-optimized/logo-isi-kuy.webp"));
+
+    document.title = title;
+    setMeta('meta[name="description"]', "content", description);
+    setMeta('meta[name="robots"]', "content", "index, follow");
+    setMeta('link[rel="canonical"]', "href", canonicalUrl);
+    setMeta('meta[property="og:title"]', "content", title);
+    setMeta('meta[property="og:description"]', "content", description);
+    setMeta('meta[property="og:type"]', "content", "product");
+    setMeta('meta[property="og:url"]', "content", canonicalUrl);
+    setMeta('meta[property="og:image"]', "content", image);
+    setMeta('meta[name="twitter:title"]', "content", title);
+    setMeta('meta[name="twitter:description"]', "content", description);
+    setMeta('meta[name="twitter:image"]', "content", image);
+
+    setJsonLd("game-structured-data", {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: window.location.origin },
+            { "@type": "ListItem", position: 2, name: "Produk", item: `${window.location.origin}/games` },
+            { "@type": "ListItem", position: 3, name: game.name, item: canonicalUrl },
+          ],
+        },
+        {
+          "@type": "Product",
+          name: `Top Up ${game.name}`,
+          image,
+          description,
+          brand: { "@type": "Brand", name: game.name },
+          category: game.category?.name || "Produk Digital",
+          offers: {
+            "@type": "AggregateOffer",
+            priceCurrency: "IDR",
+            lowPrice: lowPrice || undefined,
+            highPrice: highPrice || undefined,
+            offerCount: game.products.length,
+            availability: "https://schema.org/InStock",
+            url: canonicalUrl,
+          },
+        },
+      ],
+    });
+
+    return () => {
+      document.getElementById("game-structured-data")?.remove();
+    };
+  }, [game]);
 
   useEffect(() => {
     if (txStatus?.status === "success") {

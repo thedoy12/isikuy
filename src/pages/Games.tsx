@@ -72,6 +72,43 @@ export default function Games() {
     ? "Produk paling populer saat ini"
     : "Pilih game, pulsa, e-wallet, atau produk digital favoritmu";
 
+  useEffect(() => {
+    const title = trendingParam
+      ? "Produk Top Up Trending via QRIS | ISIKUY TOPUP"
+      : "Katalog Top Up Game, Pulsa, E-Wallet, dan Voucher | ISIKUY";
+    const description = trendingParam
+      ? "Lihat produk top up game dan digital yang sedang trending di ISIKUY. Bayar cepat pakai QRIS dan cek status transaksi otomatis."
+      : "Katalog lengkap top up game, pulsa, e-wallet, voucher digital, dan token PLN di ISIKUY. Pilih produk, bayar QRIS, lalu pesanan diproses otomatis.";
+    const canonicalUrl = `${window.location.origin}/games${trendingParam ? "?trending=true" : ""}`;
+    document.title = title;
+    const metaDescription = document.querySelector('meta[name="description"]') ?? document.createElement("meta");
+    metaDescription.setAttribute("name", "description");
+    metaDescription.setAttribute("content", description);
+    document.head.appendChild(metaDescription);
+    const canonical = document.querySelector('link[rel="canonical"]') ?? document.createElement("link");
+    canonical.setAttribute("rel", "canonical");
+    canonical.setAttribute("href", canonicalUrl);
+    document.head.appendChild(canonical);
+    const robots = document.querySelector('meta[name="robots"]') ?? document.createElement("meta");
+    robots.setAttribute("name", "robots");
+    robots.setAttribute("content", "index, follow");
+    document.head.appendChild(robots);
+
+    for (const [selector, value] of [
+      ['meta[property="og:title"]', title],
+      ['meta[property="og:description"]', description],
+      ['meta[property="og:url"]', canonicalUrl],
+      ['meta[name="twitter:title"]', title],
+      ['meta[name="twitter:description"]', description],
+    ]) {
+      const element = document.querySelector(selector) ?? document.createElement("meta");
+      const match = selector.match(/\[(name|property)="([^"]+)"\]/);
+      if (match) element.setAttribute(match[1], match[2]);
+      element.setAttribute("content", value);
+      document.head.appendChild(element);
+    }
+  }, [trendingParam]);
+
   const fallbackCover = (name: string) =>
     `https://placehold.co/600x800/09090b/ffffff?text=${encodeURIComponent(name)}`;
 
