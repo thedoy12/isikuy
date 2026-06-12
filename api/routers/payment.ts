@@ -8,6 +8,10 @@ import { safeDiscountAmount } from "../lib/pricing";
 import { checkRateLimit, rateLimitKey } from "../lib/rateLimit";
 import { checkoutAmounts } from "../lib/checkout";
 import { getCommerceSettings } from "../lib/commerceSettings";
+import {
+  getSupplierRouting,
+  isProductAvailableForSupplierRoute,
+} from "../lib/supplierRouting";
 
 async function calculateVoucherDiscount(input: {
   code?: string;
@@ -105,7 +109,7 @@ export const paymentRouter = createRouter({
           ? await db
               .select()
               .from(products)
-              .where(eq(products.id, input.productId))
+              .where(and(eq(products.id, input.productId), eq(products.isActive, true)))
               .limit(1)
           : [];
 
@@ -121,6 +125,13 @@ export const paymentRouter = createRouter({
         .limit(1);
 
       if (!method) throw new Error("Metode pembayaran belum tersedia");
+
+      if (product) {
+        const supplierRoute = await getSupplierRouting();
+        if (!isProductAvailableForSupplierRoute(product, supplierRoute.mode)) {
+          throw new Error("Produk sedang tidak tersedia. Silakan pilih produk lain.");
+        }
+      }
 
       const basePrice = product
         ? parseFloat(product.salePrice || product.basePrice)
@@ -159,7 +170,6 @@ export const paymentRouter = createRouter({
         totalAmount,
         voucher,
         voucherMessage,
-        product,
         method,
       };
     }),

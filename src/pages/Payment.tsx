@@ -50,8 +50,11 @@ export default function PaymentPage() {
   const isPaid = paymentStatus === "paid";
   const isSuccess = status === "success";
   const isFailed = ["failed", "cancelled", "refunded"].includes(status);
+  const paymentIsProcessing = paymentStatus === "unpaid" && status === "processing";
+  const orderIsProcessing = isPaid && status === "processing";
   const paidButFailed = isPaid && status === "failed";
-  const StatusIcon = isSuccess ? CheckCircle2 : isFailed ? XCircle : isPaid ? Loader2 : Clock;
+  const statusIsLoading = paymentIsProcessing || orderIsProcessing;
+  const StatusIcon = isSuccess ? CheckCircle2 : isFailed ? XCircle : statusIsLoading ? Loader2 : Clock;
 
   return (
     <div className="min-h-[100dvh] site-bg text-white">
@@ -84,7 +87,7 @@ export default function PaymentPage() {
                       : "bg-[#ffb800]/10 text-[#ffb800]"
                 }`}
               >
-                <StatusIcon className={`h-8 w-8 ${isPaid && !isSuccess && !isFailed ? "animate-spin" : ""}`} />
+                <StatusIcon className={`h-8 w-8 ${statusIsLoading ? "animate-spin" : ""}`} />
               </div>
               <p className="text-[10px] uppercase tracking-[0.22em] text-[#00f0ff]">Invoice</p>
               <div className="mt-2 flex items-center justify-center gap-2">
@@ -100,8 +103,10 @@ export default function PaymentPage() {
                     ? "Pembayaran sudah diterima, tetapi order gagal diproses. Admin akan bantu cek untuk proses ulang atau refund."
                     : isFailed
                     ? "Transaksi tidak bisa dilanjutkan."
-                    : isPaid
+                    : orderIsProcessing
                       ? "Pembayaran sudah diterima, pesanan sedang diproses."
+                      : paymentIsProcessing
+                        ? "Pembayaran sedang diproses oleh Flowix. Pesanan akan dikirim setelah deposit berhasil."
                       : "Selesaikan pembayaran QRIS sebelum waktu habis."}
               </p>
             </section>
@@ -161,7 +166,7 @@ export default function PaymentPage() {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-[#11131a] p-6 text-center">
-                {!isPaid && transaction.payment?.qrImage ? (
+                {!isPaid && !paymentIsProcessing && transaction.payment?.qrImage ? (
                   <>
                     <p className="mb-3 text-xs text-white/45">Scan QRIS</p>
                     <img
@@ -176,8 +181,12 @@ export default function PaymentPage() {
                     <p className="text-sm text-white/55">
                       {paidButFailed
                         ? "QRIS sudah dibayar, pesanan gagal diproses."
-                        : isPaid
+                        : isSuccess
+                          ? "Pesanan berhasil diproses."
+                          : orderIsProcessing
                           ? "QRIS sudah dibayar."
+                          : paymentIsProcessing
+                            ? "Pembayaran sedang diproses."
                           : "Detail QRIS tidak tersedia."}
                     </p>
                   </div>

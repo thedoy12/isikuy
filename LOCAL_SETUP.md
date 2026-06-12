@@ -12,7 +12,7 @@ Project ini sudah diarahkan ke PostgreSQL lokal khusus project:
 Start PostgreSQL project:
 
 ```powershell
-& "C:\Program Files\PostgreSQL\15\bin\pg_ctl.exe" -D "d:\aeron\.local-postgres" -l "d:\aeron\.local-postgres.log" -o "-p 5433" start
+& "C:\Program Files\PostgreSQL\15\bin\pg_ctl.exe" -D "d:\isikuy\.local-postgres" -l "d:\isikuy\.local-postgres.log" -o "-p 5433" start
 ```
 
 Start app:
@@ -38,5 +38,5 @@ npm run db:seed
 Stop PostgreSQL project:
 
 ```powershell
-& "C:\Program Files\PostgreSQL\15\bin\pg_ctl.exe" -D "d:\aeron\.local-postgres" stop
+& "C:\Program Files\PostgreSQL\15\bin\pg_ctl.exe" -D "d:\isikuy\.local-postgres" stop
 ```

@@ -18,4 +18,4 @@ COPY drizzle.config.ts tsconfig.json tsconfig.server.json ./
 COPY package.json ./
 
 EXPOSE 3000
-CMD ["npm", "run", "start:railway"]
+CMD ["npm", "run", "start"]

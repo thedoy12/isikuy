@@ -19,6 +19,21 @@ describe("Flowix callback status mapping", () => {
     });
   });
 
+  it("maps processing deposit statuses to payment processing but unpaid", () => {
+    expect(mapStatus("processing")).toMatchObject({
+      status: "processing",
+      paymentStatus: "unpaid",
+      paid: false,
+      completed: false,
+    });
+    expect(mapStatus("process")).toMatchObject({
+      status: "processing",
+      paymentStatus: "unpaid",
+      paid: false,
+      completed: false,
+    });
+  });
+
   it("keeps unknown statuses pending and unpaid", () => {
     expect(mapStatus("waiting")).toMatchObject({
       status: "pending",

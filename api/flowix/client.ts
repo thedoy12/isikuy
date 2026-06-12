@@ -9,6 +9,10 @@ type FlowixResponse<T> = {
   meta?: Record<string, unknown>;
 };
 
+type FlowixRequestInit = RequestInit & {
+  timeoutMs?: number;
+};
+
 export type FlowixDeposit = {
   reff_id: string;
   pay_id: string;
@@ -73,6 +77,13 @@ export type FlowixProfile = {
   };
 };
 
+export class FlowixCatalogUnavailableError extends Error {
+  constructor(message = "Katalog produk Flowix belum bisa dimuat.") {
+    super(message);
+    this.name = "FlowixCatalogUnavailableError";
+  }
+}
+
 function normalizeFlowixCategory(value?: string) {
   const slug = (value || "produk")
     .toLowerCase()
@@ -132,22 +143,23 @@ export function isFlowixConfigured() {
 
 async function request<T>(
   path: string,
-  init: RequestInit = {},
+  init: FlowixRequestInit = {},
 ): Promise<FlowixResponse<T>> {
   assertConfigured();
+  const { timeoutMs = 15_000, ...fetchInit } = init;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15_000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   let response: Response;
   try {
     response = await fetch(`${env.flowixBaseUrl}${path}`, {
-      ...init,
+      ...fetchInit,
       signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
         api_key: env.flowixApiKey,
         merchant_id: env.flowixMerchantId,
-        ...(init.headers ?? {}),
+        ...(fetchInit.headers ?? {}),
       },
     });
   } catch (error) {
@@ -229,9 +241,9 @@ export async function checkFlowixTransaction(reffId: string) {
   return response.data;
 }
 
-export async function listFlowixProducts(category?: string) {
+export async function listFlowixProducts(category?: string, input?: { timeoutMs?: number }) {
   const path = category ? `/product?category=${encodeURIComponent(category)}` : "/product";
-  const response = await request<FlowixProduct[]>(path);
+  const response = await request<FlowixProduct[]>(path, { timeoutMs: input?.timeoutMs });
 
   return response.data.map((product) => ({
     ...product,
@@ -266,7 +278,7 @@ export async function ensureFlowixProductAvailable(serviceCode: string | null | 
     throw new Error("Kode produk Flowix kosong.");
   }
 
-  const products = await listFlowixCatalog();
+  const products = await listFlowixCatalog({ strict: true });
   const product = products.find(
     (item) => item.code.toLowerCase() === serviceCode.toLowerCase(),
   );
@@ -278,7 +290,24 @@ export async function ensureFlowixProductAvailable(serviceCode: string | null | 
   return product;
 }
 
-export async function listFlowixCatalog(input?: { categories?: string[] }) {
+export async function warnIfFlowixProductUnavailable(serviceCode: string | null | undefined) {
+  if (!serviceCode) {
+    throw new Error("Kode produk Flowix kosong.");
+  }
+
+  const products = await listFlowixCatalog({ strict: false });
+  if (products.length === 0) return;
+
+  const product = products.find(
+    (item) => item.code.toLowerCase() === serviceCode.toLowerCase(),
+  );
+
+  if (product && !isActiveFlowixProduct(product)) {
+    throw new Error("Produk sedang tidak tersedia di Flowix. Silakan pilih produk lain.");
+  }
+}
+
+export async function listFlowixCatalog(input?: { categories?: string[]; strict?: boolean; timeoutMs?: number }) {
   const commerceSettings = input?.categories
     ? null
     : await getCommerceSettings().catch(() => null);
@@ -286,18 +315,26 @@ export async function listFlowixCatalog(input?: { categories?: string[] }) {
     new Set(input?.categories || commerceSettings?.flowixProductCategories || env.flowixProductCategories),
   );
   const requests = [undefined, ...categories].map((category) =>
-    listFlowixProducts(category).catch((error) => {
-      console.warn(
-        `[flowix] Failed to load products${category ? ` for ${category}` : ""}`,
-        error,
-      );
-      return [] as FlowixProduct[];
-    }),
+    listFlowixProducts(category, { timeoutMs: input?.timeoutMs }).then(
+      (products) => ({ category, products }),
+      (error) => {
+        console.warn(
+          `[flowix] Failed to load products${category ? ` for ${category}` : ""}`,
+          error,
+        );
+        if (input?.strict) {
+          throw new FlowixCatalogUnavailableError(
+            error instanceof Error ? error.message : undefined,
+          );
+        }
+        return { category, products: [] as FlowixProduct[] };
+      },
+    ),
   );
   const groups = await Promise.all(requests);
   const productsByKey = new Map<string, FlowixProduct>();
 
-  for (const product of groups.flat()) {
+  for (const product of groups.flatMap((group) => group.products)) {
     const key = product.code || [
       normalizeFlowixCategory(product.sourceCategory || product.category),
       product.brand || "",

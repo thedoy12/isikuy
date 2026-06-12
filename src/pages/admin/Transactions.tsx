@@ -87,6 +87,13 @@ function displayStatus(tx: any) {
       label: "PAID_NEEDS_HELP",
     };
   }
+  if (tx.paymentStatus === "unpaid" && tx.status === "processing") {
+    return {
+      icon: Loader2,
+      color: "text-[#ffb800]",
+      label: "PAYMENT_PROCESSING",
+    };
+  }
   return statusConfig[tx.status] || { icon: AlertCircle, color: "text-white/30", label: tx.status };
 }
 

@@ -291,3 +291,21 @@ PERFORMA
 - minimalkan query database
 
 Pastikan semua tools menyatu dengan website topup existing agar user dapat bermain tools sambil tetap diarahkan ke fitur topup game.
+
+====================================
+CATATAN DEPLOY DOMAIN - 2026-06-01
+====================================
+
+Rencana perbaikan domain ISIKUY di VPS 202.10.37.162:
+- Gunakan domain coinin.store untuk website ISIKUY.
+- www.coinin.store diarahkan/redirect ke coinin.store.
+- Pasang SSL valid Let’s Encrypt untuk coinin.store dan www.coinin.store agar tidak muncul warning browser.
+- Jangan mengganggu website Jepret: jepret.my.id dan www.jepret.my.id harus tetap mengarah ke website Jepret.
+- Sebelum reload Nginx wajib backup config aktif, jalankan nginx -t, lalu verifikasi:
+  - http://coinin.store
+  - https://coinin.store
+  - http://www.coinin.store
+  - https://www.coinin.store
+  - http://jepret.my.id
+  - https://jepret.my.id
+  - http://202.10.37.162

@@ -78,6 +78,18 @@ function getNumberCandidate(payload: Record<string, unknown>, keys: string[]) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function getPaidGrossAmount(payload: Record<string, unknown>) {
+  return getNumberCandidate(payload, [
+    "original_amount",
+    "originalAmount",
+    "amount_total",
+    "amountTotal",
+    "amount_request",
+    "amountRequest",
+    "amount",
+  ]);
+}
+
 function getInvoiceNumber(payload: Record<string, unknown>): string {
   return getCandidate(payload, [
     "invoiceNumber",
@@ -124,7 +136,7 @@ export function mapStatus(status: string): FlowixStatusUpdate {
 
   if (["processing", "process"].includes(status)) {
     return {
-      status: "pending",
+      status: "processing",
       paymentStatus: "unpaid",
       paid: false,
       completed: false,
@@ -467,7 +479,14 @@ export async function handleFlowixCallback(c: Context) {
     matched.status === "refunded" ||
     matched.paymentStatus === "expired" ||
     matched.paymentStatus === "refunded";
-  const isProductCallback = event === "transaction.status" || providerReference.startsWith("TRX-");
+  const isProductCallback =
+    event === "transaction.status" ||
+    event.includes("product") ||
+    providerReference.startsWith("TRX-") ||
+    (matched.paymentStatus === "paid" &&
+      !!matched.providerReference &&
+      lookup === matched.providerReference &&
+      !matched.providerReference.startsWith("DEP-"));
   const amountReceived = getNumberCandidate(payload, [
     "amount_received",
     "amountReceived",
@@ -475,9 +494,14 @@ export async function handleFlowixCallback(c: Context) {
     "paidAmount",
     "amount_paid",
     "amountPaid",
+    "amount",
   ]);
+  const paidGrossAmount = getPaidGrossAmount(payload);
   const expectedAmount = Math.round(Number(matched.totalAmount || 0));
-  const receivedAmountIsEnough = amountReceived > 0 && amountReceived >= expectedAmount;
+  const receivedAmountIsEnough =
+    paidGrossAmount > 0
+      ? paidGrossAmount >= expectedAmount
+      : amountReceived > 0 && amountReceived >= expectedAmount;
   const paymentAlreadyPaid = matched.paymentStatus === "paid";
   const canProceedWithPaidCallback = paymentAlreadyPaid || receivedAmountIsEnough;
   const previousProviderState = parseProviderState(matched.providerResponse);
@@ -549,7 +573,7 @@ export async function handleFlowixCallback(c: Context) {
       providerResponse = stringifyProviderState(matched.providerResponse, {
         depositCallback: payload,
         lastCallback: payload,
-        paymentHoldReason: `Payment callback held: received Rp${amountReceived.toLocaleString("id-ID")} of expected Rp${expectedAmount.toLocaleString("id-ID")}.`,
+        paymentHoldReason: `Payment callback held: received Rp${(paidGrossAmount || amountReceived).toLocaleString("id-ID")} of expected Rp${expectedAmount.toLocaleString("id-ID")}.`,
       });
     } else {
       nextPaymentStatus = "paid";

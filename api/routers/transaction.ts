@@ -7,10 +7,10 @@ import { transactions, games, products, paymentMethods, vouchers } from "@db/sch
 import {
   checkFlowixDeposit,
   createFlowixDeposit,
-  ensureFlowixProductAvailable,
   getFlowixProfile,
   isFlowixProductUnavailableError,
   isFlowixConfigured,
+  warnIfFlowixProductUnavailable,
 } from "../flowix/client";
 import { checkSupplierOrder, submitSupplierOrder, type SupplierOrder } from "../suppliers/orders";
 import { env } from "../lib/env";
@@ -27,6 +27,7 @@ import {
   resolveProductSupplier,
 } from "../lib/supplierRouting";
 import { getCommerceSettings } from "../lib/commerceSettings";
+import { publicProductUnavailableMessage, sanitizePublicText } from "../lib/publicText";
 
 function generateInvoice(): string {
   const date = new Date();
@@ -44,10 +45,17 @@ async function ensureFlowixBalanceCanFulfill(input: {
   if (!isFlowixConfigured()) return;
   const profile = await getFlowixProfile();
   const balance = Number(profile.financials?.balance ?? 0);
+  const availableAfterPayment = balance + input.paymentReceivedEstimate;
+  if (availableAfterPayment < input.productCost) {
+    throw new Error(
+      "Produk sedang tidak bisa diproses. Silakan pilih produk lain atau coba lagi nanti.",
+    );
+  }
+
   const projectedBalance = balance + input.paymentReceivedEstimate - input.productCost;
   if (projectedBalance < input.minimumBalanceReserve) {
-    throw new Error(
-      `Saldo Flowix tidak cukup untuk memproses produk ini. Saldo sekarang Rp${balance.toLocaleString("id-ID")}, estimasi saldo setelah transaksi Rp${Math.max(0, Math.round(projectedBalance)).toLocaleString("id-ID")}. Minimal sisa saldo Rp${input.minimumBalanceReserve.toLocaleString("id-ID")}.`,
+    console.warn(
+      `[flowix] Balance reserve warning: projected Rp${Math.round(projectedBalance).toLocaleString("id-ID")} below reserve Rp${input.minimumBalanceReserve.toLocaleString("id-ID")}.`,
     );
   }
 }
@@ -134,7 +142,9 @@ function getPaymentDetails(raw: string | null) {
       reff_id?: string;
       pay_id?: string;
       amount_total?: number;
+      amount_request?: number;
       amount_received?: number;
+      fee?: number;
       pay_url?: string | null;
       pay_code?: string | null;
       qr_string?: string | null;
@@ -153,6 +163,12 @@ function getPaymentDetails(raw: string | null) {
     paymentId: deposit.pay_id || null,
     method: deposit.method || "QRIS",
     amountTotal: Number(deposit.amount_total || 0),
+    amountRequested: Number(deposit.amount_request || 0),
+    providerAdjustment: Math.max(
+      0,
+      Number(deposit.amount_total || 0) - Number(deposit.amount_request || 0),
+    ),
+    fee: Number(deposit.fee || 0),
     amountReceived: Number(deposit.amount_received || 0),
     payUrl: deposit.pay_url || null,
     payCode: deposit.pay_code || null,
@@ -169,7 +185,50 @@ function getTransactionIssue(raw: string | null) {
     orderSubmitError?: string;
     voucherUsageError?: string;
   };
-  return state.paymentHoldReason || state.orderSubmitError || state.voucherUsageError || null;
+  return sanitizePublicText(
+    state.paymentHoldReason || state.orderSubmitError || state.voucherUsageError || null,
+  );
+}
+
+function publicTransactionProduct(product: typeof products.$inferSelect | undefined) {
+  if (!product) return undefined;
+  return {
+    id: product.id,
+    gameId: product.gameId,
+    name: product.name,
+    description: sanitizePublicText(product.description),
+    basePrice: product.basePrice,
+    salePrice: product.salePrice,
+    discountPercent: product.discountPercent,
+    isPromo: product.isPromo,
+    stock: product.stock,
+    sortOrder: product.sortOrder,
+    isActive: product.isActive,
+  };
+}
+
+function publicTransactionGame(game: typeof games.$inferSelect | undefined) {
+  if (!game) return undefined;
+  return {
+    id: game.id,
+    categoryId: game.categoryId,
+    name: game.name,
+    slug: game.slug,
+    description: sanitizePublicText(game.description),
+    coverImage: game.coverImage,
+    cardImage: game.cardImage,
+    bannerImage: game.bannerImage,
+    publisher: "ISIKUY",
+    platform: game.platform,
+    isTrending: game.isTrending,
+    isPopular: game.isPopular,
+    isNew: game.isNew,
+    hasServerId: game.hasServerId,
+    serverIdLabel: game.serverIdLabel,
+    serverIdPlaceholder: game.serverIdPlaceholder,
+    sortOrder: game.sortOrder,
+    isActive: game.isActive,
+  };
 }
 
 async function submitProductOrder(transaction: {
@@ -300,6 +359,20 @@ async function syncFlowixDepositPayment(invoiceNumber: string) {
   const deposit = await checkFlowixDeposit(transaction.providerReference);
   const depositStatus = deposit.status.toLowerCase();
   if (!["paid", "success", "settlement", "settled", "completed", "capture"].includes(depositStatus)) {
+    if (["processing", "process"].includes(depositStatus) && transaction.status === "pending") {
+      await db
+        .update(transactions)
+        .set({
+          status: "processing",
+          paymentStatus: "unpaid",
+          providerResponse: stringifyProviderState(transaction.providerResponse, {
+            depositStatus: deposit,
+            depositSyncedAt: new Date().toISOString(),
+            paymentHoldReason: "Pembayaran sedang diproses oleh Flowix.",
+          }),
+        })
+        .where(eq(transactions.id, transaction.id));
+    }
     return;
   }
 
@@ -501,7 +574,7 @@ export const transactionRouter = createRouter({
       const commerceSettings = await getCommerceSettings();
       const supplierRoute = await getSupplierRouting();
       if (!isProductAvailableForSupplierRoute(product, supplierRoute.mode)) {
-        throw new Error("Produk ini tidak tersedia pada jalur API yang sedang aktif.");
+        throw new Error(publicProductUnavailableMessage);
       }
       const supplier = resolveProductSupplier({
         product,
@@ -511,10 +584,10 @@ export const transactionRouter = createRouter({
       const supplierProductCode = supplier.supplierProductCode;
       const supplierMaintenance = await getSupplierMaintenance();
       if (supplierProvider === "flowix" && supplierMaintenance.flowix) {
-        throw new Error("Supplier Flowix sedang maintenance. Silakan coba lagi nanti.");
+        throw new Error("Layanan sedang maintenance. Silakan coba lagi nanti.");
       }
       if (supplierProvider === "digiflazz" && supplierMaintenance.digiflazz) {
-        throw new Error("Supplier Digiflazz sedang maintenance. Silakan coba lagi nanti.");
+        throw new Error("Layanan sedang maintenance. Silakan coba lagi nanti.");
       }
       const voucher = await validateVoucher({
         code: input.voucherCode,
@@ -528,7 +601,7 @@ export const transactionRouter = createRouter({
       });
       const totalAmount = amounts.totalAmount;
       const feeAmount = amounts.feeAmount;
-      const finalFeeAmount = feeAmount;
+      let finalFeeAmount = feeAmount;
       let finalTotalAmount = totalAmount;
       let providerReference: string | null = null;
       let providerPaymentId: string | null = null;
@@ -542,27 +615,41 @@ export const transactionRouter = createRouter({
       if (method.code === "qris" && isFlowixConfigured()) {
         if (supplierProvider === "flowix") {
           try {
-            await ensureFlowixProductAvailable(supplierProductCode);
+            await warnIfFlowixProductUnavailable(supplierProductCode);
           } catch (error) {
-            await deactivateUnavailableProduct({
-              productId: product.id,
-              error,
-            });
-            throw error;
+            if (isFlowixProductUnavailableError(error)) {
+              await deactivateUnavailableProduct({
+                productId: product.id,
+                error,
+              });
+              throw new Error(publicProductUnavailableMessage);
+            }
+            console.warn("[flowix] Product precheck skipped", error);
           }
 
           await ensureFlowixBalanceCanFulfill({
             productCost,
             paymentReceivedEstimate: Math.round(totalAmount),
             minimumBalanceReserve: commerceSettings.flowixMinimumBalanceReserve,
+          }).catch((error) => {
+            const message =
+              sanitizePublicText(error instanceof Error ? error.message : String(error)) ||
+              "Pembayaran belum bisa dibuat. Silakan coba lagi sebentar.";
+            throw new TRPCError({ code: "BAD_REQUEST", message });
           });
         }
         const flowixDeposit = await createFlowixDeposit({
           amount: Math.round(totalAmount),
           methodCode: "QRIS",
-          feeByCustomer: false,
+          feeByCustomer: true,
+        }).catch((error) => {
+          const message =
+            sanitizePublicText(error instanceof Error ? error.message : String(error)) ||
+            "Pembayaran belum bisa dibuat. Silakan coba lagi sebentar.";
+          throw new TRPCError({ code: "BAD_REQUEST", message });
         });
         finalTotalAmount = Number(flowixDeposit.amount_total || totalAmount);
+        finalFeeAmount = Math.max(0, finalTotalAmount - baseAmount);
         providerReference = flowixDeposit.reff_id;
         providerPaymentId = flowixDeposit.pay_id;
         providerResponse = JSON.stringify({
@@ -678,8 +765,8 @@ export const transactionRouter = createRouter({
       const { providerResponse, ...safeTransaction } = transaction;
       return {
         ...safeTransaction,
-        game,
-        product,
+        game: publicTransactionGame(game),
+        product: publicTransactionProduct(product),
         method,
         payment: getPaymentDetails(providerResponse),
         issue: getTransactionIssue(providerResponse),
@@ -706,7 +793,6 @@ export const transactionRouter = createRouter({
         productName: products.name,
         providerProductName: transactions.providerProductName,
         providerResponse: transactions.providerResponse,
-        nominalAmount: products.nominalAmount,
         methodName: paymentMethods.name,
       })
       .from(transactions)

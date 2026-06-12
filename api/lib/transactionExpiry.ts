@@ -1,4 +1,4 @@
-import { and, eq, lte, sql } from "drizzle-orm";
+import { and, eq, inArray, lte, sql } from "drizzle-orm";
 import { transactions } from "@db/schema";
 import { getDb } from "../queries/connection";
 
@@ -6,6 +6,10 @@ export const QRIS_PAYMENT_TIMEOUT_MS = 60 * 60 * 1000;
 
 export function qrisExpiryDate(from = new Date(), timeoutMs = QRIS_PAYMENT_TIMEOUT_MS) {
   return new Date(from.getTime() + timeoutMs);
+}
+
+export function isUnpaidExpirableStatus(status: string, paymentStatus: string) {
+  return paymentStatus === "unpaid" && ["pending", "processing"].includes(status);
 }
 
 export async function failExpiredUnpaidTransactions(now = new Date()) {
@@ -22,7 +26,7 @@ export async function failExpiredUnpaidTransactions(now = new Date()) {
     })
     .where(
       and(
-        eq(transactions.status, "pending"),
+        inArray(transactions.status, ["pending", "processing"]),
         eq(transactions.paymentStatus, "unpaid"),
         lte(transactions.expiryAt, now),
       ),

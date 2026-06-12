@@ -196,9 +196,17 @@ function knownGameName(product: FlowixProduct) {
   return knownGames.find(([pattern]) => pattern.test(text))?.[1] ?? null;
 }
 
+function isPointBlankVoucherProduct(product: FlowixProduct) {
+  const code = (product.code || "").toLowerCase().trim();
+  return /^vo?pb[\w-]*/i.test(code);
+}
+
 function productGroupBaseName(product: FlowixProduct) {
   const categorySlug = productCategorySlug(product);
   const knownName = knownGameName(product);
+  if (knownName === "Point Blank" && isPointBlankVoucherProduct(product)) {
+    return "Point Blank Voucher";
+  }
   if (knownName) return knownName;
   const rawName = cleanFlowixName(product.brand || product.name || "Produk");
   if (categorySlug !== "game") return rawName;
@@ -233,7 +241,6 @@ function isRegionalGameProduct(product: FlowixProduct) {
 function isAllowedFlowixProduct(product: FlowixProduct) {
   if (productCategorySlug(product) !== "game") return true;
   const knownName = knownGameName(product);
-  if (mobileLegendsVariant(product) === "b") return false;
   if (isRegionalGameProduct(product)) return false;
   if (
     knownName === "Mobile Legends" &&
@@ -407,6 +414,14 @@ function productDedupeKey(product: ProductDedupeInput) {
   return matchKey(displayName) || matchKey(product.nominalAmount || product.name);
 }
 
+function productReplacementKey(product: ProductDedupeInput) {
+  const displayName = cleanProductDisplayName(
+    product.name,
+    productBrandFromDescription(product.description),
+  );
+  return matchKey(displayName) || matchKey(product.name);
+}
+
 function uniqueProductsByName<T extends ProductDedupeInput>(items: T[]) {
   const seen = new Set<string>();
   return items.filter((item) => {
@@ -425,6 +440,22 @@ function uniqueGamesByName<T extends Pick<GameRow, "slug" | "name" | "categoryId
     seen.add(key);
     return true;
   });
+}
+
+function publicProduct(product: ProductRow, displayName?: string) {
+  return {
+    id: product.id,
+    gameId: product.gameId,
+    name: displayName ?? product.name,
+    description: sanitizePublicText(product.description),
+    basePrice: product.basePrice,
+    salePrice: product.salePrice,
+    discountPercent: product.discountPercent,
+    isPromo: product.isPromo,
+    stock: product.stock,
+    sortOrder: product.sortOrder,
+    isActive: product.isActive,
+  };
 }
 
 function isVisibleProductForRoute(
@@ -457,9 +488,28 @@ export async function syncFlowixCatalog() {
 
   const db = getDb();
   const commerceSettings = await getCommerceSettings();
-  const flowixProducts = (await listFlowixCatalog({ categories: commerceSettings.flowixProductCategories }))
-    .filter(isActiveFlowixProduct)
+  const allFlowixProducts = (await listFlowixCatalog({
+    categories: commerceSettings.flowixProductCategories,
+    strict: true,
+    timeoutMs: 45_000,
+  }))
     .filter(isAllowedFlowixProduct);
+  const flowixProducts = allFlowixProducts.filter(isActiveFlowixProduct);
+  const unavailableCodes = allFlowixProducts
+    .filter((product) => product.code && !isActiveFlowixProduct(product))
+    .map((product) => product.code);
+
+  if (unavailableCodes.length > 0) {
+    await db
+      .update(products)
+      .set({ isActive: false })
+      .where(
+        and(
+          eq(products.supplierProvider, "flowix"),
+          inArray(products.nominalAmount, unavailableCodes),
+        ),
+      );
+  }
 
   if (flowixProducts.length === 0) {
     console.warn("[catalog] Sync skipped because provider returned an empty catalog.");
@@ -594,7 +644,7 @@ export async function syncFlowixCatalog() {
     gameCodes.add(product.code);
     activeCodesByGame.set(game.id, gameCodes);
 
-    const existingProducts = await db
+    const existingProductsByCode = await db
       .select()
       .from(products)
       .where(
@@ -605,10 +655,36 @@ export async function syncFlowixCatalog() {
         ),
       )
       .orderBy(asc(products.id));
-    const [existing] = existingProducts;
 
     const providerName = cleanProductDisplayName(product.name, product.brand, product.code);
     const providerSalePrice = String(priceWithMarkup(product.price, commerceSettings.effectiveProductMarkupPercent));
+    let existingProducts = existingProductsByCode;
+    let existing = existingProducts[0];
+    if (!existing) {
+      const providerReplacementKey = productReplacementKey({
+        name: providerName,
+        nominalAmount: product.code,
+        description: `${cleanFlowixName(product.brand)} - ${product.code}`,
+      });
+      const sameGameProducts = await db
+        .select()
+        .from(products)
+        .where(
+          and(
+            eq(products.gameId, game.id),
+            eq(products.supplierProvider, "flowix"),
+          ),
+        )
+        .orderBy(asc(products.id));
+      const replacement = sameGameProducts.find(
+        (item) => !item.isManuallyHidden && productReplacementKey(item) === providerReplacementKey,
+      );
+      if (replacement) {
+        existing = replacement;
+        existingProducts = sameGameProducts.filter((item) => item.id === replacement.id);
+      }
+    }
+
     const productData = {
       gameId: game.id,
       name: existing?.name ?? providerName,
@@ -1030,10 +1106,7 @@ export const gameRouter = createRouter({
           );
 
           return {
-            ...product,
-            name: displayName,
-            provider: (product.supplierProvider || "flowix") as "flowix" | "digiflazz",
-            providerProductCode: product.supplierProductCode || product.nominalAmount,
+            ...publicProduct(product, displayName),
             providerProductName: displayName,
           };
         }),

@@ -62,6 +62,13 @@ export default function HistoryPage() {
         label: "Paid - Butuh Bantuan",
       };
     }
+    if (tx.paymentStatus === "unpaid" && tx.status === "processing") {
+      return {
+        icon: Loader2,
+        color: "text-[#ffb800]",
+        label: "Pembayaran Diproses",
+      };
+    }
     return statusConfig[tx.status] || {
       icon: AlertCircle,
       color: "text-white/30",
@@ -205,7 +212,7 @@ export default function HistoryPage() {
                               {tx.gameName}
                             </p>
                             <p className="text-xs text-white/40">
-                              {tx.productName} &middot; {tx.nominalAmount}
+                              {tx.productName}
                             </p>
                             <p className="font-terminal text-[10px] text-white/20 mt-1">
                               {tx.invoiceNumber}

@@ -35,7 +35,6 @@ const paymentIcons: Record<string, React.ReactNode> = {
 };
 
 type CheckoutPayment = {
-  provider: string;
   reference: string;
   paymentId: string;
   amountTotal: number;
@@ -122,7 +121,13 @@ export default function GameDetail() {
       setShowQris(false);
       setStep("payment");
     },
-    onError: (err) => setCheckoutError(err.message),
+    onError: (err) => {
+      setCheckoutError(err.message);
+      if (/tidak tersedia/i.test(err.message)) {
+        setSelectedProduct(null);
+        utils.game.getBySlug.invalidate({ slug: slug || "" });
+      }
+    },
   });
   const processPayment = trpc.transaction.processPayment.useMutation({
     onSuccess: () => {
@@ -214,8 +219,10 @@ export default function GameDetail() {
   const orderIsProcessing =
     txStatus?.paymentStatus === "paid" && txStatus.status === "processing";
   const paymentIsPaid = txStatus?.paymentStatus === "paid";
+  const paymentIsProcessing =
+    !paymentIsPaid && txStatus?.status === "processing";
   const orderFailedAfterPayment = paymentIsPaid && txStatus?.status === "failed";
-  const showPaymentQr = !paymentIsPaid;
+  const showPaymentQr = !paymentIsPaid && !paymentIsProcessing;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -235,6 +242,12 @@ export default function GameDetail() {
       paymentMethods[0];
     setSelectedPayment(qrisMethod.id);
   }, [paymentMethods, selectedPayment]);
+
+  useEffect(() => {
+    if (selectedProduct && game && !selectedProductData) {
+      setSelectedProduct(null);
+    }
+  }, [game, selectedProduct, selectedProductData]);
 
   useEffect(() => {
     if (step === "payment") {
@@ -339,7 +352,7 @@ export default function GameDetail() {
               >
                 {orderFailedAfterPayment ? (
                   <AlertCircle className="h-8 w-8" />
-                ) : orderIsProcessing ? (
+                ) : orderIsProcessing || paymentIsProcessing ? (
                   <Loader2 className="h-8 w-8 animate-spin" />
                 ) : (
                   <Clock className="h-8 w-8" />
@@ -350,6 +363,8 @@ export default function GameDetail() {
                   ? "Pesanan Gagal"
                   : orderIsProcessing
                     ? "Pesanan Diproses"
+                    : paymentIsProcessing
+                      ? "Pembayaran Diproses"
                     : "Menunggu Pembayaran"}
               </h2>
               <p className="text-sm text-white/50">
@@ -357,6 +372,8 @@ export default function GameDetail() {
                   ? "Pembayaran berhasil, tetapi pesanan gagal diproses"
                   : orderIsProcessing
                   ? "Pembayaran sudah diterima, produk sedang dikirim"
+                  : paymentIsProcessing
+                  ? "Pembayaran sedang diproses oleh Flowix"
                   : "Selesaikan pembayaran sebelum waktu habis"}
               </p>
             </div>
@@ -376,8 +393,8 @@ export default function GameDetail() {
             ) : (
               <div className="glass rounded-2xl p-6 mb-6 text-center">
                 <p className="text-xs text-white/40 mb-2">Status Pembayaran</p>
-                <p className="font-display text-2xl font-bold text-[#0aff00]">
-                  QRIS Sudah Dibayar
+                <p className={`font-display text-2xl font-bold ${paymentIsProcessing ? "text-[#ffb800]" : "text-[#0aff00]"}`}>
+                  {paymentIsProcessing ? "Pembayaran Diproses" : "QRIS Sudah Dibayar"}
                 </p>
               </div>
             )}
@@ -487,7 +504,11 @@ export default function GameDetail() {
                 <>
                   <p className="text-xs text-white/40 mb-2">Status Pesanan</p>
                   <p className={orderFailedAfterPayment ? "font-display text-2xl font-bold text-[#ff4967]" : "font-display text-2xl font-bold text-[#ffb800]"}>
-                    {orderFailedAfterPayment ? "Pesanan Gagal" : "Pesanan Sedang Diproses"}
+                    {orderFailedAfterPayment
+                      ? "Pesanan Gagal"
+                      : paymentIsProcessing
+                        ? "Pembayaran Sedang Diproses"
+                        : "Pesanan Sedang Diproses"}
                   </p>
                 </>
               )}
@@ -574,6 +595,8 @@ export default function GameDetail() {
                 )}
                 {orderIsProcessing
                   ? "Cek Status Pesanan"
+                  : paymentIsProcessing
+                    ? "Cek Status Pembayaran"
                   : paymentDetails
                     ? "Cek Status Pesanan"
                     : import.meta.env.DEV
@@ -582,7 +605,7 @@ export default function GameDetail() {
               </button>
             )}
 
-            {!paymentIsPaid && (
+            {!paymentIsPaid && !paymentIsProcessing && (
               <button
                 onClick={() => {
                   setStep("form");
@@ -798,9 +821,6 @@ export default function GameDetail() {
                           -{product.discountPercent}%
                         </span>
                       )}
-                      <p className="text-xs text-white/40 mb-1">
-                        {product.providerProductCode || product.nominalAmount}
-                      </p>
                       <p className="font-display text-lg font-bold text-white">
                         {product.name}
                       </p>
